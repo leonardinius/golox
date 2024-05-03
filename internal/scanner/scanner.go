@@ -1,7 +1,6 @@
 package scanner
 
-type Token interface{}
-
+// Token represents a lexical to
 type Scanner interface {
 	Scan() ([]Token, error)
 }

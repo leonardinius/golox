@@ -1,11 +1,12 @@
 package main
 
 import (
-	"bufio"
+	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
+
+	"github.com/chzyer/readline"
 
 	"github.com/leonardinius/golox/internal/scanner"
 )
@@ -32,38 +33,24 @@ func Main(args []string) error {
 }
 
 func runPrompt() error {
-	r := bufio.NewReader(os.Stdin)
-	w := bufio.NewWriter(os.Stdout)
-	rw := bufio.NewReadWriter(r, w)
+	rl, err := readline.New("> ")
+	if err != nil {
+		return err
+	}
+	defer rl.Close()
 
 	for {
-		fmt.Fprint(rw, "> ")
-		rw.Flush()
-
-		var (
-			line   []byte
-			l      []byte
-			prefix bool
-			err    error
-		)
-		for l, prefix, err = rw.ReadLine(); err == nil; l, prefix, err = rw.ReadLine() {
-			line = append(line, l...)
-			if !prefix {
-				break
-			}
-		}
-
-		// check for EOF
-		if err == io.EOF {
+		line, err := rl.Readline()
+		if errors.Is(err, io.EOF) {
 			return nil
 		}
-
 		if err != nil {
-			return fmt.Errorf("error reading line: %w", err)
+			return err
 		}
 
-		if err := run(string(line)); err != nil {
-			log.Printf("[ERROR] eval: %v\n", err)
+		err = run(line)
+		if err != nil {
+			fmt.Printf("[ERROR] eval: %v\n", err)
 		}
 	}
 }
