@@ -256,6 +256,35 @@ func TestScanTokens(t *testing.T) {
 			},
 			"",
 		},
+		{
+			"comment-asterix",
+			"/**/",
+			[]string{
+				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+			},
+			"",
+		},
+		{
+			"comment-comment-asterix-bang-bang",
+			`/*
+			//
+			/**/
+			/*
+			*/
+			/*
+			/**/
+			/*
+			*/
+			*/
+			*/!
+			!`,
+			[]string{
+				`{Type: BANG, Lexeme: "!", Literal: <nil>, Line: 11}`,
+				`{Type: BANG, Lexeme: "!", Literal: <nil>, Line: 12}`,
+				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 12}`,
+			},
+			"",
+		},
 	}
 
 	for _, tc := range testcases {

@@ -31,6 +31,12 @@ var reservedKeywords = map[string]grammar.TokenType{
 	"while":  grammar.WHILE,
 }
 
+var (
+	errUnexpectedCharacter = errors.New("Unexpected character.")
+	errUnterminatedString  = errors.New("Unterminated string.")
+	errUnterminatedComment = errors.New("Unterminated comment.")
+)
+
 type scanner struct {
 	source               []rune
 	tokens               []Token
@@ -105,13 +111,13 @@ func (s *scanner) scanToken() {
 	case '/':
 		if s.match('/') {
 			s.comment()
+		} else if s.match('*') {
+			s.blockComment()
 		} else {
 			s.addToken(grammar.SLASH)
 		}
-	case ' ', '\r', '\t':
+	case ' ', '\r', '\t', '\n':
 		// Ignore whitespace.
-	case '\n':
-		s.line++
 	case '"':
 		s.string()
 	default:
@@ -120,7 +126,7 @@ func (s *scanner) scanToken() {
 		} else if s.isAlpha(c) {
 			s.reservedOrIdentifier()
 		} else {
-			s.reportUnrecognizedCharacter(c)
+			s.reportUnexpectedCharater(c)
 		}
 	}
 }
@@ -140,6 +146,9 @@ func (s *scanner) peekNext() rune {
 }
 
 func (s *scanner) advance() rune {
+	if s.source[s.current] == '\n' {
+		s.line++
+	}
 	s.current++
 	return s.source[s.current-1]
 }
@@ -175,16 +184,36 @@ func (s *scanner) comment() {
 	}
 }
 
+func (s *scanner) blockComment() {
+	depth := 1
+
+	for !s.isAtEnd() && depth > 0 {
+
+		if s.peek() == '*' && s.peekNext() == '/' {
+			depth--
+			s.advance()
+			s.advance()
+		} else if s.peek() == '/' && s.peekNext() == '*' {
+			depth++
+			s.advance()
+			s.advance()
+		} else {
+			s.advance()
+		}
+	}
+
+	if depth > 0 {
+		s.reportError(errUnterminatedComment)
+	}
+}
+
 func (s *scanner) string() {
 	for !s.isAtEnd() && s.peek() != '"' {
-		if s.peek() == '\n' {
-			s.line++
-		}
 		s.advance()
 	}
 
 	if s.isAtEnd() {
-		s.reportUnterminatedString()
+		s.reportError(errUnterminatedString)
 		return
 	}
 
@@ -249,16 +278,14 @@ func (s *scanner) isAlphaNumeric(c rune) bool {
 	return s.isAlpha(c) || s.isDigit(c)
 }
 
-func (s *scanner) reportUnrecognizedCharacter(c rune) {
-	s.err = NewScanError(s.line, "", "Unexpected character.", strconv.QuoteRune(c))
-}
-
-func (s *scanner) reportUnterminatedString() {
-	s.err = NewScanError(s.line, "", "Unterminated string.", "")
+func (s *scanner) reportUnexpectedCharater(c rune) {
+	s.err = errors.Join(NewScanError(s.line, "", errUnexpectedCharacter.Error(), strconv.QuoteRune(c)),
+		errUnexpectedCharacter,
+	)
 }
 
 func (s *scanner) reportError(err error) {
-	s.err = errors.Join(NewScanError(s.line, "", "Parse error.", err.Error()),
+	s.err = errors.Join(NewScanError(s.line, "", err.Error(), ""),
 		err,
 	)
 }
