@@ -6,4 +6,7 @@
 
 ## Features
 
+- [ ] TODO Makefile
+- [ ] TODO Linters
+- [ ] TODO GH actions
 - [ ] TODO scanner work with bufio
