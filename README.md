@@ -6,4 +6,4 @@
 
 ## Features
 
-- [ ] TODO xx
+- [ ] TODO scanner work with bufio
