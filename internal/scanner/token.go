@@ -10,7 +10,7 @@ import (
 type Token struct {
 	Type    grammar.TokenType
 	Lexeme  string
-	Literal interface{}
+	Literal any
 	Line    int
 }
 

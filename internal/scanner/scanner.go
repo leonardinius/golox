@@ -174,7 +174,7 @@ func (s *scanner) addToken(t grammar.TokenType) {
 	s.addTokenLiteral(t, nil)
 }
 
-func (s *scanner) addTokenLiteral(t grammar.TokenType, literal interface{}) {
+func (s *scanner) addTokenLiteral(t grammar.TokenType, literal any) {
 	s.tokens = append(s.tokens, Token{t, string(s.source[s.start:s.current]), literal, s.line})
 }
 
