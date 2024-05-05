@@ -17,7 +17,7 @@ func TestScanTokens(t *testing.T) {
 		err      string
 	}{
 		{"empty", "", []string{`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`}, ""},
-		{"syntax error", "⌘", nil, "[line 1] Error: Unrecognized character. '⌘'"},
+		{"syntax error", "⌘", nil, "[line 1] Error: Unexpected character. '⌘'"},
 		{
 			"basic",
 			"(){},*+-;",
@@ -177,6 +177,85 @@ func TestScanTokens(t *testing.T) {
 			},
 			"",
 		},
+		{
+			"number-integer",
+			`10`,
+			[]string{
+				`{Type: NUMBER, Lexeme: "10", Literal: 10, Line: 1}`,
+				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+			},
+			"",
+		},
+		{
+			"number-integer-leading-zeroes",
+			`0010`,
+			[]string{
+				`{Type: NUMBER, Lexeme: "0010", Literal: 10, Line: 1}`,
+				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+			},
+			"",
+		},
+		{
+			"number-decimal",
+			`12.34`,
+			[]string{
+				`{Type: NUMBER, Lexeme: "12.34", Literal: 12.34, Line: 1}`,
+				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+			},
+			"",
+		},
+		{
+			"number-decimal-leading-zeroes",
+			`0012.34`,
+			[]string{
+				`{Type: NUMBER, Lexeme: "0012.34", Literal: 12.34, Line: 1}`,
+				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+			},
+			"",
+		},
+		{
+			"number-dot",
+			`12.`,
+			[]string{
+				`{Type: NUMBER, Lexeme: "12", Literal: 12, Line: 1}`,
+				`{Type: DOT, Lexeme: ".", Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+			},
+			"",
+		},
+		{
+			"identifier",
+			`identifier`,
+			[]string{
+				`{Type: IDENTIFIER, Lexeme: "identifier", Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+			},
+			"",
+		},
+		{
+			"reserved",
+			`and class else false for fun if nil or print return super this true var while`,
+			[]string{
+				`{Type: AND, Lexeme: "and", Literal: <nil>, Line: 1}`,
+				`{Type: CLASS, Lexeme: "class", Literal: <nil>, Line: 1}`,
+				`{Type: ELSE, Lexeme: "else", Literal: <nil>, Line: 1}`,
+				`{Type: FALSE, Lexeme: "false", Literal: <nil>, Line: 1}`,
+				`{Type: FOR, Lexeme: "for", Literal: <nil>, Line: 1}`,
+				`{Type: FUN, Lexeme: "fun", Literal: <nil>, Line: 1}`,
+				`{Type: IF, Lexeme: "if", Literal: <nil>, Line: 1}`,
+				`{Type: NIL, Lexeme: "nil", Literal: <nil>, Line: 1}`,
+				`{Type: OR, Lexeme: "or", Literal: <nil>, Line: 1}`,
+				`{Type: PRINT, Lexeme: "print", Literal: <nil>, Line: 1}`,
+				`{Type: RETURN, Lexeme: "return", Literal: <nil>, Line: 1}`,
+				`{Type: SUPER, Lexeme: "super", Literal: <nil>, Line: 1}`,
+				`{Type: THIS, Lexeme: "this", Literal: <nil>, Line: 1}`,
+				`{Type: TRUE, Lexeme: "true", Literal: <nil>, Line: 1}`,
+				`{Type: VAR, Lexeme: "var", Literal: <nil>, Line: 1}`,
+				`{Type: WHILE, Lexeme: "while", Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+			},
+			"",
+		},
 	}
 
 	for _, tc := range testcases {
@@ -190,7 +269,7 @@ func TestScanTokens(t *testing.T) {
 				for i, token := range tokens {
 					tokensAsStrings[i] = token.GoString()
 				}
-				assert.Equalf(tt, tc.expected, tokensAsStrings, "expected tokens %v, got %v", tc.expected, tokens)
+				assert.Equal(tt, tc.expected, tokensAsStrings)
 			}
 		})
 	}

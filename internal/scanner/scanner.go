@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/leonardinius/golox/internal/grammar"
@@ -9,6 +10,25 @@ import (
 // Token represents a lexical to
 type Scanner interface {
 	Scan() ([]Token, error)
+}
+
+var reservedKeywords = map[string]grammar.TokenType{
+	"and":    grammar.AND,
+	"class":  grammar.CLASS,
+	"else":   grammar.ELSE,
+	"false":  grammar.FALSE,
+	"for":    grammar.FOR,
+	"fun":    grammar.FUN,
+	"if":     grammar.IF,
+	"nil":    grammar.NIL,
+	"or":     grammar.OR,
+	"print":  grammar.PRINT,
+	"return": grammar.RETURN,
+	"super":  grammar.SUPER,
+	"this":   grammar.THIS,
+	"true":   grammar.TRUE,
+	"var":    grammar.VAR,
+	"while":  grammar.WHILE,
 }
 
 type scanner struct {
@@ -95,28 +115,14 @@ func (s *scanner) scanToken() {
 	case '"':
 		s.string()
 	default:
-		s.reportUnrecognizedCharacter(c)
-	}
-}
-
-func (s *scanner) string() {
-	for !s.isAtEnd() && s.peek() != '"' {
-		if s.peek() == '\n' {
-			s.line++
+		if s.isDigit(c) {
+			s.number()
+		} else if s.isAlpha(c) {
+			s.reservedOrIdentifier()
+		} else {
+			s.reportUnrecognizedCharacter(c)
 		}
-		s.advance()
 	}
-
-	if s.isAtEnd() {
-		s.reportUnterminatedString()
-		return
-	}
-
-	// The closing ".
-	s.advance()
-
-	value := s.source[s.start+1 : s.current-1]
-	s.addTokenLiteral(grammar.STRING, string(value))
 }
 
 func (s *scanner) peek() rune {
@@ -124,6 +130,13 @@ func (s *scanner) peek() rune {
 		return '\000'
 	}
 	return s.source[s.current]
+}
+
+func (s *scanner) peekNext() rune {
+	if s.current+1 >= len(s.source) {
+		return '\000'
+	}
+	return s.source[s.current+1]
 }
 
 func (s *scanner) advance() rune {
@@ -162,12 +175,92 @@ func (s *scanner) comment() {
 	}
 }
 
+func (s *scanner) string() {
+	for !s.isAtEnd() && s.peek() != '"' {
+		if s.peek() == '\n' {
+			s.line++
+		}
+		s.advance()
+	}
+
+	if s.isAtEnd() {
+		s.reportUnterminatedString()
+		return
+	}
+
+	// The closing ".
+	s.advance()
+
+	value := s.source[s.start+1 : s.current-1]
+	s.addTokenLiteral(grammar.STRING, string(value))
+}
+
+func (s *scanner) number() {
+	for s.isDigit(s.peek()) {
+		s.advance()
+	}
+
+	if s.peek() == '.' && s.isDigit(s.peekNext()) {
+		s.advance()
+
+		for s.isDigit(s.peek()) {
+			s.advance()
+		}
+	}
+
+	svalue := string(s.source[s.start:s.current])
+	value, err := strconv.ParseFloat(svalue, 64)
+	if err != nil {
+		s.reportError(err)
+		return
+	}
+	s.addTokenLiteral(grammar.NUMBER, value)
+}
+
+func (s *scanner) reservedOrIdentifier() {
+	for s.isAlphaNumeric(s.peek()) {
+		s.advance()
+	}
+
+	tokenType := grammar.IDENTIFIER
+	name := string(s.source[s.start:s.current])
+	if _type, ok := s.reserved(name); ok {
+		tokenType = _type
+	}
+	s.addToken(tokenType)
+}
+
+func (s *scanner) reserved(identifier string) (tokenType grammar.TokenType, ok bool) {
+	tokenType, ok = reservedKeywords[identifier]
+	return
+}
+
+func (s *scanner) isDigit(c rune) bool {
+	return c >= '0' && c <= '9'
+}
+
+func (s *scanner) isAlpha(c rune) bool {
+	return (c >= 'a' && c <= 'z') ||
+		(c >= 'A' && c <= 'Z') ||
+		c == '_'
+}
+
+func (s *scanner) isAlphaNumeric(c rune) bool {
+	return s.isAlpha(c) || s.isDigit(c)
+}
+
 func (s *scanner) reportUnrecognizedCharacter(c rune) {
-	s.err = NewScanError(s.line, "", "Unrecognized character.", strconv.QuoteRune(c))
+	s.err = NewScanError(s.line, "", "Unexpected character.", strconv.QuoteRune(c))
 }
 
 func (s *scanner) reportUnterminatedString() {
 	s.err = NewScanError(s.line, "", "Unterminated string.", "")
+}
+
+func (s *scanner) reportError(err error) {
+	s.err = errors.Join(NewScanError(s.line, "", "Parse error.", err.Error()),
+		err,
+	)
 }
 
 var _ Scanner = (*scanner)(nil)
