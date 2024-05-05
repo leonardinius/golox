@@ -1,6 +1,7 @@
 package scanner_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/leonardinius/golox/internal/scanner"
@@ -16,22 +17,22 @@ func TestScanTokens(t *testing.T) {
 		expected []string
 		err      string
 	}{
-		{"empty", "", []string{`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`}, ""},
+		{"empty", "", []string{`{Type: EOF, Literal: <nil>, Line: 1}`}, ""},
 		{"syntax error", "⌘", nil, "[line 1] Error: Unexpected character. '⌘'"},
 		{
 			"basic",
 			"(){},*+-;",
 			[]string{
-				`{Type: LEFT_PAREN, Lexeme: "(", Literal: <nil>, Line: 1}`,
-				`{Type: RIGHT_PAREN, Lexeme: ")", Literal: <nil>, Line: 1}`,
-				`{Type: LEFT_BRACE, Lexeme: "{", Literal: <nil>, Line: 1}`,
-				`{Type: RIGHT_BRACE, Lexeme: "}", Literal: <nil>, Line: 1}`,
-				`{Type: COMMA, Lexeme: ",", Literal: <nil>, Line: 1}`,
-				`{Type: STAR, Lexeme: "*", Literal: <nil>, Line: 1}`,
-				`{Type: PLUS, Lexeme: "+", Literal: <nil>, Line: 1}`,
-				`{Type: MINUS, Lexeme: "-", Literal: <nil>, Line: 1}`,
-				`{Type: SEMICOLON, Lexeme: ";", Literal: <nil>, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: LEFT_PAREN, Literal: <nil>, Line: 1}`,
+				`{Type: RIGHT_PAREN, Literal: <nil>, Line: 1}`,
+				`{Type: LEFT_BRACE, Literal: <nil>, Line: 1}`,
+				`{Type: RIGHT_BRACE, Literal: <nil>, Line: 1}`,
+				`{Type: COMMA, Literal: <nil>, Line: 1}`,
+				`{Type: STAR, Literal: <nil>, Line: 1}`,
+				`{Type: PLUS, Literal: <nil>, Line: 1}`,
+				`{Type: MINUS, Literal: <nil>, Line: 1}`,
+				`{Type: SEMICOLON, Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -39,8 +40,8 @@ func TestScanTokens(t *testing.T) {
 			"bang",
 			"!",
 			[]string{
-				`{Type: BANG, Lexeme: "!", Literal: <nil>, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: BANG, Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -48,9 +49,9 @@ func TestScanTokens(t *testing.T) {
 			"bangbang",
 			"!!",
 			[]string{
-				`{Type: BANG, Lexeme: "!", Literal: <nil>, Line: 1}`,
-				`{Type: BANG, Lexeme: "!", Literal: <nil>, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: BANG, Literal: <nil>, Line: 1}`,
+				`{Type: BANG, Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -58,10 +59,10 @@ func TestScanTokens(t *testing.T) {
 			"bangbangeqeqeqeq",
 			"!====",
 			[]string{
-				`{Type: BANG_EQUAL, Lexeme: "!=", Literal: <nil>, Line: 1}`,
-				`{Type: EQUAL_EQUAL, Lexeme: "==", Literal: <nil>, Line: 1}`,
-				`{Type: EQUAL, Lexeme: "=", Literal: <nil>, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: BANG_EQUAL, Literal: <nil>, Line: 1}`,
+				`{Type: EQUAL_EQUAL, Literal: <nil>, Line: 1}`,
+				`{Type: EQUAL, Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -69,8 +70,8 @@ func TestScanTokens(t *testing.T) {
 			"lt",
 			"<",
 			[]string{
-				`{Type: LESS, Lexeme: "<", Literal: <nil>, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: LESS, Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -78,8 +79,8 @@ func TestScanTokens(t *testing.T) {
 			"lteq",
 			"<=",
 			[]string{
-				`{Type: LESS_EQUAL, Lexeme: "<=", Literal: <nil>, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: LESS_EQUAL, Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -87,10 +88,10 @@ func TestScanTokens(t *testing.T) {
 			"lteqeqeqeq",
 			"<====",
 			[]string{
-				`{Type: LESS_EQUAL, Lexeme: "<=", Literal: <nil>, Line: 1}`,
-				`{Type: EQUAL_EQUAL, Lexeme: "==", Literal: <nil>, Line: 1}`,
-				`{Type: EQUAL, Lexeme: "=", Literal: <nil>, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: LESS_EQUAL, Literal: <nil>, Line: 1}`,
+				`{Type: EQUAL_EQUAL, Literal: <nil>, Line: 1}`,
+				`{Type: EQUAL, Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -98,8 +99,8 @@ func TestScanTokens(t *testing.T) {
 			"gt",
 			">",
 			[]string{
-				`{Type: GREATER, Lexeme: ">", Literal: <nil>, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: GREATER, Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -107,8 +108,8 @@ func TestScanTokens(t *testing.T) {
 			"gteq",
 			">=",
 			[]string{
-				`{Type: GREATER_EQUAL, Lexeme: ">=", Literal: <nil>, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: GREATER_EQUAL, Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -116,10 +117,10 @@ func TestScanTokens(t *testing.T) {
 			"gteqeqeqeq",
 			">====",
 			[]string{
-				`{Type: GREATER_EQUAL, Lexeme: ">=", Literal: <nil>, Line: 1}`,
-				`{Type: EQUAL_EQUAL, Lexeme: "==", Literal: <nil>, Line: 1}`,
-				`{Type: EQUAL, Lexeme: "=", Literal: <nil>, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: GREATER_EQUAL, Literal: <nil>, Line: 1}`,
+				`{Type: EQUAL_EQUAL, Literal: <nil>, Line: 1}`,
+				`{Type: EQUAL, Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -127,7 +128,7 @@ func TestScanTokens(t *testing.T) {
 			"comment",
 			"//comment",
 			[]string{
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -135,8 +136,8 @@ func TestScanTokens(t *testing.T) {
 			"bangcomment",
 			"!//comment",
 			[]string{
-				`{Type: BANG, Lexeme: "!", Literal: <nil>, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: BANG, Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -144,9 +145,9 @@ func TestScanTokens(t *testing.T) {
 			"spaces",
 			"! \r\t=",
 			[]string{
-				`{Type: BANG, Lexeme: "!", Literal: <nil>, Line: 1}`,
-				`{Type: EQUAL, Lexeme: "=", Literal: <nil>, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: BANG, Literal: <nil>, Line: 1}`,
+				`{Type: EQUAL, Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -154,8 +155,8 @@ func TestScanTokens(t *testing.T) {
 			"string",
 			`"string"`,
 			[]string{
-				`{Type: STRING, Lexeme: "\"string\"", Literal: "string", Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: STRING, Literal: "string", Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -163,8 +164,8 @@ func TestScanTokens(t *testing.T) {
 			"empty-string",
 			`""`,
 			[]string{
-				`{Type: STRING, Lexeme: "\"\"", Literal: "", Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: STRING, Literal: "", Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -172,8 +173,8 @@ func TestScanTokens(t *testing.T) {
 			"string-nl",
 			`"string\nstring"`,
 			[]string{
-				`{Type: STRING, Lexeme: "\"string\\nstring\"", Literal: "string\\nstring", Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: STRING, Literal: "string\\nstring", Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -181,8 +182,8 @@ func TestScanTokens(t *testing.T) {
 			"number-integer",
 			`10`,
 			[]string{
-				`{Type: NUMBER, Lexeme: "10", Literal: 10, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: NUMBER, Literal: 10, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -190,8 +191,8 @@ func TestScanTokens(t *testing.T) {
 			"number-integer-leading-zeroes",
 			`0010`,
 			[]string{
-				`{Type: NUMBER, Lexeme: "0010", Literal: 10, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: NUMBER, Literal: 10, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -199,8 +200,8 @@ func TestScanTokens(t *testing.T) {
 			"number-decimal",
 			`12.34`,
 			[]string{
-				`{Type: NUMBER, Lexeme: "12.34", Literal: 12.34, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: NUMBER, Literal: 12.34, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -208,8 +209,8 @@ func TestScanTokens(t *testing.T) {
 			"number-decimal-leading-zeroes",
 			`0012.34`,
 			[]string{
-				`{Type: NUMBER, Lexeme: "0012.34", Literal: 12.34, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: NUMBER, Literal: 12.34, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -217,9 +218,9 @@ func TestScanTokens(t *testing.T) {
 			"number-dot",
 			`12.`,
 			[]string{
-				`{Type: NUMBER, Lexeme: "12", Literal: 12, Line: 1}`,
-				`{Type: DOT, Lexeme: ".", Literal: <nil>, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: NUMBER, Literal: 12, Line: 1}`,
+				`{Type: DOT, Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -227,8 +228,8 @@ func TestScanTokens(t *testing.T) {
 			"identifier",
 			`identifier`,
 			[]string{
-				`{Type: IDENTIFIER, Lexeme: "identifier", Literal: <nil>, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: IDENTIFIER, Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -236,23 +237,23 @@ func TestScanTokens(t *testing.T) {
 			"reserved",
 			`and class else false for fun if nil or print return super this true var while`,
 			[]string{
-				`{Type: AND, Lexeme: "and", Literal: <nil>, Line: 1}`,
-				`{Type: CLASS, Lexeme: "class", Literal: <nil>, Line: 1}`,
-				`{Type: ELSE, Lexeme: "else", Literal: <nil>, Line: 1}`,
-				`{Type: FALSE, Lexeme: "false", Literal: <nil>, Line: 1}`,
-				`{Type: FOR, Lexeme: "for", Literal: <nil>, Line: 1}`,
-				`{Type: FUN, Lexeme: "fun", Literal: <nil>, Line: 1}`,
-				`{Type: IF, Lexeme: "if", Literal: <nil>, Line: 1}`,
-				`{Type: NIL, Lexeme: "nil", Literal: <nil>, Line: 1}`,
-				`{Type: OR, Lexeme: "or", Literal: <nil>, Line: 1}`,
-				`{Type: PRINT, Lexeme: "print", Literal: <nil>, Line: 1}`,
-				`{Type: RETURN, Lexeme: "return", Literal: <nil>, Line: 1}`,
-				`{Type: SUPER, Lexeme: "super", Literal: <nil>, Line: 1}`,
-				`{Type: THIS, Lexeme: "this", Literal: <nil>, Line: 1}`,
-				`{Type: TRUE, Lexeme: "true", Literal: <nil>, Line: 1}`,
-				`{Type: VAR, Lexeme: "var", Literal: <nil>, Line: 1}`,
-				`{Type: WHILE, Lexeme: "while", Literal: <nil>, Line: 1}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: AND, Literal: <nil>, Line: 1}`,
+				`{Type: CLASS, Literal: <nil>, Line: 1}`,
+				`{Type: ELSE, Literal: <nil>, Line: 1}`,
+				`{Type: FALSE, Literal: <nil>, Line: 1}`,
+				`{Type: FOR, Literal: <nil>, Line: 1}`,
+				`{Type: FUN, Literal: <nil>, Line: 1}`,
+				`{Type: IF, Literal: <nil>, Line: 1}`,
+				`{Type: NIL, Literal: <nil>, Line: 1}`,
+				`{Type: OR, Literal: <nil>, Line: 1}`,
+				`{Type: PRINT, Literal: <nil>, Line: 1}`,
+				`{Type: RETURN, Literal: <nil>, Line: 1}`,
+				`{Type: SUPER, Literal: <nil>, Line: 1}`,
+				`{Type: THIS, Literal: <nil>, Line: 1}`,
+				`{Type: TRUE, Literal: <nil>, Line: 1}`,
+				`{Type: VAR, Literal: <nil>, Line: 1}`,
+				`{Type: WHILE, Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -260,7 +261,7 @@ func TestScanTokens(t *testing.T) {
 			"comment-asterix",
 			"/**/",
 			[]string{
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
 		},
@@ -279,9 +280,9 @@ func TestScanTokens(t *testing.T) {
 			*/!
 			!`,
 			[]string{
-				`{Type: BANG, Lexeme: "!", Literal: <nil>, Line: 11}`,
-				`{Type: BANG, Lexeme: "!", Literal: <nil>, Line: 12}`,
-				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 12}`,
+				`{Type: BANG, Literal: <nil>, Line: 11}`,
+				`{Type: BANG, Literal: <nil>, Line: 12}`,
+				`{Type: EOF, Literal: <nil>, Line: 12}`,
 			},
 			"",
 		},
@@ -296,7 +297,7 @@ func TestScanTokens(t *testing.T) {
 			} else {
 				tokensAsStrings := make([]string, len(tokens))
 				for i, token := range tokens {
-					tokensAsStrings[i] = token.GoString()
+					tokensAsStrings[i] = fmt.Sprintf(`{Type: %s, Literal: %#v, Line: %d}`, token.Type, token.Literal, token.Line)
 				}
 				assert.Equal(tt, tc.expected, tokensAsStrings)
 			}
