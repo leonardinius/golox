@@ -150,6 +150,33 @@ func TestScanTokens(t *testing.T) {
 			},
 			"",
 		},
+		{
+			"string",
+			`"string"`,
+			[]string{
+				`{Type: STRING, Lexeme: "\"string\"", Literal: "string", Line: 1}`,
+				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+			},
+			"",
+		},
+		{
+			"empty-string",
+			`""`,
+			[]string{
+				`{Type: STRING, Lexeme: "\"\"", Literal: "", Line: 1}`,
+				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+			},
+			"",
+		},
+		{
+			"string-nl",
+			`"string\nstring"`,
+			[]string{
+				`{Type: STRING, Lexeme: "\"string\\nstring\"", Literal: "string\\nstring", Line: 1}`,
+				`{Type: EOF, Lexeme: "", Literal: <nil>, Line: 1}`,
+			},
+			"",
+		},
 	}
 
 	for _, tc := range testcases {

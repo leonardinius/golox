@@ -92,9 +92,31 @@ func (s *scanner) scanToken() {
 		// Ignore whitespace.
 	case '\n':
 		s.line++
+	case '"':
+		s.string()
 	default:
-		s.unrecognizedCharacter(c)
+		s.reportUnrecognizedCharacter(c)
 	}
+}
+
+func (s *scanner) string() {
+	for !s.isAtEnd() && s.peek() != '"' {
+		if s.peek() == '\n' {
+			s.line++
+		}
+		s.advance()
+	}
+
+	if s.isAtEnd() {
+		s.reportUnterminatedString()
+		return
+	}
+
+	// The closing ".
+	s.advance()
+
+	value := s.source[s.start+1 : s.current-1]
+	s.addTokenLiteral(grammar.STRING, string(value))
 }
 
 func (s *scanner) peek() rune {
@@ -140,8 +162,12 @@ func (s *scanner) comment() {
 	}
 }
 
-func (s *scanner) unrecognizedCharacter(c rune) {
+func (s *scanner) reportUnrecognizedCharacter(c rune) {
 	s.err = NewScanError(s.line, "", "Unrecognized character.", strconv.QuoteRune(c))
+}
+
+func (s *scanner) reportUnterminatedString() {
+	s.err = NewScanError(s.line, "", "Unterminated string.", "")
 }
 
 var _ Scanner = (*scanner)(nil)
