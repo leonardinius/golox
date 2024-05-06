@@ -10,8 +10,17 @@ import (
 type Token struct {
 	Type    grammar.TokenType
 	Lexeme  string
-	Literal interface{}
+	Literal any
 	Line    int
+}
+
+func NewToken(t grammar.TokenType, lexeme string, literal any, line int) Token {
+	return Token{
+		Type:    t,
+		Lexeme:  lexeme,
+		Literal: literal,
+		Line:    line,
+	}
 }
 
 // String implements fmt.Stringer.
