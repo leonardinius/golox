@@ -35,6 +35,7 @@ func Main(args []string) int {
 
 func defineAst(outFile, packageName string, types ...string) error {
 	f, err := os.Create(outFile)
+	defer func() { _ = f.Close() }()
 
 	fprintfln := func(message string, args ...any) {
 		if err == nil {
@@ -51,7 +52,7 @@ func defineAst(outFile, packageName string, types ...string) error {
 	fprintfln("type Visitor[R any] interface {")
 	for _, typeDef := range types {
 		exprClassName := strings.TrimSpace(strings.Split(typeDef, ":")[0])
-		fprintfln("\tVisit%s(expr Expr) R", exprClassName)
+		fprintfln("\tVisit%s(expr *%s) R", exprClassName, exprClassName)
 	}
 	fprintfln("}\n")
 

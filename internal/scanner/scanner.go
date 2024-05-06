@@ -59,7 +59,7 @@ func (s *scanner) Scan() ([]Token, error) {
 		s.scanToken()
 	}
 
-	s.tokens = append(s.tokens, Token{grammar.EOF, "", nil, s.line})
+	s.tokens = append(s.tokens, NewToken(grammar.EOF, "", nil, s.line))
 
 	return s.tokens, s.err
 }
@@ -175,7 +175,7 @@ func (s *scanner) addToken(t grammar.TokenType) {
 }
 
 func (s *scanner) addTokenLiteral(t grammar.TokenType, literal any) {
-	s.tokens = append(s.tokens, Token{t, string(s.source[s.start:s.current]), literal, s.line})
+	s.tokens = append(s.tokens, NewToken(t, string(s.source[s.start:s.current]), literal, s.line))
 }
 
 func (s *scanner) comment() {

@@ -14,6 +14,15 @@ type Token struct {
 	Line    int
 }
 
+func NewToken(t grammar.TokenType, lexeme string, literal any, line int) Token {
+	return Token{
+		Type:    t,
+		Lexeme:  lexeme,
+		Literal: literal,
+		Line:    line,
+	}
+}
+
 // String implements fmt.Stringer.
 func (t Token) String() string {
 	return fmt.Sprintf("%s %s %v", t.Type, t.Lexeme, t.Literal)
