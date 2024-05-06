@@ -18,7 +18,7 @@ func TestScanTokens(t *testing.T) {
 		err      string
 	}{
 		{"empty", "", []string{`{Type: EOF, Literal: <nil>, Line: 1}`}, ""},
-		{"syntax error", "⌘", nil, "[line 1] Error: Unexpected character. '⌘'"},
+		{"syntax error", "⌘", nil, "[line 1] syntax error: Unexpected character. '⌘'"},
 		{
 			"basic",
 			"(){},*+-;",

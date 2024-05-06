@@ -8,6 +8,7 @@ import (
 
 	"github.com/chzyer/readline"
 
+	"github.com/leonardinius/golox/internal/parser"
 	"github.com/leonardinius/golox/internal/scanner"
 )
 
@@ -92,9 +93,13 @@ func (app *LoxApp) run(input string) error {
 		return err
 	}
 
-	for _, t := range tokens {
-		fmt.Printf("%#v\n", t)
+	p := parser.NewParser(tokens)
+	expr, err := p.Parse()
+	if err != nil {
+		return err
 	}
+	printer := parser.NewAstPrinter()
+	fmt.Println(printer.Print(expr))
 
 	return nil
 }

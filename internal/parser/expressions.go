@@ -2,7 +2,7 @@
 
 package parser
 
-import "github.com/leonardinius/golox/internal/scanner"
+import "github.com/leonardinius/golox/internal/token"
 
 // Visitor is the interface that wraps the Visit method.
 //
@@ -20,7 +20,7 @@ type Expr interface {
 
 type Binary struct {
 	Left     Expr
-	Operator scanner.Token
+	Operator *token.Token
 	Right    Expr
 }
 
@@ -51,7 +51,7 @@ func (e *Literal) Accept(v Visitor) any {
 }
 
 type Unary struct {
-	Operator scanner.Token
+	Operator *token.Token
 	Right    Expr
 }
 
