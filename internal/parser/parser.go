@@ -19,7 +19,7 @@ type Parser interface {
 type parser struct {
 	tokens  []token.Token
 	current int
-	err     error
+	err     []error
 }
 
 func NewParser(tokens []token.Token) Parser {
@@ -48,7 +48,18 @@ func (p *parser) String() string {
 
 // Parse implements Parser.
 func (p *parser) Parse() (Expr, error) {
-	return p.expression(), p.err
+	exp, err := p.expression(), errors.Join(p.err...)
+	if err == nil {
+		return exp, nil
+	}
+
+	// if we are at error state, we do not return invalid ast tree
+	// return nil, err - errors intead
+	for !p.isAtEnd() {
+		p.synchronize()
+		_, err = p.expression(), errors.Join(p.err...)
+	}
+	return nil, err
 }
 
 func (p *parser) expression() Expr {
@@ -72,7 +83,7 @@ func (p *parser) comparison() Expr {
 
 	for p.anyMatch(token.GREATER, token.GREATER_EQUAL, token.LESS, token.LESS_EQUAL) {
 		operator := p.previous()
-		right := p.comparison()
+		right := p.term()
 		expr = &Binary{Left: expr, Operator: operator, Right: right}
 	}
 
@@ -120,11 +131,9 @@ func (p *parser) primary() Expr {
 	if p.anyMatch(token.TRUE) {
 		return &Literal{Value: true}
 	}
-
 	if p.anyMatch(token.FALSE) {
 		return &Literal{Value: false}
 	}
-
 	if p.anyMatch(token.NIL) {
 		return &Literal{Value: nil}
 	}
@@ -142,6 +151,7 @@ func (p *parser) grouping() Expr {
 		expr := p.expression()
 		if !p.anyMatch(token.RIGHT_PAREN) {
 			p.reportError(errExpectedRightParenToken)
+			return nil
 		}
 		return &Grouping{
 			Expression: expr,
@@ -194,9 +204,32 @@ func (p *parser) reportError(err error) {
 	if t.Type != token.EOF {
 		where = fmt.Sprintf(" at '%s'", t.Lexeme)
 	}
-	p.err = errors.Join(
-		NewParseError(t.Line, where, "parse error", err.Error()),
-		err)
+
+	p.err = append(p.err, NewParseError(t.Line, where, "parse error", err))
+}
+
+func (p *parser) synchronize() {
+	p.advance()
+
+	for !p.isAtEnd() {
+		if p.previous().Type == token.SEMICOLON {
+			return
+		}
+
+		switch p.peek().Type {
+		case token.CLASS,
+			token.FUN,
+			token.VAR,
+			token.FOR,
+			token.IF,
+			token.WHILE,
+			token.PRINT,
+			token.RETURN:
+			return
+		}
+
+		p.advance()
+	}
 }
 
 var _ Parser = (*parser)(nil)

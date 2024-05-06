@@ -21,6 +21,11 @@ func NewToken(t TokenType, lexeme string, literal any, line int) Token {
 	}
 }
 
+func NewTokenHeap(t TokenType, lexeme string, literal any, line int) *Token {
+	tt := NewToken(t, lexeme, literal, line)
+	return &tt
+}
+
 // String implements fmt.Stringer.
 func (t Token) String() string {
 	return fmt.Sprintf("%s %s %v", t.Type, t.Lexeme, t.Literal)

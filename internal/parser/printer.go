@@ -5,46 +5,54 @@ import (
 	"strings"
 )
 
-type DebugPrinter struct{}
+type AstPrinter struct{}
 
-func NewDebugPrintVisitor() *DebugPrinter {
-	return &DebugPrinter{}
+func NewAstPrinter() *AstPrinter {
+	return &AstPrinter{}
 }
 
 // VisitBinary implements Visitor.
-func (p *DebugPrinter) VisitBinary(expr *Binary) any {
+func (p *AstPrinter) VisitBinary(expr *Binary) any {
 	return p.parenthesize(expr.Operator.Lexeme, expr.Left, expr.Right)
 }
 
 // VisitGrouping implements Visitor.
-func (p *DebugPrinter) VisitGrouping(expr *Grouping) any {
+func (p *AstPrinter) VisitGrouping(expr *Grouping) any {
 	return p.parenthesize("group", expr.Expression)
 }
 
 // VisitLiteral implements Visitor.
-func (p *DebugPrinter) VisitLiteral(expr *Literal) any {
+func (p *AstPrinter) VisitLiteral(expr *Literal) any {
 	return fmt.Sprintf("%v", expr.Value)
 }
 
 // VisitUnary implements Visitor.
-func (p *DebugPrinter) VisitUnary(expr *Unary) any {
+func (p *AstPrinter) VisitUnary(expr *Unary) any {
 	return p.parenthesize(expr.Operator.Lexeme, expr.Right)
 }
 
-func (p *DebugPrinter) parenthesize(name string, exprs ...Expr) string {
+func (p *AstPrinter) parenthesize(name string, exprs ...Expr) string {
 	out := new(strings.Builder)
 	_, _ = out.WriteString("(")
 	_, _ = out.WriteString(name)
 	for _, expr := range exprs {
 		_, _ = out.WriteString(" ")
-		_, _ = out.WriteString(fmt.Sprintf("%v", expr.Accept(p)))
+		_, _ = out.WriteString(p.asStr(expr.Accept(p)))
 	}
 	_, _ = out.WriteString(")")
 	return out.String()
 }
 
-func (p *DebugPrinter) Print(expr Expr) string {
-	return fmt.Sprintf("%v", expr.Accept(p))
+func (p *AstPrinter) Print(expr Expr) string {
+	return p.asStr(expr.Accept(p))
 }
 
-var _ Visitor = (*DebugPrinter)(nil)
+func (p *AstPrinter) asStr(v any) string {
+	if v == nil {
+		return "<nil>"
+	}
+
+	return v.(string)
+}
+
+var _ Visitor = (*AstPrinter)(nil)

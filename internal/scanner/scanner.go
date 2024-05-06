@@ -279,15 +279,11 @@ func (s *scanner) isAlphaNumeric(c rune) bool {
 }
 
 func (s *scanner) reportUnexpectedCharater(c rune) {
-	s.err = errors.Join(NewScanError(s.line, "", errUnexpectedCharacter.Error(), strconv.QuoteRune(c)),
-		errUnexpectedCharacter,
-	)
+	s.err = NewScanError(s.line, "", errUnexpectedCharacter, strconv.QuoteRune(c))
 }
 
 func (s *scanner) reportError(err error) {
-	s.err = errors.Join(NewScanError(s.line, "", err.Error(), ""),
-		err,
-	)
+	s.err = NewScanError(s.line, "", err, "")
 }
 
 var _ Scanner = (*scanner)(nil)

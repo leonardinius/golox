@@ -3,20 +3,20 @@ package scanner
 import "fmt"
 
 type scanError struct {
-	Line    int
-	Where   string
-	Message string
-	Details string
+	Line  int
+	Where string
 }
 
 func (e *scanError) Error() string {
-	details := e.Details
+	return fmt.Sprintf("[line %d] syntax error%s", e.Line, e.Where)
+}
+
+func NewScanError(line int, where string, message error, details string) error {
 	if details != "" {
 		details = " " + details
 	}
-	return fmt.Sprintf("[line %d] Error%s: %s%s", e.Line, e.Where, e.Message, details)
-}
 
-func NewScanError(line int, where string, message, details string) *scanError {
-	return &scanError{Line: line, Where: where, Message: message, Details: details}
+	se := &scanError{Line: line, Where: where}
+
+	return fmt.Errorf("%w: %w%s", se, message, details)
 }
