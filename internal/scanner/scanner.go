@@ -4,31 +4,31 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/leonardinius/golox/internal/grammar"
+	"github.com/leonardinius/golox/internal/token"
 )
 
 // Token represents a lexical to
 type Scanner interface {
-	Scan() ([]Token, error)
+	Scan() ([]token.Token, error)
 }
 
-var reservedKeywords = map[string]grammar.TokenType{
-	"and":    grammar.AND,
-	"class":  grammar.CLASS,
-	"else":   grammar.ELSE,
-	"false":  grammar.FALSE,
-	"for":    grammar.FOR,
-	"fun":    grammar.FUN,
-	"if":     grammar.IF,
-	"nil":    grammar.NIL,
-	"or":     grammar.OR,
-	"print":  grammar.PRINT,
-	"return": grammar.RETURN,
-	"super":  grammar.SUPER,
-	"this":   grammar.THIS,
-	"true":   grammar.TRUE,
-	"var":    grammar.VAR,
-	"while":  grammar.WHILE,
+var reservedKeywords = map[string]token.TokenType{
+	"and":    token.AND,
+	"class":  token.CLASS,
+	"else":   token.ELSE,
+	"false":  token.FALSE,
+	"for":    token.FOR,
+	"fun":    token.FUN,
+	"if":     token.IF,
+	"nil":    token.NIL,
+	"or":     token.OR,
+	"print":  token.PRINT,
+	"return": token.RETURN,
+	"super":  token.SUPER,
+	"this":   token.THIS,
+	"true":   token.TRUE,
+	"var":    token.VAR,
+	"while":  token.WHILE,
 }
 
 var (
@@ -39,7 +39,7 @@ var (
 
 type scanner struct {
 	source               []rune
-	tokens               []Token
+	tokens               []token.Token
 	start, current, line int
 	err                  error
 }
@@ -50,7 +50,7 @@ func NewScanner(input string) Scanner {
 }
 
 // Scan implements Scanner.
-func (s *scanner) Scan() ([]Token, error) {
+func (s *scanner) Scan() ([]token.Token, error) {
 	// return tokens;”
 
 	for !s.isDone() {
@@ -59,7 +59,7 @@ func (s *scanner) Scan() ([]Token, error) {
 		s.scanToken()
 	}
 
-	s.tokens = append(s.tokens, NewToken(grammar.EOF, "", nil, s.line))
+	s.tokens = append(s.tokens, token.NewToken(token.EOF, "", nil, s.line))
 
 	return s.tokens, s.err
 }
@@ -81,40 +81,40 @@ func (s *scanner) scanToken() {
 
 	switch c {
 	case '(':
-		s.addToken(grammar.LEFT_PAREN)
+		s.addToken(token.LEFT_PAREN)
 	case ')':
-		s.addToken(grammar.RIGHT_PAREN)
+		s.addToken(token.RIGHT_PAREN)
 	case '{':
-		s.addToken(grammar.LEFT_BRACE)
+		s.addToken(token.LEFT_BRACE)
 	case '}':
-		s.addToken(grammar.RIGHT_BRACE)
+		s.addToken(token.RIGHT_BRACE)
 	case ',':
-		s.addToken(grammar.COMMA)
+		s.addToken(token.COMMA)
 	case '.':
-		s.addToken(grammar.DOT)
+		s.addToken(token.DOT)
 	case '-':
-		s.addToken(grammar.MINUS)
+		s.addToken(token.MINUS)
 	case '+':
-		s.addToken(grammar.PLUS)
+		s.addToken(token.PLUS)
 	case ';':
-		s.addToken(grammar.SEMICOLON)
+		s.addToken(token.SEMICOLON)
 	case '*':
-		s.addToken(grammar.STAR)
+		s.addToken(token.STAR)
 	case '!':
-		s.addMatchToken('=', grammar.BANG_EQUAL, grammar.BANG)
+		s.addMatchToken('=', token.BANG_EQUAL, token.BANG)
 	case '=':
-		s.addMatchToken('=', grammar.EQUAL_EQUAL, grammar.EQUAL)
+		s.addMatchToken('=', token.EQUAL_EQUAL, token.EQUAL)
 	case '<':
-		s.addMatchToken('=', grammar.LESS_EQUAL, grammar.LESS)
+		s.addMatchToken('=', token.LESS_EQUAL, token.LESS)
 	case '>':
-		s.addMatchToken('=', grammar.GREATER_EQUAL, grammar.GREATER)
+		s.addMatchToken('=', token.GREATER_EQUAL, token.GREATER)
 	case '/':
 		if s.match('/') {
 			s.comment()
 		} else if s.match('*') {
 			s.blockComment()
 		} else {
-			s.addToken(grammar.SLASH)
+			s.addToken(token.SLASH)
 		}
 	case ' ', '\r', '\t', '\n':
 		// Ignore whitespace.
@@ -162,7 +162,7 @@ func (s *scanner) match(expected rune) bool {
 	return false
 }
 
-func (s *scanner) addMatchToken(lookAhead rune, ifMatch, ifNotMatched grammar.TokenType) {
+func (s *scanner) addMatchToken(lookAhead rune, ifMatch, ifNotMatched token.TokenType) {
 	if s.match(lookAhead) {
 		s.addToken(ifMatch)
 	} else {
@@ -170,12 +170,12 @@ func (s *scanner) addMatchToken(lookAhead rune, ifMatch, ifNotMatched grammar.To
 	}
 }
 
-func (s *scanner) addToken(t grammar.TokenType) {
+func (s *scanner) addToken(t token.TokenType) {
 	s.addTokenLiteral(t, nil)
 }
 
-func (s *scanner) addTokenLiteral(t grammar.TokenType, literal any) {
-	s.tokens = append(s.tokens, NewToken(t, string(s.source[s.start:s.current]), literal, s.line))
+func (s *scanner) addTokenLiteral(t token.TokenType, literal any) {
+	s.tokens = append(s.tokens, token.NewToken(t, string(s.source[s.start:s.current]), literal, s.line))
 }
 
 func (s *scanner) comment() {
@@ -221,7 +221,7 @@ func (s *scanner) string() {
 	s.advance()
 
 	value := s.source[s.start+1 : s.current-1]
-	s.addTokenLiteral(grammar.STRING, string(value))
+	s.addTokenLiteral(token.STRING, string(value))
 }
 
 func (s *scanner) number() {
@@ -243,7 +243,7 @@ func (s *scanner) number() {
 		s.reportError(err)
 		return
 	}
-	s.addTokenLiteral(grammar.NUMBER, value)
+	s.addTokenLiteral(token.NUMBER, value)
 }
 
 func (s *scanner) reservedOrIdentifier() {
@@ -251,7 +251,7 @@ func (s *scanner) reservedOrIdentifier() {
 		s.advance()
 	}
 
-	tokenType := grammar.IDENTIFIER
+	tokenType := token.IDENTIFIER
 	name := string(s.source[s.start:s.current])
 	if _type, ok := s.reserved(name); ok {
 		tokenType = _type
@@ -259,7 +259,7 @@ func (s *scanner) reservedOrIdentifier() {
 	s.addToken(tokenType)
 }
 
-func (s *scanner) reserved(identifier string) (tokenType grammar.TokenType, ok bool) {
+func (s *scanner) reserved(identifier string) (tokenType token.TokenType, ok bool) {
 	tokenType, ok = reservedKeywords[identifier]
 	return
 }

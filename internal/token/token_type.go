@@ -1,4 +1,4 @@
-package grammar
+package token
 
 import "fmt"
 

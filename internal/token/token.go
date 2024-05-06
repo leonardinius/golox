@@ -1,20 +1,18 @@
-package scanner
+package token
 
 import (
 	"fmt"
-
-	"github.com/leonardinius/golox/internal/grammar"
 )
 
 // Token represents a lexical token.
 type Token struct {
-	Type    grammar.TokenType
+	Type    TokenType
 	Lexeme  string
 	Literal any
 	Line    int
 }
 
-func NewToken(t grammar.TokenType, lexeme string, literal any, line int) Token {
+func NewToken(t TokenType, lexeme string, literal any, line int) Token {
 	return Token{
 		Type:    t,
 		Lexeme:  lexeme,
