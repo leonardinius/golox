@@ -21,10 +21,10 @@ func Main(args []string) int {
 	packageName := args[1]
 
 	if err := defineAst(outFile, packageName,
-		"Binary   : Left *Expr, Operator scanner.Token, Right *Expr",
-		"Grouping : Expression *Expr",
+		"Binary   : Left Expr, Operator scanner.Token, Right Expr",
+		"Grouping : Expression Expr",
 		"Literal  : Value any",
-		"Unary    : Operator scanner.Token, Right *Expr",
+		"Unary    : Operator scanner.Token, Right Expr",
 	); err != nil {
 		fmt.Printf("Error: %v", err)
 		return 1
@@ -49,15 +49,15 @@ func defineAst(outFile, packageName string, types ...string) error {
 	fprintfln("// Visitor is the interface that wraps the Visit method.")
 	fprintfln("//")
 	fprintfln("// Visit is called for every node in the tree.")
-	fprintfln("type Visitor[R any] interface {")
+	fprintfln("type Visitor interface {")
 	for _, typeDef := range types {
 		exprClassName := strings.TrimSpace(strings.Split(typeDef, ":")[0])
-		fprintfln("\tVisit%s(expr *%s) R", exprClassName, exprClassName)
+		fprintfln("\tVisit%s(expr *%s) any", exprClassName, exprClassName)
 	}
 	fprintfln("}\n")
 
 	fprintfln("type Expr interface{")
-	fprintfln("\tAccept(v Visitor[any]) any")
+	fprintfln("\tAccept(v Visitor) any")
 	fprintfln("}\n")
 
 	for _, typeDef := range types {
@@ -82,7 +82,7 @@ func defineType(fprintf func(message string, args ...any), exprClassName string,
 
 	fprintf("var _ Expr = (*%s)(nil)\n", exprClassName)
 
-	fprintf("func (e *%s) Accept(v Visitor[any]) any {", exprClassName)
+	fprintf("func (e *%s) Accept(v Visitor) any {", exprClassName)
 	fprintf("\treturn v.Visit%s(e)", exprClassName)
 	fprintf("}\n")
 }

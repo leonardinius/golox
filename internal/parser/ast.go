@@ -1,8 +1,6 @@
 package parser
 
-import (
-	"github.com/leonardinius/golox/internal/scanner"
-)
+import "github.com/leonardinius/golox/internal/scanner"
 
 // Visitor is the interface that wraps the Visit method.
 //
