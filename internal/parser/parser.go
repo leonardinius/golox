@@ -4,12 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/token"
-)
-
-var (
-	errExpectedRightParenToken = errors.New("expected ')' after expression")
-	errUnexpectedToken         = errors.New("expected expression")
 )
 
 type Parser interface {
@@ -150,7 +146,7 @@ func (p *parser) grouping() Expr {
 	if p.anyMatch(token.LEFT_PAREN) {
 		expr := p.expression()
 		if !p.anyMatch(token.RIGHT_PAREN) {
-			p.reportError(errExpectedRightParenToken)
+			p.reportError(loxerrors.ErrParseExpectedRightParenToken)
 			return nil
 		}
 		return &Grouping{
@@ -158,7 +154,7 @@ func (p *parser) grouping() Expr {
 		}
 	}
 
-	p.reportError(errUnexpectedToken)
+	p.reportError(loxerrors.ErrParseUnexpectedToken)
 	return nil
 }
 
@@ -205,7 +201,7 @@ func (p *parser) reportError(err error) {
 		where = fmt.Sprintf(" at '%s'", t.Lexeme)
 	}
 
-	p.err = append(p.err, NewParseError(t.Line, where, "parse error", err))
+	p.err = append(p.err, loxerrors.NewParseError(t.Line, where, err))
 }
 
 func (p *parser) synchronize() {

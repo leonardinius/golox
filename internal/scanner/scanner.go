@@ -1,9 +1,9 @@
 package scanner
 
 import (
-	"errors"
 	"strconv"
 
+	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/token"
 )
 
@@ -30,12 +30,6 @@ var reservedKeywords = map[string]token.TokenType{
 	"var":    token.VAR,
 	"while":  token.WHILE,
 }
-
-var (
-	errUnexpectedCharacter = errors.New("Unexpected character.")
-	errUnterminatedString  = errors.New("Unterminated string.")
-	errUnterminatedComment = errors.New("Unterminated comment.")
-)
 
 type scanner struct {
 	source               []rune
@@ -203,7 +197,7 @@ func (s *scanner) blockComment() {
 	}
 
 	if depth > 0 {
-		s.reportError(errUnterminatedComment)
+		s.reportError(loxerrors.ErrScanUnterminatedComment)
 	}
 }
 
@@ -213,7 +207,7 @@ func (s *scanner) string() {
 	}
 
 	if s.isAtEnd() {
-		s.reportError(errUnterminatedString)
+		s.reportError(loxerrors.ErrScanUnterminatedString)
 		return
 	}
 
@@ -279,11 +273,11 @@ func (s *scanner) isAlphaNumeric(c rune) bool {
 }
 
 func (s *scanner) reportUnexpectedCharater(c rune) {
-	s.err = NewScanError(s.line, "", errUnexpectedCharacter, strconv.QuoteRune(c))
+	s.err = loxerrors.NewScanError(s.line, "", loxerrors.ErrScanUnexpectedCharacter, strconv.QuoteRune(c))
 }
 
 func (s *scanner) reportError(err error) {
-	s.err = NewScanError(s.line, "", err, "")
+	s.err = loxerrors.NewScanError(s.line, "", err, "")
 }
 
 var _ Scanner = (*scanner)(nil)
