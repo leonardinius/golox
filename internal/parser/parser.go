@@ -8,6 +8,11 @@ import (
 	"github.com/leonardinius/golox/internal/token"
 )
 
+var (
+	NilToken *token.Token = nil
+	NilExpr  Expr         = nil
+)
+
 type Parser interface {
 	Parse() (Expr, error)
 }
@@ -55,7 +60,7 @@ func (p *parser) Parse() (Expr, error) {
 		p.synchronize()
 		_, err = p.expression(), errors.Join(p.err...)
 	}
-	return nil, err
+	return NilExpr, err
 }
 
 func (p *parser) expression() Expr {
@@ -124,19 +129,19 @@ func (p *parser) unary() Expr {
 }
 
 func (p *parser) primary() Expr {
-	if p.anyMatch(token.TRUE) {
-		return &Literal{Value: true}
-	}
 	if p.anyMatch(token.FALSE) {
 		return &Literal{Value: false}
+	}
+	if p.anyMatch(token.TRUE) {
+		return &Literal{Value: true}
 	}
 	if p.anyMatch(token.NIL) {
 		return &Literal{Value: nil}
 	}
 
 	if p.anyMatch(token.NUMBER, token.STRING) {
-		operator := p.previous()
-		return &Literal{Value: operator.Literal}
+		tok := p.previous()
+		return &Literal{Value: tok.Literal}
 	}
 
 	return p.grouping()
@@ -145,17 +150,13 @@ func (p *parser) primary() Expr {
 func (p *parser) grouping() Expr {
 	if p.anyMatch(token.LEFT_PAREN) {
 		expr := p.expression()
-		if !p.anyMatch(token.RIGHT_PAREN) {
-			p.reportError(loxerrors.ErrParseExpectedRightParenToken)
-			return nil
+		if tok := p.consume(token.RIGHT_PAREN); tok != NilToken {
+			return p.reportError(loxerrors.ErrParseExpectedRightParenToken)
 		}
-		return &Grouping{
-			Expression: expr,
-		}
+		return &Grouping{Expression: expr}
 	}
 
-	p.reportError(loxerrors.ErrParseUnexpectedToken)
-	return nil
+	return p.reportError(loxerrors.ErrParseUnexpectedToken)
 }
 
 func (p *parser) anyMatch(types ...token.TokenType) bool {
@@ -166,6 +167,13 @@ func (p *parser) anyMatch(types ...token.TokenType) bool {
 		}
 	}
 	return false
+}
+
+func (p *parser) consume(tokType token.TokenType) *token.Token {
+	if p.check(tokType) {
+		return p.advance()
+	}
+	return nil
 }
 
 func (p *parser) check(tokenType token.TokenType) bool {
@@ -194,7 +202,7 @@ func (p *parser) isAtEnd() bool {
 	return p.peek().Type == token.EOF
 }
 
-func (p *parser) reportError(err error) {
+func (p *parser) reportError(err error) Expr {
 	t := p.peek()
 	where := " at end"
 	if t.Type != token.EOF {
@@ -202,6 +210,8 @@ func (p *parser) reportError(err error) {
 	}
 
 	p.err = append(p.err, loxerrors.NewParseError(t.Line, where, err))
+
+	return NilExpr
 }
 
 func (p *parser) synchronize() {
