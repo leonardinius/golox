@@ -4,6 +4,8 @@ import (
 	"fmt"
 )
 
+type DoubleNumber float64
+
 // Token represents a lexical token.
 type Token struct {
 	Type    TokenType

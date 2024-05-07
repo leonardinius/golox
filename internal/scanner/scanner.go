@@ -237,7 +237,7 @@ func (s *scanner) number() {
 		s.reportError(err)
 		return
 	}
-	s.addTokenLiteral(token.NUMBER, value)
+	s.addTokenLiteral(token.NUMBER, token.DoubleNumber(value))
 }
 
 func (s *scanner) reservedOrIdentifier() {

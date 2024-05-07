@@ -39,7 +39,7 @@ func NewParser(tokens []token.Token) Parser {
 
 // GoString implements fmt.GoStringer.
 func (p *parser) GoString() string {
-	return fmt.Sprintf("parser{tokens: %v, err: %v}", p.tokens, p.err)
+	return fmt.Sprintf("parser{tokens: %#v, current: %d, err: %#v}", p.tokens, p.current, p.err)
 }
 
 // String implements fmt.Stringer.
@@ -150,7 +150,7 @@ func (p *parser) primary() Expr {
 func (p *parser) grouping() Expr {
 	if p.anyMatch(token.LEFT_PAREN) {
 		expr := p.expression()
-		if tok := p.consume(token.RIGHT_PAREN); tok != NilToken {
+		if tok := p.consume(token.RIGHT_PAREN); tok == NilToken {
 			return p.reportError(loxerrors.ErrParseExpectedRightParenToken)
 		}
 		return &Grouping{Expression: expr}
@@ -173,7 +173,7 @@ func (p *parser) consume(tokType token.TokenType) *token.Token {
 	if p.check(tokType) {
 		return p.advance()
 	}
-	return nil
+	return NilToken
 }
 
 func (p *parser) check(tokenType token.TokenType) bool {
