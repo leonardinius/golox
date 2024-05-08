@@ -8,8 +8,10 @@ import (
 )
 
 var (
-	ErrParseExpectedRightParenToken = errors.New("expected ')' after expression")
-	ErrParseUnexpectedToken         = errors.New("expected expression")
+	ErrParseExpectedRightParenToken          = errors.New("expected ')' after expression")
+	ErrParseExpectedSemicolonTokenAfterValue = errors.New("expect ';' after value.")
+	ErrParseExpectedSemicolonTokenAfterExpr  = errors.New("expect ';' after value.")
+	ErrParseUnexpectedToken                  = errors.New("expected expression")
 )
 
 type ParserError struct {

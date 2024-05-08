@@ -9,12 +9,14 @@ import (
 )
 
 var (
-	NilToken *token.Token = nil
-	NilExpr  Expr         = nil
+	NilToken      *token.Token = nil
+	NilExpr       Expr         = nil
+	NilStmt       Stmt         = nil
+	NilStatements []Stmt       = nil
 )
 
 type Parser interface {
-	Parse() (Expr, error)
+	Parse() ([]Stmt, error)
 }
 
 type parser struct {
@@ -48,19 +50,53 @@ func (p *parser) String() string {
 }
 
 // Parse implements Parser.
-func (p *parser) Parse() (Expr, error) {
-	exp, err := p.expression(), errors.Join(p.err...)
+func (p *parser) Parse() (statements []Stmt, err error) {
+	var stmt Stmt
+	for !p.isAtEnd() {
+		stmt, err = p.statement(), errors.Join(p.err...)
+		if err != nil {
+			break
+		}
+		statements = append(statements, stmt)
+	}
+
 	if err == nil {
-		return exp, nil
+		return statements, nil
 	}
 
 	// if we are at error state, we do not return invalid ast tree
 	// return nil, err - errors intead
 	for !p.isAtEnd() {
 		p.synchronize()
-		_, err = p.expression(), errors.Join(p.err...)
+		_, err = p.statement(), errors.Join(p.err...)
 	}
-	return NilExpr, err
+
+	return NilStatements, err
+}
+
+func (p *parser) statement() Stmt {
+	if p.anyMatch(token.PRINT) {
+		return p.printStatement()
+	}
+
+	return p.expressionStatement()
+
+}
+
+func (p *parser) printStatement() Stmt {
+	expr := p.expression()
+	if tok := p.consume(token.SEMICOLON); tok == NilToken {
+		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterValue)
+	}
+	return &Print{Expression: expr}
+}
+
+func (p *parser) expressionStatement() Stmt {
+	expr := p.expression()
+	if tok := p.consume(token.SEMICOLON); tok == NilToken {
+		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterExpr)
+	}
+	return &Expression{Expression: expr}
 }
 
 func (p *parser) expression() Expr {
@@ -151,12 +187,12 @@ func (p *parser) grouping() Expr {
 	if p.anyMatch(token.LEFT_PAREN) {
 		expr := p.expression()
 		if tok := p.consume(token.RIGHT_PAREN); tok == NilToken {
-			return p.reportError(loxerrors.ErrParseExpectedRightParenToken)
+			return p.reportExprError(loxerrors.ErrParseExpectedRightParenToken)
 		}
 		return &Grouping{Expression: expr}
 	}
 
-	return p.reportError(loxerrors.ErrParseUnexpectedToken)
+	return p.reportExprError(loxerrors.ErrParseUnexpectedToken)
 }
 
 func (p *parser) anyMatch(types ...token.TokenType) bool {
@@ -202,7 +238,14 @@ func (p *parser) isAtEnd() bool {
 	return p.peek().Type == token.EOF
 }
 
-func (p *parser) reportError(err error) Expr {
+func (p *parser) reportStmtError(err error) Stmt {
+	t := p.peek()
+	p.err = append(p.err, loxerrors.NewParseError(t, err))
+
+	return NilStmt
+}
+
+func (p *parser) reportExprError(err error) Expr {
 	t := p.peek()
 	p.err = append(p.err, loxerrors.NewParseError(t, err))
 

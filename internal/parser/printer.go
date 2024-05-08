@@ -55,4 +55,4 @@ func (p *AstPrinter) asStr(v any) string {
 	return v.(string)
 }
 
-var _ Visitor = (*AstPrinter)(nil)
+var _ ExprVisitor = (*AstPrinter)(nil)

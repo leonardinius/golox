@@ -96,15 +96,21 @@ func (app *LoxApp) run(input string) error {
 	}
 
 	p := parser.NewParser(tokens)
-	expr, err := p.Parse()
+	statements, err := p.Parse()
 	if err != nil {
 		return err
 	}
 
-	var out string
-	if out, err = app.interpeter.Interpret(expr); err == nil {
+	return app.interpret(statements)
+}
+
+func (app *LoxApp) interpret(statements []parser.Stmt) error {
+
+	if out, err := app.interpeter.Interpret(statements); err != nil {
+		return err
+	} else {
 		fmt.Println(out)
 	}
 
-	return err
+	return nil
 }

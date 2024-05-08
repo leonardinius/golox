@@ -4,18 +4,16 @@ package parser
 
 import "github.com/leonardinius/golox/internal/token"
 
-// Visitor is the interface that wraps the Visit method.
-//
-// Visit is called for every node in the tree.
-type Visitor interface {
-	VisitBinary(expr *Binary) any
-	VisitGrouping(expr *Grouping) any
-	VisitLiteral(expr *Literal) any
-	VisitUnary(expr *Unary) any
+// ExprVisitor is the interface that wraps the Visit method.
+type ExprVisitor interface {
+	VisitBinary(v *Binary) any
+	VisitGrouping(v *Grouping) any
+	VisitLiteral(v *Literal) any
+	VisitUnary(v *Unary) any
 }
 
 type Expr interface {
-	Accept(v Visitor) any
+	Accept(v ExprVisitor) any
 }
 
 type Binary struct {
@@ -26,7 +24,7 @@ type Binary struct {
 
 var _ Expr = (*Binary)(nil)
 
-func (e *Binary) Accept(v Visitor) any {
+func (e *Binary) Accept(v ExprVisitor) any {
 	return v.VisitBinary(e)
 }
 
@@ -36,7 +34,7 @@ type Grouping struct {
 
 var _ Expr = (*Grouping)(nil)
 
-func (e *Grouping) Accept(v Visitor) any {
+func (e *Grouping) Accept(v ExprVisitor) any {
 	return v.VisitGrouping(e)
 }
 
@@ -46,7 +44,7 @@ type Literal struct {
 
 var _ Expr = (*Literal)(nil)
 
-func (e *Literal) Accept(v Visitor) any {
+func (e *Literal) Accept(v ExprVisitor) any {
 	return v.VisitLiteral(e)
 }
 
@@ -57,6 +55,6 @@ type Unary struct {
 
 var _ Expr = (*Unary)(nil)
 
-func (e *Unary) Accept(v Visitor) any {
+func (e *Unary) Accept(v ExprVisitor) any {
 	return v.VisitUnary(e)
 }

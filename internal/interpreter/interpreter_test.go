@@ -44,7 +44,7 @@ func TestInterpret(t *testing.T) {
 		{name: `gt number`, input: `1 > 1`, expectedOutput: `false`},
 		{name: `gte number`, input: `1 >= 2`, expectedOutput: `false`},
 		{name: `gte number`, input: `1 >= 1`, expectedOutput: `true`},
-		{name: `invalid expression`, input: `1 + 2 +`, expectedError: `parse error at end: expected expression`},
+		{name: `invalid expression`, input: `1 + 2 +`, expectedError: `parse error at ';': expected expression`},
 		{name: `invalid expression sum`, input: `"a" + 0`, expectedError: `at +: Operands must be two numbers or two strings.`},
 		{name: `invalid expression minus`, input: `0 - ""`, expectedError: `at -: Operands must be numbers.`},
 		{name: `invalid expression minus string`, input: `-"a"`, expectedError: `at -: Operand must be a number.`},
@@ -66,18 +66,18 @@ func TestInterpret(t *testing.T) {
 
 func evaluate(script string) (string, error) {
 	eval := interpreter.NewInterpreter()
-	scan := scanner.NewScanner(script)
+	scan := scanner.NewScanner(script + ";")
 
 	tokens, err := scan.Scan()
 	if err != nil {
 		return "", err
 	}
 
-	parse := parser.NewParser(tokens)
-	expr, err := parse.Parse()
+	p := parser.NewParser(tokens)
+	statements, err := p.Parse()
 	if err != nil {
 		return "", err
 	}
 
-	return eval.Interpret(expr)
+	return eval.Interpret(statements)
 }

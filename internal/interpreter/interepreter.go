@@ -9,21 +9,20 @@ import (
 )
 
 type Interpreter interface {
-	// Interpret interprets the given expression.
-	// Returns the stringified result of the expression and an error if any.
-	// The error is nil if the expression is valid.
+	// Interpret interprets the given statements.
+	// Returns the stringified result of the last statement and an error if any.
+	// The error is nil if the statement is valid.
 	//
 	// Not thread safe.
 	// Resets internal state on Interpret.
-	Interpret(expr parser.Expr) (string, error)
+	Interpret(stmt []parser.Stmt) (string, error)
 
-	// Evaluate evaluates the given expression.
-	// Returns the result of the expression and an error if any.
-	// The error is nil if the expression is valid.
+	// Evaluate evaluates the given statement.
+	// Returns an error if any.
+	// The error is nil if the statement is valid.
 	//
 	// Not thread safe.
-	// Resets internal state on Evaluate.
-	Evaluate(expr parser.Expr) (any, error)
+	Evaluate(parser.Stmt) (any, error)
 }
 
 type interpreter struct {
@@ -35,19 +34,23 @@ func NewInterpreter() Interpreter {
 }
 
 // Interpret implements Interpreter.
-func (i *interpreter) Interpret(expr parser.Expr) (string, error) {
-	if value, err := i.Evaluate(expr); err != nil {
-		return "", err
-	} else {
-		return i.stringify(value), nil
+func (i *interpreter) Interpret(statements []parser.Stmt) (string, error) {
+	i.reset()
+
+	for _, stmt := range statements {
+		if v, err := i.Evaluate(stmt); err != nil {
+			return "", err
+		} else {
+			return i.stringify(v), nil
+		}
 	}
+
+	return i.stringify(nil), nil
 }
 
 // Evaluate implements Interpreter.
-func (i *interpreter) Evaluate(expr parser.Expr) (any, error) {
-	i.reset()
-
-	return i.evaluate(expr)
+func (i *interpreter) Evaluate(stmt parser.Stmt) (any, error) {
+	return i.execute(stmt)
 }
 
 func (i *interpreter) stringify(v any) string {
@@ -55,6 +58,22 @@ func (i *interpreter) stringify(v any) string {
 		return "nil"
 	}
 	return fmt.Sprintf("%#v", v)
+}
+
+// VisitExpression implements parser.StmtVisitor.
+func (i *interpreter) VisitExpression(expr *parser.Expression) any {
+	if v, err := i.evaluate(expr.Expression); err == nil {
+		return v
+	}
+	return nil
+}
+
+// VisitPrint implements parser.StmtVisitor.
+func (i *interpreter) VisitPrint(expr *parser.Print) any {
+	if value, err := i.evaluate(expr.Expression); err == nil {
+		fmt.Println(i.stringify(value))
+	}
+	return nil
 }
 
 // VisitBinary implements parser.Visitor.
@@ -158,6 +177,16 @@ func (i *interpreter) VisitUnary(expr *parser.Unary) any {
 	return i.unreachable()
 }
 
+func (i *interpreter) execute(stmt parser.Stmt) (any, error) {
+	if i.hasErr() {
+		return nil, i.err
+	}
+
+	value := stmt.Accept(i)
+
+	return value, i.err
+}
+
 func (i *interpreter) evaluate(expr parser.Expr) (any, error) {
 	if i.hasErr() {
 		return nil, i.err
@@ -220,5 +249,6 @@ func (i *interpreter) reset() {
 	i.err = nil
 }
 
-var _ parser.Visitor = (*interpreter)(nil)
+var _ parser.ExprVisitor = (*interpreter)(nil)
+var _ parser.StmtVisitor = (*interpreter)(nil)
 var _ Interpreter = (*interpreter)(nil)
