@@ -204,12 +204,7 @@ func (p *parser) isAtEnd() bool {
 
 func (p *parser) reportError(err error) Expr {
 	t := p.peek()
-	where := " at end"
-	if t.Type != token.EOF {
-		where = fmt.Sprintf(" at '%s'", t.Lexeme)
-	}
-
-	p.err = append(p.err, loxerrors.NewParseError(t.Line, where, err))
+	p.err = append(p.err, loxerrors.NewParseError(t, err))
 
 	return NilExpr
 }

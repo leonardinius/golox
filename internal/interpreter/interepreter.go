@@ -109,7 +109,7 @@ func (i *interpreter) VisitBinary(expr *parser.Binary) any {
 				return left + right
 			}
 		}
-		return i.reportError(expr.Operator, "Operands must be two numbers or two strings.")
+		return i.reportError(expr.Operator, loxerrors.ErrRuntimeOperandsMustNumbersOrStrings)
 	case token.SLASH:
 		if ok := i.checkNumberOperands(expr.Operator, left, right); !ok {
 			return nil
@@ -196,23 +196,23 @@ func (i *interpreter) hasErr() bool {
 
 func (i *interpreter) checkNumberOperands(tok *token.Token, left, right any) bool {
 	if _, ok := left.(float64); !ok {
-		i.reportError(tok, "Operands must be numbers.")
+		i.reportError(tok, loxerrors.ErrRuntimeOperandsMustBeNumbers)
 	} else if _, ok := right.(float64); !ok {
-		i.reportError(tok, "Operands must be numbers.")
+		i.reportError(tok, loxerrors.ErrRuntimeOperandsMustBeNumbers)
 	}
 	return !i.hasErr()
 }
 
 func (i *interpreter) checkNumberOperand(tok *token.Token, val any) bool {
 	if _, ok := val.(float64); !ok {
-		i.reportError(tok, "Operand must be a number.")
+		i.reportError(tok, loxerrors.ErrRuntimeOperandMustBeNumber)
 	}
 
 	return !i.hasErr()
 }
 
-func (i *interpreter) reportError(tok *token.Token, msg string) any {
-	i.err = loxerrors.NewRuntimeError(tok, msg)
+func (i *interpreter) reportError(tok *token.Token, err error) any {
+	i.err = loxerrors.NewRuntimeError(tok, err)
 	return nil
 }
 
