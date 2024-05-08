@@ -8,16 +8,18 @@ import (
 
 	"github.com/chzyer/readline"
 
+	"github.com/leonardinius/golox/internal/interpreter"
 	"github.com/leonardinius/golox/internal/parser"
 	"github.com/leonardinius/golox/internal/scanner"
 )
 
 type LoxApp struct {
-	err error
+	err        error
+	interpeter interpreter.Interpreter
 }
 
 func NewLoxApp() *LoxApp {
-	return &LoxApp{}
+	return &LoxApp{interpeter: interpreter.NewInterpreter()}
 }
 
 func (app *LoxApp) reportError(err error) {
@@ -98,8 +100,11 @@ func (app *LoxApp) run(input string) error {
 	if err != nil {
 		return err
 	}
-	printer := parser.NewAstPrinter()
-	fmt.Println(printer.Print(expr))
 
-	return nil
+	var out string
+	if out, err = app.interpeter.Interpret(expr); err == nil {
+		fmt.Println(out)
+	}
+
+	return err
 }

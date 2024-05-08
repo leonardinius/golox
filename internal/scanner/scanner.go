@@ -237,7 +237,7 @@ func (s *scanner) number() {
 		s.reportError(err)
 		return
 	}
-	s.addTokenLiteral(token.NUMBER, value)
+	s.addTokenLiteral(token.NUMBER, float64(value))
 }
 
 func (s *scanner) reservedOrIdentifier() {
@@ -273,11 +273,11 @@ func (s *scanner) isAlphaNumeric(c rune) bool {
 }
 
 func (s *scanner) reportUnexpectedCharater(c rune) {
-	s.err = loxerrors.NewScanError(s.line, "", loxerrors.ErrScanUnexpectedCharacter, strconv.QuoteRune(c))
+	s.err = loxerrors.NewScanError(s.line, loxerrors.ErrScanUnexpectedCharacter, strconv.QuoteRune(c))
 }
 
 func (s *scanner) reportError(err error) {
-	s.err = loxerrors.NewScanError(s.line, "", err, "")
+	s.err = loxerrors.NewScanError(s.line, err, "")
 }
 
 var _ Scanner = (*scanner)(nil)
