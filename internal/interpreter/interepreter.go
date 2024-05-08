@@ -51,6 +51,9 @@ func (i *interpreter) Evaluate(expr parser.Expr) (any, error) {
 }
 
 func (i *interpreter) stringify(v any) string {
+	if v == nil {
+		return "nil"
+	}
 	return fmt.Sprintf("%#v", v)
 }
 
@@ -70,22 +73,22 @@ func (i *interpreter) VisitBinary(expr *parser.Binary) any {
 		if ok := i.checkNumberOperands(expr.Operator, left, right); !ok {
 			return nil
 		}
-		return left.(token.DoubleNumber) > right.(token.DoubleNumber)
+		return left.(float64) > right.(float64)
 	case token.GREATER_EQUAL:
 		if ok := i.checkNumberOperands(expr.Operator, left, right); !ok {
 			return nil
 		}
-		return left.(token.DoubleNumber) >= right.(token.DoubleNumber)
+		return left.(float64) >= right.(float64)
 	case token.LESS:
 		if ok := i.checkNumberOperands(expr.Operator, left, right); !ok {
 			return nil
 		}
-		return left.(token.DoubleNumber) < right.(token.DoubleNumber)
+		return left.(float64) < right.(float64)
 	case token.LESS_EQUAL:
 		if ok := i.checkNumberOperands(expr.Operator, left, right); !ok {
 			return nil
 		}
-		return left.(token.DoubleNumber) <= right.(token.DoubleNumber)
+		return left.(float64) <= right.(float64)
 	case token.BANG_EQUAL:
 		return !i.isEqual(left, right)
 	case token.EQUAL_EQUAL:
@@ -94,15 +97,15 @@ func (i *interpreter) VisitBinary(expr *parser.Binary) any {
 		if ok := i.checkNumberOperands(expr.Operator, left, right); !ok {
 			return nil
 		}
-		return left.(token.DoubleNumber) - right.(token.DoubleNumber)
+		return left.(float64) - right.(float64)
 	case token.PLUS:
 		if left, ok := left.(string); ok {
 			if right, ok := right.(string); ok {
 				return left + right
 			}
 		}
-		if left, ok := left.(token.DoubleNumber); ok {
-			if right, ok := right.(token.DoubleNumber); ok {
+		if left, ok := left.(float64); ok {
+			if right, ok := right.(float64); ok {
 				return left + right
 			}
 		}
@@ -111,12 +114,12 @@ func (i *interpreter) VisitBinary(expr *parser.Binary) any {
 		if ok := i.checkNumberOperands(expr.Operator, left, right); !ok {
 			return nil
 		}
-		return left.(token.DoubleNumber) / right.(token.DoubleNumber)
+		return left.(float64) / right.(float64)
 	case token.STAR:
 		if ok := i.checkNumberOperands(expr.Operator, left, right); !ok {
 			return nil
 		}
-		return left.(token.DoubleNumber) * right.(token.DoubleNumber)
+		return left.(float64) * right.(float64)
 	}
 
 	return i.unreachable()
@@ -147,7 +150,7 @@ func (i *interpreter) VisitUnary(expr *parser.Unary) any {
 		if ok := i.checkNumberOperand(expr.Operator, right); !ok {
 			return nil
 		}
-		return -right.(token.DoubleNumber)
+		return -right.(float64)
 	case token.BANG:
 		return !i.isTruthy(right)
 	}
@@ -192,16 +195,16 @@ func (i *interpreter) hasErr() bool {
 }
 
 func (i *interpreter) checkNumberOperands(tok *token.Token, left, right any) bool {
-	if _, ok := left.(token.DoubleNumber); !ok {
+	if _, ok := left.(float64); !ok {
 		i.reportError(tok, "Operands must be numbers.")
-	} else if _, ok := right.(token.DoubleNumber); !ok {
+	} else if _, ok := right.(float64); !ok {
 		i.reportError(tok, "Operands must be numbers.")
 	}
 	return !i.hasErr()
 }
 
 func (i *interpreter) checkNumberOperand(tok *token.Token, val any) bool {
-	if _, ok := val.(token.DoubleNumber); !ok {
+	if _, ok := val.(float64); !ok {
 		i.reportError(tok, "Operand must be a number.")
 	}
 
