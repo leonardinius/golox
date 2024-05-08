@@ -53,6 +53,13 @@ func (i *interpreter) Evaluate(stmt parser.Stmt) (any, error) {
 	return i.execute(stmt)
 }
 
+func (i *interpreter) print(v any) {
+	if v == nil {
+		v = "nil"
+	}
+	fmt.Println(v)
+}
+
 func (i *interpreter) stringify(v any) string {
 	if v == nil {
 		return "nil"
@@ -71,7 +78,7 @@ func (i *interpreter) VisitExpression(expr *parser.Expression) any {
 // VisitPrint implements parser.StmtVisitor.
 func (i *interpreter) VisitPrint(expr *parser.Print) any {
 	if value, err := i.evaluate(expr.Expression); err == nil {
-		fmt.Println(i.stringify(value))
+		i.print(value)
 	}
 	return nil
 }
