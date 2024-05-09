@@ -30,7 +30,7 @@ type interpreter struct {
 
 func NewInterpreter() Interpreter {
 	return &interpreter{
-		env: newEnvironment(),
+		env: NewEnvironment(),
 	}
 }
 
@@ -93,6 +93,12 @@ func (i *interpreter) VisitStmtVar(stmt *parser.StmtVar) (any, error) {
 
 	i.env.Define(stmt.Name.Lexeme, value)
 
+	return nil, nil
+}
+
+// VisitStmtBlock implements parser.StmtVisitor.
+func (i *interpreter) VisitStmtBlock(block *parser.StmtBlock) (any, error) {
+	//i.executeBlock(block.Statements, i.env.Nest())
 	return nil, nil
 }
 

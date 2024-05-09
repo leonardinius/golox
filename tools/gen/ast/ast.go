@@ -34,6 +34,7 @@ func Main(args []string) int {
 	}
 
 	if err := defineAst(statementsOutFile, packageName, "Stmt",
+		"StmtBlock      : Statements []Stmt",
 		"StmtExpression : Expression Expr",
 		"StmtPrint      : Expression Expr",
 		"StmtVar        : Name *token.Token, Initializer Expr",

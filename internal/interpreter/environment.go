@@ -8,25 +8,19 @@ import (
 )
 
 type environment struct {
-	parent *environment
-	values map[string]interface{}
+	enclosing *environment
+	values    map[string]interface{}
 }
 
-func newEnvironment() *environment {
-	return &environment{
-		values: make(map[string]interface{}),
-	}
+func NewEnvironment() *environment {
+	return &environment{}
 }
 
 func (e *environment) Define(name string, value any) {
-	if _, ok := e.values[name]; ok || e.parent == nil {
-		e.values[name] = value
-		return
+	if e.values == nil {
+		e.values = make(map[string]interface{})
 	}
-
-	if e.parent != nil {
-		e.parent.Define(name, value)
-	}
+	e.values[name] = value
 }
 
 func (e *environment) Assign(name *token.Token, value any) error {
@@ -35,8 +29,8 @@ func (e *environment) Assign(name *token.Token, value any) error {
 		return nil
 	}
 
-	if e.parent != nil {
-		return e.parent.Assign(name, value)
+	if e.enclosing != nil {
+		return e.enclosing.Assign(name, value)
 	}
 
 	return e.undefinedVariable(name)
@@ -47,11 +41,17 @@ func (e *environment) Get(name *token.Token) (any, error) {
 		return value, nil
 	}
 
-	if e.parent != nil {
-		return e.parent.Get(name)
+	if e.enclosing != nil {
+		return e.enclosing.Get(name)
 	}
 
 	return nil, e.undefinedVariable(name)
+}
+
+func (e *environment) Nest() *environment {
+	env := NewEnvironment()
+	env.enclosing = e
+	return env
 }
 
 func (e *environment) undefinedVariable(name *token.Token) error {

@@ -51,7 +51,7 @@ func (p *parser) String() string {
 // Parse implements Parser.
 func (p *parser) Parse() (statements []Stmt, err error) {
 	var stmt Stmt
-	for !p.isAtEnd() {
+	for !p.isDone() {
 		stmt, err = p.declaration(), errors.Join(p.err...)
 		if err != nil {
 			break
@@ -65,12 +65,14 @@ func (p *parser) Parse() (statements []Stmt, err error) {
 
 	// if we are at error state, we do not return invalid ast tree
 	// return nil, err - errors intead
+	errs := p.err
 	for !p.isAtEnd() {
 		p.synchronize()
-		_, err = p.declaration(), errors.Join(p.err...)
+		p.err = nil
+		_, errs = p.declaration(), append(errs, p.err...)
 	}
 
-	return nilStatements, err
+	return nilStatements, errors.Join(errs...)
 }
 
 func (p *parser) declaration() Stmt {
@@ -101,19 +103,43 @@ func (p *parser) varDeclaration() Stmt {
 }
 
 func (p *parser) statement() Stmt {
+
 	if p.match(token.PRINT) {
 		return p.printStatement()
+	}
+
+	if p.match(token.LEFT_BRACE) {
+		block := p.blockStatement()
+		return &StmtBlock{Statements: block}
 	}
 
 	return p.expressionStatement()
 }
 
 func (p *parser) printStatement() Stmt {
+
 	expr := p.expression()
+
 	if !p.match(token.SEMICOLON) {
 		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterValue)
 	}
+
 	return &StmtPrint{Expression: expr}
+}
+
+func (p *parser) blockStatement() []Stmt {
+
+	var stmts []Stmt
+
+	for !p.check(token.RIGHT_BRACE) && !p.isDone() {
+		stmts = append(stmts, p.declaration())
+	}
+
+	if !p.match(token.RIGHT_BRACE) {
+		return p.reportStmtsError(loxerrors.ErrParseExpectedRightCurlyBlockToken)
+	}
+
+	return stmts
 }
 
 func (p *parser) expressionStatement() Stmt {
@@ -262,7 +288,7 @@ func (p *parser) match(tokType token.TokenType) bool {
 }
 
 func (p *parser) check(tokenType token.TokenType) bool {
-	if p.isAtEnd() {
+	if p.isDone() {
 		return false
 	}
 	return p.peek().Type == tokenType
@@ -283,15 +309,32 @@ func (p *parser) advance() *token.Token {
 	return p.previous()
 }
 
+// Be carefull with isAtEnd, it does not check for parse errors.
+// Use isDone instead.
+// isAtEnd is used from top level Parse, synchronize and advance ony.
 func (p *parser) isAtEnd() bool {
 	return p.peek().Type == token.EOF
 }
 
+func (p *parser) isDone() bool {
+	// et the end, OR, have errors
+	return p.isAtEnd() || len(p.err) > 0
+}
+
 func (p *parser) reportStmtError(err error) Stmt {
 	t := p.peek()
+
 	p.err = append(p.err, loxerrors.NewParseError(t, err))
 
 	return nilStmt
+}
+
+func (p *parser) reportStmtsError(err error) []Stmt {
+	t := p.peek()
+
+	p.err = append(p.err, loxerrors.NewParseError(t, err))
+
+	return nilStatements
 }
 
 func (p *parser) reportExprError(err error) Expr {
@@ -299,7 +342,9 @@ func (p *parser) reportExprError(err error) Expr {
 }
 
 func (p *parser) reportTokenExprError(tok *token.Token, err error) Expr {
+
 	p.err = append(p.err, loxerrors.NewParseError(tok, err))
+
 	return nilExpr
 }
 
