@@ -49,6 +49,15 @@ func TestInterpret(t *testing.T) {
 		{name: `invalid expression minus`, input: `0 - "";`, expectedError: `at -: operands must be numbers.`},
 		{name: `invalid expression minus string`, input: `-"a";`, expectedError: `at -: operand must be a number.`},
 		{name: `bang as boolean`, input: `!"a";`, expectedOutput: `false`},
+		{name: `emty var`, input: `var a;`, expectedOutput: `nil`},
+		{name: `emty var eval`, input: `var a;a;`, expectedOutput: `nil`},
+		{name: `var init`, input: `var a =1;a;`, expectedOutput: `1`},
+		{name: `var assign`, input: `var a =1;a=2;`, expectedOutput: `2`},
+		{name: `var multiple var math`, input: `var a =1;var b=2;a+b;`, expectedOutput: `3`},
+		{name: `var syntax error 1`, input: `var print;`, expectedError: `parse error at end: expect ';' after value.`},
+		{name: `var syntax error 2`, input: `var a print;`, expectedError: `parse error at end: expect ';' after value.`},
+		{name: `var assign error`, input: `var a;(a)=1;`, expectedError: `parse error at '=': invalid assignment target.`},
+		{name: `var assign error unrecognized var`, input: `b=1;`, expectedError: `at b: undefined variable 'b'.`},
 	}
 
 	for _, tc := range testcases {

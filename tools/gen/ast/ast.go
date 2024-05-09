@@ -22,6 +22,7 @@ func Main(args []string) int {
 	packageName := args[2]
 
 	if err := defineAst(expressionsOutFile, packageName, "Expr",
+		"ExprAssign    : Name *token.Token, Value Expr",
 		"ExprBinary   : Left Expr, Operator *token.Token, Right Expr",
 		"ExprGrouping : Expression Expr",
 		"ExprLiteral  : Value any",

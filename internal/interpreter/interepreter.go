@@ -91,7 +91,7 @@ func (i *interpreter) VisitStmtVar(stmt *parser.StmtVar) (any, error) {
 		}
 	}
 
-	i.env.Assign(stmt.Name.Lexeme, value)
+	i.env.Define(stmt.Name.Lexeme, value)
 
 	return nil, nil
 }
@@ -100,8 +100,22 @@ func (i *interpreter) VisitStmtVar(stmt *parser.StmtVar) (any, error) {
 func (i *interpreter) VisitExprVariable(expr *parser.ExprVariable) (any, error) {
 	value, err := i.env.Get(expr.Name)
 	if err != nil {
-		return nil, i.runtimeError(expr.Name, err)
+		return nil, err
 	}
+	return value, nil
+}
+
+// VisitExprAssign implements parser.ExprVisitor.
+func (i *interpreter) VisitExprAssign(assign *parser.ExprAssign) (any, error) {
+	value, err := i.evaluate(assign.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = i.env.Assign(assign.Name, value); err != nil {
+		return nil, err
+	}
+
 	return value, nil
 }
 

@@ -126,7 +126,25 @@ func (p *parser) expressionStatement() Stmt {
 }
 
 func (p *parser) expression() Expr {
-	return p.equality()
+	return p.assignment()
+}
+
+func (p *parser) assignment() Expr {
+	expr := p.equality()
+
+	if p.anyMatch(token.EQUAL) {
+		equals := p.previous()
+		value := p.assignment()
+
+		if v, ok := expr.(*ExprVariable); ok {
+			name := v.Name
+			return &ExprAssign{Name: name, Value: value}
+		}
+
+		return p.reportTokenExprError(equals, loxerrors.ErrParseInvalidAssignmentTarget)
+	}
+
+	return expr
 }
 
 func (p *parser) equality() Expr {
@@ -277,9 +295,11 @@ func (p *parser) reportStmtError(err error) Stmt {
 }
 
 func (p *parser) reportExprError(err error) Expr {
-	t := p.peek()
-	p.err = append(p.err, loxerrors.NewParseError(t, err))
+	return p.reportTokenExprError(p.peek(), err)
+}
 
+func (p *parser) reportTokenExprError(tok *token.Token, err error) Expr {
+	p.err = append(p.err, loxerrors.NewParseError(tok, err))
 	return NilExpr
 }
 

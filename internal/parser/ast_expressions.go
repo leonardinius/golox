@@ -6,6 +6,7 @@ import "github.com/leonardinius/golox/internal/token"
 
 // ExprVisitor is the interface that wraps the Visit method.
 type ExprVisitor interface {
+	VisitExprAssign(assign *ExprAssign) (any, error)
 	VisitExprBinary(binary *ExprBinary) (any, error)
 	VisitExprGrouping(grouping *ExprGrouping) (any, error)
 	VisitExprLiteral(literal *ExprLiteral) (any, error)
@@ -15,6 +16,17 @@ type ExprVisitor interface {
 
 type Expr interface {
 	Accept(v ExprVisitor) (any, error)
+}
+
+type ExprAssign struct {
+	Name  *token.Token
+	Value Expr
+}
+
+var _ Expr = (*ExprAssign)(nil)
+
+func (e *ExprAssign) Accept(v ExprVisitor) (any, error) {
+	return v.VisitExprAssign(e)
 }
 
 type ExprBinary struct {
