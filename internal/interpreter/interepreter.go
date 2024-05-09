@@ -67,12 +67,12 @@ func (i *interpreter) stringify(v any) string {
 }
 
 // VisitExpression implements parser.StmtVisitor.
-func (i *interpreter) VisitExpression(expr *parser.Expression) (any, error) {
+func (i *interpreter) VisitStmtExpression(expr *parser.StmtExpression) (any, error) {
 	return i.evaluate(expr.Expression)
 }
 
 // VisitPrint implements parser.StmtVisitor.
-func (i *interpreter) VisitPrint(expr *parser.Print) (any, error) {
+func (i *interpreter) VisitStmtPrint(expr *parser.StmtPrint) (any, error) {
 	value, err := i.evaluate(expr.Expression)
 	if err == nil {
 		i.print(value)
@@ -81,7 +81,7 @@ func (i *interpreter) VisitPrint(expr *parser.Print) (any, error) {
 }
 
 // VisitVar implements parser.StmtVisitor.
-func (i *interpreter) VisitVar(stmt *parser.Var) (any, error) {
+func (i *interpreter) VisitStmtVar(stmt *parser.StmtVar) (any, error) {
 	var value any
 	var err error
 	if stmt.Initializer != nil {
@@ -96,16 +96,16 @@ func (i *interpreter) VisitVar(stmt *parser.Var) (any, error) {
 }
 
 // VisitVariable implements parser.ExprVisitor.
-func (i *interpreter) VisitVariable(expr *parser.Variable) (any, error) {
+func (i *interpreter) VisitExprVariable(expr *parser.ExprVariable) (any, error) {
 	value, err := i.env.Get(expr.Name)
 	if err != nil {
-		return nil, i.reportError(expr.Name, err)
+		return nil, i.runtimeError(expr.Name, err)
 	}
 	return value, nil
 }
 
 // VisitBinary implements parser.Visitor.
-func (i *interpreter) VisitBinary(expr *parser.Binary) (any, error) {
+func (i *interpreter) VisitExprBinary(expr *parser.ExprBinary) (any, error) {
 	left, err := i.evaluate(expr.Left)
 	if err != nil {
 		return nil, err
@@ -156,7 +156,7 @@ func (i *interpreter) VisitBinary(expr *parser.Binary) (any, error) {
 				return left + right, nil
 			}
 		}
-		return nil, i.reportError(expr.Operator, loxerrors.ErrRuntimeOperandsMustNumbersOrStrings)
+		return nil, i.runtimeError(expr.Operator, loxerrors.ErrRuntimeOperandsMustNumbersOrStrings)
 	case token.SLASH:
 		if err = i.checkNumberOperands(expr.Operator, left, right); err != nil {
 			return nil, err
@@ -173,17 +173,17 @@ func (i *interpreter) VisitBinary(expr *parser.Binary) (any, error) {
 }
 
 // VisitGrouping implements parser.Visitor.
-func (i *interpreter) VisitGrouping(expr *parser.Grouping) (any, error) {
+func (i *interpreter) VisitExprGrouping(expr *parser.ExprGrouping) (any, error) {
 	return i.evaluate(expr.Expression)
 }
 
 // VisitLiteral implements parser.Visitor.
-func (i *interpreter) VisitLiteral(expr *parser.Literal) (any, error) {
+func (i *interpreter) VisitExprLiteral(expr *parser.ExprLiteral) (any, error) {
 	return expr.Value, nil
 }
 
 // VisitUnary implements parser.Visitor.
-func (i *interpreter) VisitUnary(expr *parser.Unary) (any, error) {
+func (i *interpreter) VisitExprUnary(expr *parser.ExprUnary) (any, error) {
 	right, err := i.evaluate(expr.Right)
 	if err != nil {
 		return nil, err
@@ -228,29 +228,29 @@ func (i *interpreter) isEqual(left, right any) bool {
 	return left == right
 }
 
-func (i *interpreter) unreachable() (any, error) {
-	panic("unreachable")
-}
-
 func (i *interpreter) checkNumberOperands(tok *token.Token, left, right any) error {
 	if _, ok := left.(float64); !ok {
-		return i.reportError(tok, loxerrors.ErrRuntimeOperandsMustBeNumbers)
+		return i.runtimeError(tok, loxerrors.ErrRuntimeOperandsMustBeNumbers)
 	} else if _, ok := right.(float64); !ok {
-		return i.reportError(tok, loxerrors.ErrRuntimeOperandsMustBeNumbers)
+		return i.runtimeError(tok, loxerrors.ErrRuntimeOperandsMustBeNumbers)
 	}
 	return nil
 }
 
 func (i *interpreter) checkNumberOperand(tok *token.Token, val any) error {
 	if _, ok := val.(float64); !ok {
-		return i.reportError(tok, loxerrors.ErrRuntimeOperandMustBeNumber)
+		return i.runtimeError(tok, loxerrors.ErrRuntimeOperandMustBeNumber)
 	}
 
 	return nil
 }
 
-func (i *interpreter) reportError(tok *token.Token, err error) error {
+func (i *interpreter) runtimeError(tok *token.Token, err error) error {
 	return loxerrors.NewRuntimeError(tok, err)
+}
+
+func (i *interpreter) unreachable() (any, error) {
+	panic("unreachable")
 }
 
 var _ parser.ExprVisitor = (*interpreter)(nil)

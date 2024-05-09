@@ -98,7 +98,7 @@ func (p *parser) varDeclaration() Stmt {
 		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterVar)
 	}
 
-	return &Var{Name: name, Initializer: initializer}
+	return &StmtVar{Name: name, Initializer: initializer}
 }
 
 func (p *parser) statement() Stmt {
@@ -114,7 +114,7 @@ func (p *parser) printStatement() Stmt {
 	if tok := p.consume(token.SEMICOLON); tok == NilToken {
 		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterValue)
 	}
-	return &Print{Expression: expr}
+	return &StmtPrint{Expression: expr}
 }
 
 func (p *parser) expressionStatement() Stmt {
@@ -122,7 +122,7 @@ func (p *parser) expressionStatement() Stmt {
 	if tok := p.consume(token.SEMICOLON); tok == NilToken {
 		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterExpr)
 	}
-	return &Expression{Expression: expr}
+	return &StmtExpression{Expression: expr}
 }
 
 func (p *parser) expression() Expr {
@@ -135,7 +135,7 @@ func (p *parser) equality() Expr {
 	for p.anyMatch(token.BANG_EQUAL, token.EQUAL_EQUAL) {
 		operator := p.previous()
 		right := p.comparison()
-		expr = &Binary{Left: expr, Operator: operator, Right: right}
+		expr = &ExprBinary{Left: expr, Operator: operator, Right: right}
 	}
 
 	return expr
@@ -147,7 +147,7 @@ func (p *parser) comparison() Expr {
 	for p.anyMatch(token.GREATER, token.GREATER_EQUAL, token.LESS, token.LESS_EQUAL) {
 		operator := p.previous()
 		right := p.term()
-		expr = &Binary{Left: expr, Operator: operator, Right: right}
+		expr = &ExprBinary{Left: expr, Operator: operator, Right: right}
 	}
 
 	return expr
@@ -159,7 +159,7 @@ func (p *parser) term() Expr {
 	for p.anyMatch(token.MINUS, token.PLUS) {
 		operator := p.previous()
 		right := p.factor()
-		expr = &Binary{Left: expr, Operator: operator, Right: right}
+		expr = &ExprBinary{Left: expr, Operator: operator, Right: right}
 	}
 
 	return expr
@@ -171,7 +171,7 @@ func (p *parser) factor() Expr {
 	for p.anyMatch(token.SLASH, token.STAR) {
 		operator := p.previous()
 		right := p.unary()
-		expr = &Binary{Left: expr, Operator: operator, Right: right}
+		expr = &ExprBinary{Left: expr, Operator: operator, Right: right}
 	}
 
 	return expr
@@ -181,7 +181,7 @@ func (p *parser) unary() Expr {
 	if p.anyMatch(token.BANG, token.MINUS) {
 		operator := p.previous()
 		right := p.unary()
-		return &Unary{
+		return &ExprUnary{
 			Operator: operator,
 			Right:    right,
 		}
@@ -192,23 +192,23 @@ func (p *parser) unary() Expr {
 
 func (p *parser) primary() Expr {
 	if p.anyMatch(token.FALSE) {
-		return &Literal{Value: false}
+		return &ExprLiteral{Value: false}
 	}
 	if p.anyMatch(token.TRUE) {
-		return &Literal{Value: true}
+		return &ExprLiteral{Value: true}
 	}
 	if p.anyMatch(token.NIL) {
-		return &Literal{Value: nil}
+		return &ExprLiteral{Value: nil}
 	}
 
 	if p.anyMatch(token.NUMBER, token.STRING) {
 		tok := p.previous()
-		return &Literal{Value: tok.Literal}
+		return &ExprLiteral{Value: tok.Literal}
 	}
 
 	if p.anyMatch(token.IDENTIFIER) {
 		tok := p.previous()
-		return &Variable{Name: tok}
+		return &ExprVariable{Name: tok}
 	}
 
 	return p.grouping()
@@ -220,7 +220,7 @@ func (p *parser) grouping() Expr {
 		if tok := p.consume(token.RIGHT_PAREN); tok == NilToken {
 			return p.reportExprError(loxerrors.ErrParseExpectedRightParenToken)
 		}
-		return &Grouping{Expression: expr}
+		return &ExprGrouping{Expression: expr}
 	}
 
 	return p.reportExprError(loxerrors.ErrParseUnexpectedToken)

@@ -22,20 +22,20 @@ func Main(args []string) int {
 	packageName := args[2]
 
 	if err := defineAst(expressionsOutFile, packageName, "Expr",
-		"Binary   : Left Expr, Operator *token.Token, Right Expr",
-		"Grouping : Expression Expr",
-		"Literal  : Value any",
-		"Unary    : Operator *token.Token, Right Expr",
-		"Variable : Name *token.Token",
+		"ExprBinary   : Left Expr, Operator *token.Token, Right Expr",
+		"ExprGrouping : Expression Expr",
+		"ExprLiteral  : Value any",
+		"ExprUnary    : Operator *token.Token, Right Expr",
+		"ExprVariable : Name *token.Token",
 	); err != nil {
 		fmt.Printf("Error: %v", err)
 		return 1
 	}
 
 	if err := defineAst(statementsOutFile, packageName, "Stmt",
-		"Expression : Expression Expr",
-		"Print      : Expression Expr",
-		"Var        : Name *token.Token, Initializer Expr",
+		"StmtExpression : Expression Expr",
+		"StmtPrint      : Expression Expr",
+		"StmtVar        : Name *token.Token, Initializer Expr",
 	); err != nil {
 		fmt.Printf("Error: %v", err)
 		return 1

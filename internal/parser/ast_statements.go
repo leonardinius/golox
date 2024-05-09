@@ -6,42 +6,42 @@ import "github.com/leonardinius/golox/internal/token"
 
 // StmtVisitor is the interface that wraps the Visit method.
 type StmtVisitor interface {
-	VisitExpression(expression *Expression) (any, error)
-	VisitPrint(print *Print) (any, error)
-	VisitVar(v *Var) (any, error)
+	VisitStmtExpression(stmtexpression *StmtExpression) (any, error)
+	VisitStmtPrint(stmtprint *StmtPrint) (any, error)
+	VisitStmtVar(stmtvar *StmtVar) (any, error)
 }
 
 type Stmt interface {
 	Accept(v StmtVisitor) (any, error)
 }
 
-type Expression struct {
+type StmtExpression struct {
 	Expression Expr
 }
 
-var _ Stmt = (*Expression)(nil)
+var _ Stmt = (*StmtExpression)(nil)
 
-func (e *Expression) Accept(v StmtVisitor) (any, error) {
-	return v.VisitExpression(e)
+func (e *StmtExpression) Accept(v StmtVisitor) (any, error) {
+	return v.VisitStmtExpression(e)
 }
 
-type Print struct {
+type StmtPrint struct {
 	Expression Expr
 }
 
-var _ Stmt = (*Print)(nil)
+var _ Stmt = (*StmtPrint)(nil)
 
-func (e *Print) Accept(v StmtVisitor) (any, error) {
-	return v.VisitPrint(e)
+func (e *StmtPrint) Accept(v StmtVisitor) (any, error) {
+	return v.VisitStmtPrint(e)
 }
 
-type Var struct {
+type StmtVar struct {
 	Name        *token.Token
 	Initializer Expr
 }
 
-var _ Stmt = (*Var)(nil)
+var _ Stmt = (*StmtVar)(nil)
 
-func (e *Var) Accept(v StmtVisitor) (any, error) {
-	return v.VisitVar(e)
+func (e *StmtVar) Accept(v StmtVisitor) (any, error) {
+	return v.VisitStmtVar(e)
 }

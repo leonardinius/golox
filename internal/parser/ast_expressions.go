@@ -6,66 +6,66 @@ import "github.com/leonardinius/golox/internal/token"
 
 // ExprVisitor is the interface that wraps the Visit method.
 type ExprVisitor interface {
-	VisitBinary(binary *Binary) (any, error)
-	VisitGrouping(grouping *Grouping) (any, error)
-	VisitLiteral(literal *Literal) (any, error)
-	VisitUnary(unary *Unary) (any, error)
-	VisitVariable(variable *Variable) (any, error)
+	VisitExprBinary(exprbinary *ExprBinary) (any, error)
+	VisitExprGrouping(exprgrouping *ExprGrouping) (any, error)
+	VisitExprLiteral(exprliteral *ExprLiteral) (any, error)
+	VisitExprUnary(exprunary *ExprUnary) (any, error)
+	VisitExprVariable(exprvariable *ExprVariable) (any, error)
 }
 
 type Expr interface {
 	Accept(v ExprVisitor) (any, error)
 }
 
-type Binary struct {
+type ExprBinary struct {
 	Left     Expr
 	Operator *token.Token
 	Right    Expr
 }
 
-var _ Expr = (*Binary)(nil)
+var _ Expr = (*ExprBinary)(nil)
 
-func (e *Binary) Accept(v ExprVisitor) (any, error) {
-	return v.VisitBinary(e)
+func (e *ExprBinary) Accept(v ExprVisitor) (any, error) {
+	return v.VisitExprBinary(e)
 }
 
-type Grouping struct {
+type ExprGrouping struct {
 	Expression Expr
 }
 
-var _ Expr = (*Grouping)(nil)
+var _ Expr = (*ExprGrouping)(nil)
 
-func (e *Grouping) Accept(v ExprVisitor) (any, error) {
-	return v.VisitGrouping(e)
+func (e *ExprGrouping) Accept(v ExprVisitor) (any, error) {
+	return v.VisitExprGrouping(e)
 }
 
-type Literal struct {
+type ExprLiteral struct {
 	Value any
 }
 
-var _ Expr = (*Literal)(nil)
+var _ Expr = (*ExprLiteral)(nil)
 
-func (e *Literal) Accept(v ExprVisitor) (any, error) {
-	return v.VisitLiteral(e)
+func (e *ExprLiteral) Accept(v ExprVisitor) (any, error) {
+	return v.VisitExprLiteral(e)
 }
 
-type Unary struct {
+type ExprUnary struct {
 	Operator *token.Token
 	Right    Expr
 }
 
-var _ Expr = (*Unary)(nil)
+var _ Expr = (*ExprUnary)(nil)
 
-func (e *Unary) Accept(v ExprVisitor) (any, error) {
-	return v.VisitUnary(e)
+func (e *ExprUnary) Accept(v ExprVisitor) (any, error) {
+	return v.VisitExprUnary(e)
 }
 
-type Variable struct {
+type ExprVariable struct {
 	Name *token.Token
 }
 
-var _ Expr = (*Variable)(nil)
+var _ Expr = (*ExprVariable)(nil)
 
-func (e *Variable) Accept(v ExprVisitor) (any, error) {
-	return v.VisitVariable(e)
+func (e *ExprVariable) Accept(v ExprVisitor) (any, error) {
+	return v.VisitExprVariable(e)
 }
