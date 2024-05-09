@@ -36,15 +36,16 @@ func NewInterpreter() Interpreter {
 
 // Interpret implements Interpreter.
 func (i *interpreter) Interpret(statements []parser.Stmt) (string, error) {
+	var v any
+	var err error
+
 	for _, stmt := range statements {
-		if v, err := i.Evaluate(stmt); err != nil {
+		if v, err = i.Evaluate(stmt); err != nil {
 			return "", err
-		} else {
-			return i.stringify(v), nil
 		}
 	}
 
-	return i.stringify(nil), nil
+	return i.stringify(v), nil
 }
 
 // Evaluate implements Interpreter.
