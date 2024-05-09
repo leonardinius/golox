@@ -2,10 +2,13 @@
 
 package parser
 
+import "github.com/leonardinius/golox/internal/token"
+
 // StmtVisitor is the interface that wraps the Visit method.
 type StmtVisitor interface {
 	VisitExpression(v *Expression) any
 	VisitPrint(v *Print) any
+	VisitVar(v *Var) any
 }
 
 type Stmt interface {
@@ -30,4 +33,15 @@ var _ Stmt = (*Print)(nil)
 
 func (e *Print) Accept(v StmtVisitor) any {
 	return v.VisitPrint(e)
+}
+
+type Var struct {
+	Name        *token.Token
+	Initializer Expr
+}
+
+var _ Stmt = (*Var)(nil)
+
+func (e *Var) Accept(v StmtVisitor) any {
+	return v.VisitVar(e)
 }

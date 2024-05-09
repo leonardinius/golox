@@ -27,15 +27,18 @@ type Interpreter interface {
 
 type interpreter struct {
 	err error
+	env *environment
 }
 
 func NewInterpreter() Interpreter {
-	return &interpreter{}
+	return &interpreter{
+		env: newEnvironment(),
+	}
 }
 
 // Interpret implements Interpreter.
 func (i *interpreter) Interpret(statements []parser.Stmt) (string, error) {
-	i.reset()
+	i.resetError()
 
 	for _, stmt := range statements {
 		if v, err := i.Evaluate(stmt); err != nil {
@@ -81,6 +84,30 @@ func (i *interpreter) VisitPrint(expr *parser.Print) any {
 		i.print(value)
 	}
 	return nil
+}
+
+// VisitVar implements parser.StmtVisitor.
+func (i *interpreter) VisitVar(stmt *parser.Var) any {
+	var value any
+	var err error
+	if stmt.Initializer != nil {
+		if value, err = i.evaluate(stmt.Initializer); err != nil {
+			return nil
+		}
+	}
+
+	i.env.Assign(stmt.Name.Lexeme, value)
+
+	return nil
+}
+
+// VisitVariable implements parser.ExprVisitor.
+func (i *interpreter) VisitVariable(expr *parser.Variable) any {
+	value, err := i.env.Get(expr.Name)
+	if err != nil {
+		return i.reportError(expr.Name, err)
+	}
+	return value
 }
 
 // VisitBinary implements parser.Visitor.
@@ -252,7 +279,7 @@ func (i *interpreter) reportError(tok *token.Token, err error) any {
 	return nil
 }
 
-func (i *interpreter) reset() {
+func (i *interpreter) resetError() {
 	i.err = nil
 }
 

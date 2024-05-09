@@ -8,9 +8,10 @@ import (
 )
 
 var (
-	ErrRuntimeOperandMustBeNumber          = errors.New("Operand must be a number.")
-	ErrRuntimeOperandsMustBeNumbers        = errors.New("Operands must be numbers.")
-	ErrRuntimeOperandsMustNumbersOrStrings = errors.New("Operands must be two numbers or two strings.")
+	ErrRuntimeOperandMustBeNumber          = errors.New("operand must be a number.")
+	ErrRuntimeOperandsMustBeNumbers        = errors.New("operands must be numbers.")
+	ErrRuntimeOperandsMustNumbersOrStrings = errors.New("operands must be two numbers or two strings.")
+	ErrRuntimeUndefinedVariable            = errors.New("undefined variable")
 )
 
 type RuntimeError struct {

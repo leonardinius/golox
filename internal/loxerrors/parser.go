@@ -11,7 +11,9 @@ var (
 	ErrParseExpectedRightParenToken          = errors.New("expected ')' after expression")
 	ErrParseExpectedSemicolonTokenAfterValue = errors.New("expect ';' after value.")
 	ErrParseExpectedSemicolonTokenAfterExpr  = errors.New("expect ';' after value.")
+	ErrParseExpectedSemicolonTokenAfterVar   = errors.New("expect ';' after variable declaration.")
 	ErrParseUnexpectedToken                  = errors.New("expected expression")
+	ErrParseUnexpectedVariableName           = errors.New("expect variable name.")
 )
 
 type ParserError struct {

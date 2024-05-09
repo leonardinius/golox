@@ -10,6 +10,7 @@ type ExprVisitor interface {
 	VisitGrouping(v *Grouping) any
 	VisitLiteral(v *Literal) any
 	VisitUnary(v *Unary) any
+	VisitVariable(v *Variable) any
 }
 
 type Expr interface {
@@ -57,4 +58,14 @@ var _ Expr = (*Unary)(nil)
 
 func (e *Unary) Accept(v ExprVisitor) any {
 	return v.VisitUnary(e)
+}
+
+type Variable struct {
+	Name *token.Token
+}
+
+var _ Expr = (*Variable)(nil)
+
+func (e *Variable) Accept(v ExprVisitor) any {
+	return v.VisitVariable(e)
 }

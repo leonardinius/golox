@@ -53,7 +53,7 @@ func (p *parser) String() string {
 func (p *parser) Parse() (statements []Stmt, err error) {
 	var stmt Stmt
 	for !p.isAtEnd() {
-		stmt, err = p.statement(), errors.Join(p.err...)
+		stmt, err = p.declaration(), errors.Join(p.err...)
 		if err != nil {
 			break
 		}
@@ -68,10 +68,37 @@ func (p *parser) Parse() (statements []Stmt, err error) {
 	// return nil, err - errors intead
 	for !p.isAtEnd() {
 		p.synchronize()
-		_, err = p.statement(), errors.Join(p.err...)
+		_, err = p.declaration(), errors.Join(p.err...)
 	}
 
 	return NilStatements, err
+}
+
+func (p *parser) declaration() Stmt {
+	if p.anyMatch(token.VAR) {
+		return p.varDeclaration()
+	}
+
+	return p.statement()
+}
+
+func (p *parser) varDeclaration() Stmt {
+
+	name := p.consume(token.IDENTIFIER)
+	if name == NilToken {
+		return p.reportStmtError(loxerrors.ErrParseUnexpectedVariableName)
+	}
+
+	var initializer Expr = NilExpr
+	if p.anyMatch(token.EQUAL) {
+		initializer = p.expression()
+	}
+
+	if tok := p.consume(token.SEMICOLON); tok == NilToken {
+		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterVar)
+	}
+
+	return &Var{Name: name, Initializer: initializer}
 }
 
 func (p *parser) statement() Stmt {
@@ -80,7 +107,6 @@ func (p *parser) statement() Stmt {
 	}
 
 	return p.expressionStatement()
-
 }
 
 func (p *parser) printStatement() Stmt {
@@ -178,6 +204,11 @@ func (p *parser) primary() Expr {
 	if p.anyMatch(token.NUMBER, token.STRING) {
 		tok := p.previous()
 		return &Literal{Value: tok.Literal}
+	}
+
+	if p.anyMatch(token.IDENTIFIER) {
+		tok := p.previous()
+		return &Variable{Name: tok}
 	}
 
 	return p.grouping()

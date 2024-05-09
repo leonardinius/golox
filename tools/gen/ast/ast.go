@@ -26,6 +26,7 @@ func Main(args []string) int {
 		"Grouping : Expression Expr",
 		"Literal  : Value any",
 		"Unary    : Operator *token.Token, Right Expr",
+		"Variable : Name *token.Token",
 	); err != nil {
 		fmt.Printf("Error: %v", err)
 		return 1
@@ -34,6 +35,7 @@ func Main(args []string) int {
 	if err := defineAst(statementsOutFile, packageName, "Stmt",
 		"Expression : Expression Expr",
 		"Print      : Expression Expr",
+		"Var        : Name *token.Token, Initializer Expr",
 	); err != nil {
 		fmt.Printf("Error: %v", err)
 		return 1
