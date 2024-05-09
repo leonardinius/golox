@@ -6,9 +6,9 @@ import "github.com/leonardinius/golox/internal/token"
 
 // StmtVisitor is the interface that wraps the Visit method.
 type StmtVisitor interface {
-	VisitStmtExpression(stmtexpression *StmtExpression) (any, error)
-	VisitStmtPrint(stmtprint *StmtPrint) (any, error)
-	VisitStmtVar(stmtvar *StmtVar) (any, error)
+	VisitStmtExpression(expression *StmtExpression) (any, error)
+	VisitStmtPrint(print *StmtPrint) (any, error)
+	VisitStmtVar(v *StmtVar) (any, error)
 }
 
 type Stmt interface {

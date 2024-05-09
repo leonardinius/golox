@@ -104,7 +104,15 @@ func defineType(fprintf func(message string, args ...any), baseClass string, exp
 }
 
 func varify(exprClassName string) string {
-	v := strings.ToLower(exprClassName)
+	idx := 0
+	for i, c := range exprClassName[1:] {
+		idx = i + 1
+		if c >= 'A' && c <= 'Z' {
+			break
+		}
+	}
+
+	v := strings.ToLower(exprClassName[idx:])
 	if v == "var" {
 		v = "v"
 	}

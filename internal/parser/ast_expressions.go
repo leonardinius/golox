@@ -6,11 +6,11 @@ import "github.com/leonardinius/golox/internal/token"
 
 // ExprVisitor is the interface that wraps the Visit method.
 type ExprVisitor interface {
-	VisitExprBinary(exprbinary *ExprBinary) (any, error)
-	VisitExprGrouping(exprgrouping *ExprGrouping) (any, error)
-	VisitExprLiteral(exprliteral *ExprLiteral) (any, error)
-	VisitExprUnary(exprunary *ExprUnary) (any, error)
-	VisitExprVariable(exprvariable *ExprVariable) (any, error)
+	VisitExprBinary(binary *ExprBinary) (any, error)
+	VisitExprGrouping(grouping *ExprGrouping) (any, error)
+	VisitExprLiteral(literal *ExprLiteral) (any, error)
+	VisitExprUnary(unary *ExprUnary) (any, error)
+	VisitExprVariable(variable *ExprVariable) (any, error)
 }
 
 type Expr interface {
