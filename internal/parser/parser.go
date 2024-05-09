@@ -9,10 +9,9 @@ import (
 )
 
 var (
-	NilToken      *token.Token = nil
-	NilExpr       Expr         = nil
-	NilStmt       Stmt         = nil
-	NilStatements []Stmt       = nil
+	NilExpr       Expr   = nil
+	NilStmt       Stmt   = nil
+	NilStatements []Stmt = nil
 )
 
 type Parser interface {
@@ -75,7 +74,7 @@ func (p *parser) Parse() (statements []Stmt, err error) {
 }
 
 func (p *parser) declaration() Stmt {
-	if p.anyMatch(token.VAR) {
+	if p.match(token.VAR) {
 		return p.varDeclaration()
 	}
 
@@ -84,17 +83,17 @@ func (p *parser) declaration() Stmt {
 
 func (p *parser) varDeclaration() Stmt {
 
-	name := p.consume(token.IDENTIFIER)
-	if name == NilToken {
+	if !p.match(token.IDENTIFIER) {
 		return p.reportStmtError(loxerrors.ErrParseUnexpectedVariableName)
 	}
+	name := p.previous()
 
 	var initializer Expr = NilExpr
-	if p.anyMatch(token.EQUAL) {
+	if p.match(token.EQUAL) {
 		initializer = p.expression()
 	}
 
-	if tok := p.consume(token.SEMICOLON); tok == NilToken {
+	if !p.match(token.SEMICOLON) {
 		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterVar)
 	}
 
@@ -102,7 +101,7 @@ func (p *parser) varDeclaration() Stmt {
 }
 
 func (p *parser) statement() Stmt {
-	if p.anyMatch(token.PRINT) {
+	if p.match(token.PRINT) {
 		return p.printStatement()
 	}
 
@@ -111,7 +110,7 @@ func (p *parser) statement() Stmt {
 
 func (p *parser) printStatement() Stmt {
 	expr := p.expression()
-	if tok := p.consume(token.SEMICOLON); tok == NilToken {
+	if !p.match(token.SEMICOLON) {
 		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterValue)
 	}
 	return &StmtPrint{Expression: expr}
@@ -119,7 +118,7 @@ func (p *parser) printStatement() Stmt {
 
 func (p *parser) expressionStatement() Stmt {
 	expr := p.expression()
-	if tok := p.consume(token.SEMICOLON); tok == NilToken {
+	if !p.match(token.SEMICOLON) {
 		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterExpr)
 	}
 	return &StmtExpression{Expression: expr}
@@ -132,7 +131,7 @@ func (p *parser) expression() Expr {
 func (p *parser) assignment() Expr {
 	expr := p.equality()
 
-	if p.anyMatch(token.EQUAL) {
+	if p.match(token.EQUAL) {
 		equals := p.previous()
 		value := p.assignment()
 
@@ -209,13 +208,13 @@ func (p *parser) unary() Expr {
 }
 
 func (p *parser) primary() Expr {
-	if p.anyMatch(token.FALSE) {
+	if p.match(token.FALSE) {
 		return &ExprLiteral{Value: false}
 	}
-	if p.anyMatch(token.TRUE) {
+	if p.match(token.TRUE) {
 		return &ExprLiteral{Value: true}
 	}
-	if p.anyMatch(token.NIL) {
+	if p.match(token.NIL) {
 		return &ExprLiteral{Value: nil}
 	}
 
@@ -224,7 +223,7 @@ func (p *parser) primary() Expr {
 		return &ExprLiteral{Value: tok.Literal}
 	}
 
-	if p.anyMatch(token.IDENTIFIER) {
+	if p.match(token.IDENTIFIER) {
 		tok := p.previous()
 		return &ExprVariable{Name: tok}
 	}
@@ -233,9 +232,9 @@ func (p *parser) primary() Expr {
 }
 
 func (p *parser) grouping() Expr {
-	if p.anyMatch(token.LEFT_PAREN) {
+	if p.match(token.LEFT_PAREN) {
 		expr := p.expression()
-		if tok := p.consume(token.RIGHT_PAREN); tok == NilToken {
+		if !p.match(token.RIGHT_PAREN) {
 			return p.reportExprError(loxerrors.ErrParseExpectedRightParenToken)
 		}
 		return &ExprGrouping{Expression: expr}
@@ -254,11 +253,12 @@ func (p *parser) anyMatch(types ...token.TokenType) bool {
 	return false
 }
 
-func (p *parser) consume(tokType token.TokenType) *token.Token {
+func (p *parser) match(tokType token.TokenType) bool {
 	if p.check(tokType) {
-		return p.advance()
+		p.advance()
+		return true
 	}
-	return NilToken
+	return false
 }
 
 func (p *parser) check(tokenType token.TokenType) bool {
