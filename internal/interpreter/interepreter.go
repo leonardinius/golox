@@ -98,11 +98,7 @@ func (i *interpreter) VisitStmtVar(stmt *parser.StmtVar) (any, error) {
 
 // VisitVariable implements parser.ExprVisitor.
 func (i *interpreter) VisitExprVariable(expr *parser.ExprVariable) (any, error) {
-	value, err := i.env.Get(expr.Name)
-	if err != nil {
-		return nil, err
-	}
-	return value, nil
+	return i.env.Get(expr.Name)
 }
 
 // VisitExprAssign implements parser.ExprVisitor.
