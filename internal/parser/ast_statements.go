@@ -2,18 +2,19 @@
 
 package parser
 
+import "context"
 import "github.com/leonardinius/golox/internal/token"
 
 // StmtVisitor is the interface that wraps the Visit method.
 type StmtVisitor interface {
-	VisitStmtBlock(block *StmtBlock) (any, error)
-	VisitStmtExpression(expression *StmtExpression) (any, error)
-	VisitStmtPrint(print *StmtPrint) (any, error)
-	VisitStmtVar(v *StmtVar) (any, error)
+	VisitStmtBlock(ctx context.Context, block *StmtBlock) (any, error)
+	VisitStmtExpression(ctx context.Context, expression *StmtExpression) (any, error)
+	VisitStmtPrint(ctx context.Context, print *StmtPrint) (any, error)
+	VisitStmtVar(ctx context.Context, v *StmtVar) (any, error)
 }
 
 type Stmt interface {
-	Accept(v StmtVisitor) (any, error)
+	Accept(ctx context.Context, v StmtVisitor) (any, error)
 }
 
 type StmtBlock struct {
@@ -22,8 +23,8 @@ type StmtBlock struct {
 
 var _ Stmt = (*StmtBlock)(nil)
 
-func (e *StmtBlock) Accept(v StmtVisitor) (any, error) {
-	return v.VisitStmtBlock(e)
+func (e *StmtBlock) Accept(ctx context.Context, v StmtVisitor) (any, error) {
+	return v.VisitStmtBlock(ctx, e)
 }
 
 type StmtExpression struct {
@@ -32,8 +33,8 @@ type StmtExpression struct {
 
 var _ Stmt = (*StmtExpression)(nil)
 
-func (e *StmtExpression) Accept(v StmtVisitor) (any, error) {
-	return v.VisitStmtExpression(e)
+func (e *StmtExpression) Accept(ctx context.Context, v StmtVisitor) (any, error) {
+	return v.VisitStmtExpression(ctx, e)
 }
 
 type StmtPrint struct {
@@ -42,8 +43,8 @@ type StmtPrint struct {
 
 var _ Stmt = (*StmtPrint)(nil)
 
-func (e *StmtPrint) Accept(v StmtVisitor) (any, error) {
-	return v.VisitStmtPrint(e)
+func (e *StmtPrint) Accept(ctx context.Context, v StmtVisitor) (any, error) {
+	return v.VisitStmtPrint(ctx, e)
 }
 
 type StmtVar struct {
@@ -53,6 +54,6 @@ type StmtVar struct {
 
 var _ Stmt = (*StmtVar)(nil)
 
-func (e *StmtVar) Accept(v StmtVisitor) (any, error) {
-	return v.VisitStmtVar(e)
+func (e *StmtVar) Accept(ctx context.Context, v StmtVisitor) (any, error) {
+	return v.VisitStmtVar(ctx, e)
 }

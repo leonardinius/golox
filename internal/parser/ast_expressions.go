@@ -2,20 +2,21 @@
 
 package parser
 
+import "context"
 import "github.com/leonardinius/golox/internal/token"
 
 // ExprVisitor is the interface that wraps the Visit method.
 type ExprVisitor interface {
-	VisitExprAssign(assign *ExprAssign) (any, error)
-	VisitExprBinary(binary *ExprBinary) (any, error)
-	VisitExprGrouping(grouping *ExprGrouping) (any, error)
-	VisitExprLiteral(literal *ExprLiteral) (any, error)
-	VisitExprUnary(unary *ExprUnary) (any, error)
-	VisitExprVariable(variable *ExprVariable) (any, error)
+	VisitExprAssign(ctx context.Context, assign *ExprAssign) (any, error)
+	VisitExprBinary(ctx context.Context, binary *ExprBinary) (any, error)
+	VisitExprGrouping(ctx context.Context, grouping *ExprGrouping) (any, error)
+	VisitExprLiteral(ctx context.Context, literal *ExprLiteral) (any, error)
+	VisitExprUnary(ctx context.Context, unary *ExprUnary) (any, error)
+	VisitExprVariable(ctx context.Context, variable *ExprVariable) (any, error)
 }
 
 type Expr interface {
-	Accept(v ExprVisitor) (any, error)
+	Accept(ctx context.Context, v ExprVisitor) (any, error)
 }
 
 type ExprAssign struct {
@@ -25,8 +26,8 @@ type ExprAssign struct {
 
 var _ Expr = (*ExprAssign)(nil)
 
-func (e *ExprAssign) Accept(v ExprVisitor) (any, error) {
-	return v.VisitExprAssign(e)
+func (e *ExprAssign) Accept(ctx context.Context, v ExprVisitor) (any, error) {
+	return v.VisitExprAssign(ctx, e)
 }
 
 type ExprBinary struct {
@@ -37,8 +38,8 @@ type ExprBinary struct {
 
 var _ Expr = (*ExprBinary)(nil)
 
-func (e *ExprBinary) Accept(v ExprVisitor) (any, error) {
-	return v.VisitExprBinary(e)
+func (e *ExprBinary) Accept(ctx context.Context, v ExprVisitor) (any, error) {
+	return v.VisitExprBinary(ctx, e)
 }
 
 type ExprGrouping struct {
@@ -47,8 +48,8 @@ type ExprGrouping struct {
 
 var _ Expr = (*ExprGrouping)(nil)
 
-func (e *ExprGrouping) Accept(v ExprVisitor) (any, error) {
-	return v.VisitExprGrouping(e)
+func (e *ExprGrouping) Accept(ctx context.Context, v ExprVisitor) (any, error) {
+	return v.VisitExprGrouping(ctx, e)
 }
 
 type ExprLiteral struct {
@@ -57,8 +58,8 @@ type ExprLiteral struct {
 
 var _ Expr = (*ExprLiteral)(nil)
 
-func (e *ExprLiteral) Accept(v ExprVisitor) (any, error) {
-	return v.VisitExprLiteral(e)
+func (e *ExprLiteral) Accept(ctx context.Context, v ExprVisitor) (any, error) {
+	return v.VisitExprLiteral(ctx, e)
 }
 
 type ExprUnary struct {
@@ -68,8 +69,8 @@ type ExprUnary struct {
 
 var _ Expr = (*ExprUnary)(nil)
 
-func (e *ExprUnary) Accept(v ExprVisitor) (any, error) {
-	return v.VisitExprUnary(e)
+func (e *ExprUnary) Accept(ctx context.Context, v ExprVisitor) (any, error) {
+	return v.VisitExprUnary(ctx, e)
 }
 
 type ExprVariable struct {
@@ -78,6 +79,6 @@ type ExprVariable struct {
 
 var _ Expr = (*ExprVariable)(nil)
 
-func (e *ExprVariable) Accept(v ExprVisitor) (any, error) {
-	return v.VisitExprVariable(e)
+func (e *ExprVariable) Accept(ctx context.Context, v ExprVisitor) (any, error) {
+	return v.VisitExprVariable(ctx, e)
 }

@@ -1,6 +1,7 @@
 package interpreter_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/leonardinius/golox/internal/interpreter"
@@ -83,10 +84,10 @@ func evaluate(script string) (string, error) {
 	}
 
 	p := parser.NewParser(tokens)
-	statements, err := p.Parse()
+	stmts, err := p.Parse()
 	if err != nil {
 		return "", err
 	}
 
-	return eval.Interpret(statements)
+	return eval.Interpret(context.TODO(), stmts)
 }

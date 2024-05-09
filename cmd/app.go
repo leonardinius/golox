@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -28,13 +29,14 @@ func (app *LoxApp) reportError(err error) {
 }
 
 func (app *LoxApp) Main(args []string) int {
+	ctx := context.Background()
 
 	var err error
 	switch len(args) {
 	case 1:
-		err = app.runFile(args[0])
+		err = app.runFile(ctx, args[0])
 	case 0:
-		err = app.runPrompt()
+		err = app.runPrompt(ctx)
 	default:
 		err = fmt.Errorf("Usage: golox [script]")
 	}
@@ -54,7 +56,7 @@ func (app *LoxApp) resetError() {
 	app.err = nil
 }
 
-func (app *LoxApp) runPrompt() error {
+func (app *LoxApp) runPrompt(ctx context.Context) error {
 	rl, err := readline.New("> ")
 	if err != nil {
 		return err
@@ -70,7 +72,7 @@ func (app *LoxApp) runPrompt() error {
 			return err
 		}
 
-		err = app.run(line)
+		err = app.run(ctx, line)
 		if err != nil {
 			app.reportError(err)
 			app.resetError()
@@ -78,16 +80,16 @@ func (app *LoxApp) runPrompt() error {
 	}
 }
 
-func (app *LoxApp) runFile(scriptPath string) error {
+func (app *LoxApp) runFile(ctx context.Context, scriptPath string) error {
 	bytes, err := os.ReadFile(scriptPath)
 	if err != nil {
 		return err
 	}
 
-	return app.run(string(bytes))
+	return app.run(ctx, string(bytes))
 }
 
-func (app *LoxApp) run(input string) error {
+func (app *LoxApp) run(ctx context.Context, input string) error {
 	s := scanner.NewScanner(input)
 
 	tokens, err := s.Scan()
@@ -96,17 +98,17 @@ func (app *LoxApp) run(input string) error {
 	}
 
 	p := parser.NewParser(tokens)
-	statements, err := p.Parse()
+	stmts, err := p.Parse()
 	if err != nil {
 		return err
 	}
 
-	return app.interpret(statements)
+	return app.interpret(ctx, stmts)
 }
 
-func (app *LoxApp) interpret(statements []parser.Stmt) error {
+func (app *LoxApp) interpret(ctx context.Context, stmts []parser.Stmt) error {
 
-	if out, err := app.interpeter.Interpret(statements); err != nil {
+	if out, err := app.interpeter.Interpret(ctx, stmts); err != nil {
 		return err
 	} else {
 		fmt.Println(out)

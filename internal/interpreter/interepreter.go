@@ -1,6 +1,7 @@
 package interpreter
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/leonardinius/golox/internal/loxerrors"
@@ -14,14 +15,14 @@ type Interpreter interface {
 	// The error is nil if the statement is valid.
 	//
 	// Not thread safe.
-	Interpret(stmt []parser.Stmt) (string, error)
+	Interpret(ctx context.Context, stmts []parser.Stmt) (string, error)
 
 	// Evaluate evaluates the given statement.
 	// Returns an error if any.
 	// The error is nil if the statement is valid.
 	//
 	// Not thread safe.
-	Evaluate(parser.Stmt) (any, error)
+	Evaluate(ctx context.Context, stmt parser.Stmt) (any, error)
 }
 
 type interpreter struct {
@@ -35,12 +36,12 @@ func NewInterpreter() Interpreter {
 }
 
 // Interpret implements Interpreter.
-func (i *interpreter) Interpret(statements []parser.Stmt) (string, error) {
+func (i *interpreter) Interpret(ctx context.Context, stmts []parser.Stmt) (string, error) {
 	var v any
 	var err error
 
-	for _, stmt := range statements {
-		if v, err = i.Evaluate(stmt); err != nil {
+	for _, stmt := range stmts {
+		if v, err = i.Evaluate(ctx, stmt); err != nil {
 			return "", err
 		}
 	}
@@ -49,8 +50,8 @@ func (i *interpreter) Interpret(statements []parser.Stmt) (string, error) {
 }
 
 // Evaluate implements Interpreter.
-func (i *interpreter) Evaluate(stmt parser.Stmt) (any, error) {
-	return i.execute(stmt)
+func (i *interpreter) Evaluate(ctx context.Context, stmt parser.Stmt) (any, error) {
+	return i.execute(ctx, stmt)
 }
 
 func (i *interpreter) print(v any) {
@@ -68,13 +69,13 @@ func (i *interpreter) stringify(v any) string {
 }
 
 // VisitExpression implements parser.StmtVisitor.
-func (i *interpreter) VisitStmtExpression(expr *parser.StmtExpression) (any, error) {
-	return i.evaluate(expr.Expression)
+func (i *interpreter) VisitStmtExpression(ctx context.Context, expr *parser.StmtExpression) (any, error) {
+	return i.evaluate(ctx, expr.Expression)
 }
 
 // VisitPrint implements parser.StmtVisitor.
-func (i *interpreter) VisitStmtPrint(expr *parser.StmtPrint) (any, error) {
-	value, err := i.evaluate(expr.Expression)
+func (i *interpreter) VisitStmtPrint(ctx context.Context, expr *parser.StmtPrint) (any, error) {
+	value, err := i.evaluate(ctx, expr.Expression)
 	if err == nil {
 		i.print(value)
 	}
@@ -82,11 +83,11 @@ func (i *interpreter) VisitStmtPrint(expr *parser.StmtPrint) (any, error) {
 }
 
 // VisitVar implements parser.StmtVisitor.
-func (i *interpreter) VisitStmtVar(stmt *parser.StmtVar) (any, error) {
+func (i *interpreter) VisitStmtVar(ctx context.Context, stmt *parser.StmtVar) (any, error) {
 	var value any
 	var err error
 	if stmt.Initializer != nil {
-		if value, err = i.evaluate(stmt.Initializer); err != nil {
+		if value, err = i.evaluate(ctx, stmt.Initializer); err != nil {
 			return nil, err
 		}
 	}
@@ -97,19 +98,19 @@ func (i *interpreter) VisitStmtVar(stmt *parser.StmtVar) (any, error) {
 }
 
 // VisitStmtBlock implements parser.StmtVisitor.
-func (i *interpreter) VisitStmtBlock(block *parser.StmtBlock) (any, error) {
+func (i *interpreter) VisitStmtBlock(ctx context.Context, block *parser.StmtBlock) (any, error) {
 	//i.executeBlock(block.Statements, i.env.Nest())
 	return nil, nil
 }
 
 // VisitVariable implements parser.ExprVisitor.
-func (i *interpreter) VisitExprVariable(expr *parser.ExprVariable) (any, error) {
+func (i *interpreter) VisitExprVariable(ctx context.Context, expr *parser.ExprVariable) (any, error) {
 	return i.env.Get(expr.Name)
 }
 
 // VisitExprAssign implements parser.ExprVisitor.
-func (i *interpreter) VisitExprAssign(assign *parser.ExprAssign) (any, error) {
-	value, err := i.evaluate(assign.Value)
+func (i *interpreter) VisitExprAssign(ctx context.Context, assign *parser.ExprAssign) (any, error) {
+	value, err := i.evaluate(ctx, assign.Value)
 	if err != nil {
 		return nil, err
 	}
@@ -122,12 +123,12 @@ func (i *interpreter) VisitExprAssign(assign *parser.ExprAssign) (any, error) {
 }
 
 // VisitBinary implements parser.Visitor.
-func (i *interpreter) VisitExprBinary(expr *parser.ExprBinary) (any, error) {
-	left, err := i.evaluate(expr.Left)
+func (i *interpreter) VisitExprBinary(ctx context.Context, expr *parser.ExprBinary) (any, error) {
+	left, err := i.evaluate(ctx, expr.Left)
 	if err != nil {
 		return nil, err
 	}
-	right, err := i.evaluate(expr.Right)
+	right, err := i.evaluate(ctx, expr.Right)
 	if err != nil {
 		return nil, err
 	}
@@ -190,18 +191,18 @@ func (i *interpreter) VisitExprBinary(expr *parser.ExprBinary) (any, error) {
 }
 
 // VisitGrouping implements parser.Visitor.
-func (i *interpreter) VisitExprGrouping(expr *parser.ExprGrouping) (any, error) {
-	return i.evaluate(expr.Expression)
+func (i *interpreter) VisitExprGrouping(ctx context.Context, expr *parser.ExprGrouping) (any, error) {
+	return i.evaluate(ctx, expr.Expression)
 }
 
 // VisitLiteral implements parser.Visitor.
-func (i *interpreter) VisitExprLiteral(expr *parser.ExprLiteral) (any, error) {
+func (i *interpreter) VisitExprLiteral(ctx context.Context, expr *parser.ExprLiteral) (any, error) {
 	return expr.Value, nil
 }
 
 // VisitUnary implements parser.Visitor.
-func (i *interpreter) VisitExprUnary(expr *parser.ExprUnary) (any, error) {
-	right, err := i.evaluate(expr.Right)
+func (i *interpreter) VisitExprUnary(ctx context.Context, expr *parser.ExprUnary) (any, error) {
+	right, err := i.evaluate(ctx, expr.Right)
 	if err != nil {
 		return nil, err
 	}
@@ -219,12 +220,12 @@ func (i *interpreter) VisitExprUnary(expr *parser.ExprUnary) (any, error) {
 	return i.unreachable()
 }
 
-func (i *interpreter) execute(stmt parser.Stmt) (any, error) {
-	return stmt.Accept(i)
+func (i *interpreter) execute(ctx context.Context, stmt parser.Stmt) (any, error) {
+	return stmt.Accept(ctx, i)
 }
 
-func (i *interpreter) evaluate(expr parser.Expr) (any, error) {
-	return expr.Accept(i)
+func (i *interpreter) evaluate(ctx context.Context, expr parser.Expr) (any, error) {
+	return expr.Accept(ctx, i)
 }
 
 func (i *interpreter) isTruthy(value any) bool {
