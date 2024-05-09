@@ -1,6 +1,7 @@
 package interpreter
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/leonardinius/golox/internal/loxerrors"
@@ -12,8 +13,14 @@ type environment struct {
 	values    map[string]interface{}
 }
 
+type envCtxKey struct{}
+
 func NewEnvironment() *environment {
 	return &environment{}
+}
+
+func EnvFromContext(ctx context.Context) *environment {
+	return ctx.Value(envCtxKey{}).(*environment)
 }
 
 func (e *environment) Define(name string, value any) {
@@ -52,6 +59,10 @@ func (e *environment) Nest() *environment {
 	env := NewEnvironment()
 	env.enclosing = e
 	return env
+}
+
+func (e *environment) NestContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, envCtxKey{}, e.Nest())
 }
 
 func (e *environment) undefinedVariable(name *token.Token) error {

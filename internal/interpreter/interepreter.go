@@ -3,6 +3,7 @@ package interpreter
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/parser"
@@ -26,12 +27,19 @@ type Interpreter interface {
 }
 
 type interpreter struct {
-	env *environment
+	Env    *environment
+	Stdin  io.Reader
+	Stdout io.Writer
+	Stderr io.Writer
 }
 
-func NewInterpreter() Interpreter {
+func NewInterpreter(options ...InterpreterOption) Interpreter {
+	opts := newInterpreterOpts(options...)
 	return &interpreter{
-		env: NewEnvironment(),
+		Env:    opts.env,
+		Stdin:  opts.stdin,
+		Stdout: opts.stdout,
+		Stderr: opts.stderr,
 	}
 }
 
@@ -39,6 +47,8 @@ func NewInterpreter() Interpreter {
 func (i *interpreter) Interpret(ctx context.Context, stmts []parser.Stmt) (string, error) {
 	var v any
 	var err error
+
+	ctx = i.Env.NestContext(ctx)
 
 	for _, stmt := range stmts {
 		if v, err = i.Evaluate(ctx, stmt); err != nil {
@@ -58,7 +68,7 @@ func (i *interpreter) print(v any) {
 	if v == nil {
 		v = "nil"
 	}
-	fmt.Println(v)
+	_, _ = fmt.Fprintln(i.Stdout, v)
 }
 
 func (i *interpreter) stringify(v any) string {
@@ -92,20 +102,22 @@ func (i *interpreter) VisitStmtVar(ctx context.Context, stmt *parser.StmtVar) (a
 		}
 	}
 
-	i.env.Define(stmt.Name.Lexeme, value)
+	env := EnvFromContext(ctx)
+	env.Define(stmt.Name.Lexeme, value)
 
 	return nil, nil
 }
 
 // VisitStmtBlock implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtBlock(ctx context.Context, block *parser.StmtBlock) (any, error) {
-	//i.executeBlock(block.Statements, i.env.Nest())
-	return nil, nil
+	env := EnvFromContext(ctx)
+	return i.executeBlock(env.NestContext(ctx), block.Statements)
 }
 
 // VisitVariable implements parser.ExprVisitor.
 func (i *interpreter) VisitExprVariable(ctx context.Context, expr *parser.ExprVariable) (any, error) {
-	return i.env.Get(expr.Name)
+	env := EnvFromContext(ctx)
+	return env.Get(expr.Name)
 }
 
 // VisitExprAssign implements parser.ExprVisitor.
@@ -115,7 +127,8 @@ func (i *interpreter) VisitExprAssign(ctx context.Context, assign *parser.ExprAs
 		return nil, err
 	}
 
-	if err = i.env.Assign(assign.Name, value); err != nil {
+	env := EnvFromContext(ctx)
+	if err = env.Assign(assign.Name, value); err != nil {
 		return nil, err
 	}
 
@@ -222,6 +235,17 @@ func (i *interpreter) VisitExprUnary(ctx context.Context, expr *parser.ExprUnary
 
 func (i *interpreter) execute(ctx context.Context, stmt parser.Stmt) (any, error) {
 	return stmt.Accept(ctx, i)
+}
+
+func (i *interpreter) executeBlock(ctx context.Context, stmt []parser.Stmt) (value any, err error) {
+
+	for _, stmt := range stmt {
+		if value, err = i.execute(ctx, stmt); err != nil {
+			return nil, err
+		}
+	}
+
+	return value, nil
 }
 
 func (i *interpreter) evaluate(ctx context.Context, expr parser.Expr) (any, error) {

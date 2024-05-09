@@ -2,6 +2,7 @@ package interpreter_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/leonardinius/golox/internal/interpreter"
@@ -12,82 +13,94 @@ import (
 
 func TestInterpret(t *testing.T) {
 	testcases := []struct {
-		name           string
-		input          string
-		expectedOutput string
-		expectedError  string
+		name          string
+		input         string
+		expectedEval  string
+		expectedOut   string
+		expectedError string
 	}{
-		{name: `simple expression`, input: `1 + 2;`, expectedOutput: `3`},
-		{name: `grouped`, input: `(1 + 2);`, expectedOutput: `3`},
-		{name: `nested`, input: `(1 + (2 + 3));`, expectedOutput: `6`},
-		{name: `precedence asterix`, input: `1 + 2 * 3;`, expectedOutput: `7`},
-		{name: `precedence slash`, input: `1 + 9 / 3;`, expectedOutput: `4`},
-		{name: `precedence asterix slash`, input: `1 + 2 * 6 / 4;`, expectedOutput: `4`},
-		{name: `grouping nested precedence`, input: `((1 + 2) * 3)/2;`, expectedOutput: `4.5`},
-		{name: `strings`, input: `"a" + "b";`, expectedOutput: `"ab"`},
-		{name: `boolean t`, input: `true;`, expectedOutput: `true`},
-		{name: `boolean f`, input: `false;`, expectedOutput: `false`},
-		{name: `bang`, input: `!false;`, expectedOutput: `true`},
-		{name: `bang bang`, input: `!!false;`, expectedOutput: `false`},
-		{name: `eqeq number`, input: `1 == 1;`, expectedOutput: `true`},
-		{name: `eqeq number`, input: `1 == 2;`, expectedOutput: `false`},
-		{name: `eqeq string`, input: `"a" == "a";`, expectedOutput: `true`},
-		{name: `eqeq string`, input: `"a" == "b";`, expectedOutput: `false`},
-		{name: `bangeq number`, input: `1 != 1;`, expectedOutput: `false`},
-		{name: `bangeq number`, input: `1 != 2;`, expectedOutput: `true`},
-		{name: `bangeq string`, input: `"a" != "a";`, expectedOutput: `false`},
-		{name: `bangeq string`, input: `"a" != "b";`, expectedOutput: `true`},
-		{name: `lt number`, input: `1 < 2;`, expectedOutput: `true`},
-		{name: `lt number`, input: `1 < 1;`, expectedOutput: `false`},
-		{name: `lte number`, input: `2 <= 1;`, expectedOutput: `false`},
-		{name: `lte number`, input: `1 <= 1;`, expectedOutput: `true`},
-		{name: `gt number`, input: `2 > 1;`, expectedOutput: `true`},
-		{name: `gt number`, input: `1 > 1;`, expectedOutput: `false`},
-		{name: `gte number`, input: `1 >= 2;`, expectedOutput: `false`},
-		{name: `gte number`, input: `1 >= 1;`, expectedOutput: `true`},
+		{name: `simple expression`, input: `1 + 2;`, expectedEval: `3`},
+		{name: `grouped`, input: `(1 + 2);`, expectedEval: `3`},
+		{name: `nested`, input: `(1 + (2 + 3));`, expectedEval: `6`},
+		{name: `precedence asterix`, input: `1 + 2 * 3;`, expectedEval: `7`},
+		{name: `precedence slash`, input: `1 + 9 / 3;`, expectedEval: `4`},
+		{name: `precedence asterix slash`, input: `1 + 2 * 6 / 4;`, expectedEval: `4`},
+		{name: `grouping nested precedence`, input: `((1 + 2) * 3)/2;`, expectedEval: `4.5`},
+		{name: `strings`, input: `"a" + "b";`, expectedEval: `"ab"`},
+		{name: `boolean t`, input: `true;`, expectedEval: `true`},
+		{name: `boolean f`, input: `false;`, expectedEval: `false`},
+		{name: `bang`, input: `!false;`, expectedEval: `true`},
+		{name: `bang bang`, input: `!!false;`, expectedEval: `false`},
+		{name: `eqeq number`, input: `1 == 1;`, expectedEval: `true`},
+		{name: `eqeq number`, input: `1 == 2;`, expectedEval: `false`},
+		{name: `eqeq string`, input: `"a" == "a";`, expectedEval: `true`},
+		{name: `eqeq string`, input: `"a" == "b";`, expectedEval: `false`},
+		{name: `bangeq number`, input: `1 != 1;`, expectedEval: `false`},
+		{name: `bangeq number`, input: `1 != 2;`, expectedEval: `true`},
+		{name: `bangeq string`, input: `"a" != "a";`, expectedEval: `false`},
+		{name: `bangeq string`, input: `"a" != "b";`, expectedEval: `true`},
+		{name: `lt number`, input: `1 < 2;`, expectedEval: `true`},
+		{name: `lt number`, input: `1 < 1;`, expectedEval: `false`},
+		{name: `lte number`, input: `2 <= 1;`, expectedEval: `false`},
+		{name: `lte number`, input: `1 <= 1;`, expectedEval: `true`},
+		{name: `gt number`, input: `2 > 1;`, expectedEval: `true`},
+		{name: `gt number`, input: `1 > 1;`, expectedEval: `false`},
+		{name: `gte number`, input: `1 >= 2;`, expectedEval: `false`},
+		{name: `gte number`, input: `1 >= 1;`, expectedEval: `true`},
 		{name: `invalid expression`, input: `1 + 2 +;`, expectedError: `parse error at ';': expected expression`},
 		{name: `invalid expression sum`, input: `"a" + 0;`, expectedError: `at +: operands must be two numbers or two strings.`},
 		{name: `invalid expression minus`, input: `0 - "";`, expectedError: `at -: operands must be numbers.`},
 		{name: `invalid expression minus string`, input: `-"a";`, expectedError: `at -: operand must be a number.`},
-		{name: `bang as boolean`, input: `!"a";`, expectedOutput: `false`},
-		{name: `emty var`, input: `var a;`, expectedOutput: `nil`},
-		{name: `emty var eval`, input: `var a;a;`, expectedOutput: `nil`},
-		{name: `var init`, input: `var a =1;a;`, expectedOutput: `1`},
-		{name: `var assign`, input: `var a =1;a=2;`, expectedOutput: `2`},
-		{name: `var multiple var math`, input: `var a =1;var b=2;a+b;`, expectedOutput: `3`},
+		{name: `bang as boolean`, input: `!"a";`, expectedEval: `false`},
+		{name: `emty var`, input: `var a;`, expectedEval: `nil`},
+		{name: `emty var eval`, input: `var a;a;`, expectedEval: `nil`},
+		{name: `var init`, input: `var a =1;a;`, expectedEval: `1`},
+		{name: `var assign`, input: `var a =1;a=2;`, expectedEval: `2`},
+		{name: `var multiple var math`, input: `var a =1;var b=2;a+b;`, expectedEval: `3`},
 		{name: `var syntax error 1`, input: `var print;`, expectedError: `parse error at end: expect ';' after value.`},
 		{name: `var syntax error 2`, input: `var a print;`, expectedError: `parse error at end: expect ';' after value.`},
 		{name: `var assign error`, input: `var a;(a)=1;`, expectedError: `parse error at '=': invalid assignment target.`},
 		{name: `var assign error unrecognized var`, input: `b=1;`, expectedError: `at b: undefined variable 'b'.`},
+		{name: `var scope top level`, input: `var a=1;{a=2; print a; {a=3; print a;{a=4; print a; }}}print a;a;`, expectedEval: `4`, expectedOut: "2\n3\n4\n4\n"},
+		{name: `var scope nested`, input: `var a=1;{var a=2; print a; {var a=3; print a;{var a=4; print a; }}}print a;a;`, expectedEval: `1`, expectedOut: "2\n3\n4\n1\n"},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := evaluate(tc.input)
+			output, stdout, err := evaluate(tc.input)
 			if tc.expectedError != "" {
 				assert.ErrorContains(t, err, tc.expectedError)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tc.expectedOutput, output)
+				assert.Equal(t, tc.expectedEval, output)
+				assert.Equal(t, tc.expectedOut, stdout)
 			}
 		})
 	}
 }
 
-func evaluate(script string) (string, error) {
-	eval := interpreter.NewInterpreter()
+func evaluate(script string) (string, string, error) {
+	stdin := strings.NewReader("")
+	stdout := strings.Builder{}
+
+	eval := interpreter.NewInterpreter(
+		interpreter.WithStdin(stdin),
+		interpreter.WithStdout(&stdout),
+		interpreter.WithStderr(&stdout),
+	)
 	scan := scanner.NewScanner(script)
 
 	tokens, err := scan.Scan()
 	if err != nil {
-		return "", err
+		return "", stdout.String(), err
 	}
 
 	p := parser.NewParser(tokens)
 	stmts, err := p.Parse()
 	if err != nil {
-		return "", err
+		return "", stdout.String(), err
 	}
 
-	return eval.Interpret(context.TODO(), stmts)
+	svalue, err := eval.Interpret(context.TODO(), stmts)
+	return svalue, stdout.String(), err
 }
