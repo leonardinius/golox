@@ -9,9 +9,9 @@ import (
 )
 
 var (
-	NilExpr       Expr   = nil
-	NilStmt       Stmt   = nil
-	NilStatements []Stmt = nil
+	nilExpr       Expr   = nil
+	nilStmt       Stmt   = nil
+	nilStatements []Stmt = nil
 )
 
 type Parser interface {
@@ -70,7 +70,7 @@ func (p *parser) Parse() (statements []Stmt, err error) {
 		_, err = p.declaration(), errors.Join(p.err...)
 	}
 
-	return NilStatements, err
+	return nilStatements, err
 }
 
 func (p *parser) declaration() Stmt {
@@ -88,7 +88,7 @@ func (p *parser) varDeclaration() Stmt {
 	}
 	name := p.previous()
 
-	var initializer Expr = NilExpr
+	var initializer Expr = nilExpr
 	if p.match(token.EQUAL) {
 		initializer = p.expression()
 	}
@@ -291,7 +291,7 @@ func (p *parser) reportStmtError(err error) Stmt {
 	t := p.peek()
 	p.err = append(p.err, loxerrors.NewParseError(t, err))
 
-	return NilStmt
+	return nilStmt
 }
 
 func (p *parser) reportExprError(err error) Expr {
@@ -300,7 +300,7 @@ func (p *parser) reportExprError(err error) Expr {
 
 func (p *parser) reportTokenExprError(tok *token.Token, err error) Expr {
 	p.err = append(p.err, loxerrors.NewParseError(tok, err))
-	return NilExpr
+	return nilExpr
 }
 
 func (p *parser) synchronize() {
