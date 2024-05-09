@@ -6,13 +6,13 @@ import "github.com/leonardinius/golox/internal/token"
 
 // StmtVisitor is the interface that wraps the Visit method.
 type StmtVisitor interface {
-	VisitExpression(v *Expression) any
-	VisitPrint(v *Print) any
-	VisitVar(v *Var) any
+	VisitExpression(expression *Expression) (any, error)
+	VisitPrint(print *Print) (any, error)
+	VisitVar(v *Var) (any, error)
 }
 
 type Stmt interface {
-	Accept(v StmtVisitor) any
+	Accept(v StmtVisitor) (any, error)
 }
 
 type Expression struct {
@@ -21,7 +21,7 @@ type Expression struct {
 
 var _ Stmt = (*Expression)(nil)
 
-func (e *Expression) Accept(v StmtVisitor) any {
+func (e *Expression) Accept(v StmtVisitor) (any, error) {
 	return v.VisitExpression(e)
 }
 
@@ -31,7 +31,7 @@ type Print struct {
 
 var _ Stmt = (*Print)(nil)
 
-func (e *Print) Accept(v StmtVisitor) any {
+func (e *Print) Accept(v StmtVisitor) (any, error) {
 	return v.VisitPrint(e)
 }
 
@@ -42,6 +42,6 @@ type Var struct {
 
 var _ Stmt = (*Var)(nil)
 
-func (e *Var) Accept(v StmtVisitor) any {
+func (e *Var) Accept(v StmtVisitor) (any, error) {
 	return v.VisitVar(e)
 }

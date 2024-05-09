@@ -6,15 +6,15 @@ import "github.com/leonardinius/golox/internal/token"
 
 // ExprVisitor is the interface that wraps the Visit method.
 type ExprVisitor interface {
-	VisitBinary(v *Binary) any
-	VisitGrouping(v *Grouping) any
-	VisitLiteral(v *Literal) any
-	VisitUnary(v *Unary) any
-	VisitVariable(v *Variable) any
+	VisitBinary(binary *Binary) (any, error)
+	VisitGrouping(grouping *Grouping) (any, error)
+	VisitLiteral(literal *Literal) (any, error)
+	VisitUnary(unary *Unary) (any, error)
+	VisitVariable(variable *Variable) (any, error)
 }
 
 type Expr interface {
-	Accept(v ExprVisitor) any
+	Accept(v ExprVisitor) (any, error)
 }
 
 type Binary struct {
@@ -25,7 +25,7 @@ type Binary struct {
 
 var _ Expr = (*Binary)(nil)
 
-func (e *Binary) Accept(v ExprVisitor) any {
+func (e *Binary) Accept(v ExprVisitor) (any, error) {
 	return v.VisitBinary(e)
 }
 
@@ -35,7 +35,7 @@ type Grouping struct {
 
 var _ Expr = (*Grouping)(nil)
 
-func (e *Grouping) Accept(v ExprVisitor) any {
+func (e *Grouping) Accept(v ExprVisitor) (any, error) {
 	return v.VisitGrouping(e)
 }
 
@@ -45,7 +45,7 @@ type Literal struct {
 
 var _ Expr = (*Literal)(nil)
 
-func (e *Literal) Accept(v ExprVisitor) any {
+func (e *Literal) Accept(v ExprVisitor) (any, error) {
 	return v.VisitLiteral(e)
 }
 
@@ -56,7 +56,7 @@ type Unary struct {
 
 var _ Expr = (*Unary)(nil)
 
-func (e *Unary) Accept(v ExprVisitor) any {
+func (e *Unary) Accept(v ExprVisitor) (any, error) {
 	return v.VisitUnary(e)
 }
 
@@ -66,6 +66,6 @@ type Variable struct {
 
 var _ Expr = (*Variable)(nil)
 
-func (e *Variable) Accept(v ExprVisitor) any {
+func (e *Variable) Accept(v ExprVisitor) (any, error) {
 	return v.VisitVariable(e)
 }

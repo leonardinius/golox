@@ -45,9 +45,9 @@ func TestInterpret(t *testing.T) {
 		{name: `gte number`, input: `1 >= 2;`, expectedOutput: `false`},
 		{name: `gte number`, input: `1 >= 1;`, expectedOutput: `true`},
 		{name: `invalid expression`, input: `1 + 2 +;`, expectedError: `parse error at ';': expected expression`},
-		{name: `invalid expression sum`, input: `"a" + 0;`, expectedError: `at +: Operands must be two numbers or two strings.`},
-		{name: `invalid expression minus`, input: `0 - "";`, expectedError: `at -: Operands must be numbers.`},
-		{name: `invalid expression minus string`, input: `-"a";`, expectedError: `at -: Operand must be a number.`},
+		{name: `invalid expression sum`, input: `"a" + 0;`, expectedError: `at +: operands must be two numbers or two strings.`},
+		{name: `invalid expression minus`, input: `0 - "";`, expectedError: `at -: operands must be numbers.`},
+		{name: `invalid expression minus string`, input: `-"a";`, expectedError: `at -: operand must be a number.`},
 		{name: `bang as boolean`, input: `!"a";`, expectedOutput: `false`},
 	}
 
