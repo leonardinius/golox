@@ -431,29 +431,25 @@ func (p *parser) isAtEnd() bool {
 }
 
 func (p *parser) isDone() bool {
-	// et the end, OR, have errors
+	// is at the end, OR, have errors
 	return p.isAtEnd() || p.err != nil
 }
 
 func (p *parser) reportStmtError(err error) Stmt {
-	if p.err != nil {
-		return nilStmt
+	// do not overwrite present error.
+	// preserves the original error and bubbles up to return in Parse() with .err
+	if p.err == nil {
+		p.err = loxerrors.NewParseError(p.peek(), err)
 	}
-
-	t := p.peek()
-	p.err = loxerrors.NewParseError(t, err)
-
 	return nilStmt
 }
 
 func (p *parser) reportStmtsError(err error) []Stmt {
-	if p.err != nil {
-		return nilStatements
+	// do not overwrite present error.
+	// preserves the original error and bubbles up to return in Parse() with .err
+	if p.err == nil {
+		p.err = loxerrors.NewParseError(p.peek(), err)
 	}
-
-	t := p.peek()
-	p.err = loxerrors.NewParseError(t, err)
-
 	return nilStatements
 }
 
@@ -462,10 +458,11 @@ func (p *parser) reportExprError(err error) Expr {
 }
 
 func (p *parser) reportTokenExprError(tok *token.Token, err error) Expr {
-	if p.err != nil {
-		return nilExpr
+	// do not overwrite present error.
+	// preserves the original error and bubbles up to return in Parse() with .err
+	if p.err == nil {
+		p.err = loxerrors.NewParseError(tok, err)
 	}
-	p.err = loxerrors.NewParseError(tok, err)
 	return nilExpr
 }
 
