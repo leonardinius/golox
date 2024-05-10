@@ -64,6 +64,15 @@ func TestInterpret(t *testing.T) {
 		{name: `var scope top level`, input: `var a=1;{a=2; print a; {a=3; print a;{a=4; print a; }}}print a;a;`, expectedEval: `4`, expectedOut: "2\n3\n4\n4\n"},
 		{name: `var scope nested`, input: `var a=1;{var a=2; print a; {var a=3; print a;{var a=4; print a; }}}print a;a;`, expectedEval: `1`, expectedOut: "2\n3\n4\n1\n"},
 		{name: `var scope multiple`, input: `var a=1;var b=2;{var a=2; print a; var b=4; print b;{var a=3; print a; var b=6; print b;{var a=4; print a; var b=8; print b;}}}print a;print b; a+b;`, expectedEval: `3`, expectedOut: "2\n4\n3\n6\n4\n8\n1\n2\n"},
+		{name: `logic and 1`, input: `1 and 2;`, expectedEval: `2`},
+		{name: `logic and 2`, input: `nil and 1;`, expectedEval: `nil`},
+		{name: `logic and 3`, input: `1 and nil;`, expectedEval: `nil`},
+		{name: `logic and shortcuit`, input: `nil and Unknown;`, expectedEval: `nil`},
+		{name: `logic or 1`, input: `1 or 2;`, expectedEval: `1`},
+		{name: `logic or 2`, input: `nil or 1;`, expectedEval: `1`},
+		{name: `logic or 3`, input: `1 or nil;`, expectedEval: `1`},
+		{name: `logic or short circuit`, input: `1 or Unknown;`, expectedEval: `1`},
+		{name: `while loop`, input: `var a=1; while(a<10){print a; a=a+1;}`, expectedEval: `nil`, expectedOut: "1\n2\n3\n4\n5\n6\n7\n8\n9\n"},
 	}
 
 	for _, tc := range testcases {

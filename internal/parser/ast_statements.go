@@ -12,6 +12,7 @@ type StmtVisitor interface {
 	VisitStmtIf(ctx context.Context, stmtIf *StmtIf) (any, error)
 	VisitStmtPrint(ctx context.Context, stmtPrint *StmtPrint) (any, error)
 	VisitStmtVar(ctx context.Context, stmtVar *StmtVar) (any, error)
+	VisitStmtWhile(ctx context.Context, stmtWhile *StmtWhile) (any, error)
 }
 
 type Stmt interface {
@@ -69,4 +70,15 @@ var _ Stmt = (*StmtVar)(nil)
 
 func (e *StmtVar) Accept(ctx context.Context, v StmtVisitor) (any, error) {
 	return v.VisitStmtVar(ctx, e)
+}
+
+type StmtWhile struct {
+	Condition Expr
+	Body      Stmt
+}
+
+var _ Stmt = (*StmtWhile)(nil)
+
+func (e *StmtWhile) Accept(ctx context.Context, v StmtVisitor) (any, error) {
+	return v.VisitStmtWhile(ctx, e)
 }

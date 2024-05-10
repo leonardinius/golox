@@ -124,6 +124,25 @@ func (i *interpreter) VisitStmtVar(ctx context.Context, stmt *parser.StmtVar) (a
 	return nil, nil
 }
 
+// VisitStmtWhile implements parser.StmtVisitor.
+func (i *interpreter) VisitStmtWhile(ctx context.Context, stmtWhile *parser.StmtWhile) (condition any, err error) {
+	for {
+		if condition, err = i.evaluate(ctx, stmtWhile.Condition); err != nil {
+			break
+		}
+
+		if !i.isTruthy(condition) {
+			break
+		}
+
+		if _, err = i.execute(ctx, stmtWhile.Body); err != nil {
+			break
+		}
+	}
+
+	return nil, err
+}
+
 // VisitStmtBlock implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtBlock(ctx context.Context, block *parser.StmtBlock) (any, error) {
 	env := EnvFromContext(ctx)
@@ -227,6 +246,34 @@ func (i *interpreter) VisitExprGrouping(ctx context.Context, expr *parser.ExprGr
 // VisitLiteral implements parser.Visitor.
 func (i *interpreter) VisitExprLiteral(ctx context.Context, expr *parser.ExprLiteral) (any, error) {
 	return expr.Value, nil
+}
+
+// VisitExprLogical implements parser.ExprVisitor.
+func (i *interpreter) VisitExprLogical(ctx context.Context, exprLogical *parser.ExprLogical) (any, error) {
+	switch exprLogical.Operator.Type {
+	case token.AND:
+		return i.evalLogicalAnd(ctx, exprLogical.Left, exprLogical.Right)
+	case token.OR:
+		return i.evalLogicalOr(ctx, exprLogical.Left, exprLogical.Right)
+	default:
+		return i.unreachable()
+	}
+}
+
+func (i *interpreter) evalLogicalAnd(ctx context.Context, left parser.Expr, right parser.Expr) (any, error) {
+	if leftValue, err := i.evaluate(ctx, left); err != nil || !i.isTruthy(leftValue) {
+		return leftValue, err
+	}
+
+	return i.evaluate(ctx, right)
+}
+
+func (i *interpreter) evalLogicalOr(ctx context.Context, left parser.Expr, right parser.Expr) (any, error) {
+	if leftValue, err := i.evaluate(ctx, left); err != nil || i.isTruthy(leftValue) {
+		return leftValue, err
+	}
+
+	return i.evaluate(ctx, right)
 }
 
 // VisitUnary implements parser.Visitor.

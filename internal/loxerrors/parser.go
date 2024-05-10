@@ -9,6 +9,8 @@ import (
 
 var (
 	ErrParseExpectedRightParenToken          = errors.New("expected ')' after expression")
+	ErrParseExpectedLeftParentWhileToken     = errors.New("expected '(' after while")
+	ErrParseExpectedRightParentWhileToken    = errors.New("expected ')' after condition")
 	ErrParseExpectedRightCurlyBlockToken     = errors.New("expect '}' after block.")
 	ErrParseExpectedSemicolonTokenAfterValue = errors.New("expect ';' after value.")
 	ErrParseExpectedSemicolonTokenAfterExpr  = errors.New("expect ';' after value.")

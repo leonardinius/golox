@@ -26,6 +26,7 @@ func Main(args []string) int {
 		"ExprBinary   : Left Expr, Operator *token.Token, Right Expr",
 		"ExprGrouping : Expression Expr",
 		"ExprLiteral  : Value any",
+		"ExprLogical  : Left Expr, Operator *token.Token, Right Expr",
 		"ExprUnary    : Operator *token.Token, Right Expr",
 		"ExprVariable : Name *token.Token",
 	); err != nil {
@@ -39,6 +40,7 @@ func Main(args []string) int {
 		"StmtIf         : Condition Expr, ThenBranch Stmt, ElseBranch Stmt",
 		"StmtPrint      : Expression Expr",
 		"StmtVar        : Name *token.Token, Initializer Expr",
+		"StmtWhile      : Condition Expr, Body Stmt",
 	); err != nil {
 		fmt.Printf("Error: %v", err)
 		return 1

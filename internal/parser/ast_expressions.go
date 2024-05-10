@@ -11,6 +11,7 @@ type ExprVisitor interface {
 	VisitExprBinary(ctx context.Context, exprBinary *ExprBinary) (any, error)
 	VisitExprGrouping(ctx context.Context, exprGrouping *ExprGrouping) (any, error)
 	VisitExprLiteral(ctx context.Context, exprLiteral *ExprLiteral) (any, error)
+	VisitExprLogical(ctx context.Context, exprLogical *ExprLogical) (any, error)
 	VisitExprUnary(ctx context.Context, exprUnary *ExprUnary) (any, error)
 	VisitExprVariable(ctx context.Context, exprVariable *ExprVariable) (any, error)
 }
@@ -60,6 +61,18 @@ var _ Expr = (*ExprLiteral)(nil)
 
 func (e *ExprLiteral) Accept(ctx context.Context, v ExprVisitor) (any, error) {
 	return v.VisitExprLiteral(ctx, e)
+}
+
+type ExprLogical struct {
+	Left     Expr
+	Operator *token.Token
+	Right    Expr
+}
+
+var _ Expr = (*ExprLogical)(nil)
+
+func (e *ExprLogical) Accept(ctx context.Context, v ExprVisitor) (any, error) {
+	return v.VisitExprLogical(ctx, e)
 }
 
 type ExprUnary struct {

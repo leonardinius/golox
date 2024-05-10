@@ -112,6 +112,10 @@ func (p *parser) statement() Stmt {
 		return p.printStatement()
 	}
 
+	if p.match(token.WHILE) {
+		return p.whileStatement()
+	}
+
 	if p.match(token.LEFT_BRACE) {
 		block := p.blockStatement()
 		return &StmtBlock{Statements: block}
@@ -152,6 +156,21 @@ func (p *parser) printStatement() Stmt {
 	return &StmtPrint{Expression: expr}
 }
 
+func (p *parser) whileStatement() Stmt {
+
+	if !p.match(token.LEFT_PAREN) {
+		return p.reportStmtError(loxerrors.ErrParseExpectedLeftParentWhileToken)
+	}
+	condition := p.expression()
+	if !p.match(token.RIGHT_PAREN) {
+		return p.reportStmtError(loxerrors.ErrParseExpectedRightParentWhileToken)
+	}
+
+	body := p.statement()
+
+	return &StmtWhile{Condition: condition, Body: body}
+}
+
 func (p *parser) blockStatement() []Stmt {
 
 	var stmts []Stmt
@@ -180,7 +199,7 @@ func (p *parser) expression() Expr {
 }
 
 func (p *parser) assignment() Expr {
-	expr := p.equality()
+	expr := p.logicOr()
 
 	if p.match(token.EQUAL) {
 		equals := p.previous()
@@ -192,6 +211,30 @@ func (p *parser) assignment() Expr {
 		}
 
 		return p.reportTokenExprError(equals, loxerrors.ErrParseInvalidAssignmentTarget)
+	}
+
+	return expr
+}
+
+func (p *parser) logicOr() Expr {
+	expr := p.logicAnd()
+
+	for p.match(token.OR) {
+		operator := p.previous()
+		right := p.logicAnd()
+		return &ExprLogical{Left: expr, Operator: operator, Right: right}
+	}
+
+	return expr
+}
+
+func (p *parser) logicAnd() Expr {
+	expr := p.equality()
+
+	for p.match(token.AND) {
+		operator := p.previous()
+		right := p.equality()
+		return &ExprLogical{Left: expr, Operator: operator, Right: right}
 	}
 
 	return expr
@@ -313,10 +356,7 @@ func (p *parser) match(tokType token.TokenType) bool {
 }
 
 func (p *parser) check(tokenType token.TokenType) bool {
-	if p.isDone() {
-		return false
-	}
-	return p.peek().Type == tokenType
+	return !p.isDone() && p.peek().Type == tokenType
 }
 
 func (p *parser) peek() *token.Token {
