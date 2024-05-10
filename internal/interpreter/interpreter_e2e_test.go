@@ -73,16 +73,24 @@ func TestInterpret(t *testing.T) {
 		{name: `logic or 3`, input: `1 or nil;`, expectedEval: `1`},
 		{name: `logic or short circuit`, input: `1 or Unknown;`, expectedEval: `1`},
 		{name: `while loop`, input: `var a=1; while(a<10){print a; a=a+1;}`, expectedEval: `nil`, expectedOut: "1\n2\n3\n4\n5\n6\n7\n8\n9\n"},
+		{name: `for loop`, input: `for(var a=1;a<10;a=a+1){print a;}`, expectedEval: `nil`, expectedOut: "1\n2\n3\n4\n5\n6\n7\n8\n9\n"},
+		{name: `break invalid syntax`, input: `break;1;`, expectedError: `parse error at ';': must be inside a loop to use 'break'`},
+		{name: `continue invalid syntax`, input: `continue;1;`, expectedError: `parse error at ';': must be inside a loop to use 'continue'`},
+		{name: `for loop`, input: `for(var a=1;a<10;a=a+1){print a;}`, expectedEval: `nil`, expectedOut: "1\n2\n3\n4\n5\n6\n7\n8\n9\n"},
+		{name: `while break`, input: `var a=0; while(true){ if(a>3)break; a=a+1; print a;}`, expectedEval: `nil`, expectedOut: "1\n2\n3\n4\n"},
+		{name: `for break`, input: `for(var a=0;a<10;a=a+1){ if(a>3)break; print a;}`, expectedEval: `nil`, expectedOut: "0\n1\n2\n3\n"},
+		{name: `while continue`, input: `var a=0; while(a<10){ a=a+1; if(a<5)continue; print a;}`, expectedEval: `nil`, expectedOut: "5\n6\n7\n8\n9\n10\n"},
+		{name: `for continue`, input: `for(var a=0;a<10;a=a+1){ if(a<5)continue; print a;}`, expectedEval: `nil`, expectedOut: "5\n6\n7\n8\n9\n"},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			output, stdout, err := evaluate(tc.input)
+			evalout, stdout, err := evaluate(tc.input)
 			if tc.expectedError != "" {
 				assert.ErrorContains(t, err, tc.expectedError)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tc.expectedEval, output)
+				assert.Equal(t, tc.expectedEval, evalout)
 				assert.Equal(t, tc.expectedOut, stdout)
 			}
 		})

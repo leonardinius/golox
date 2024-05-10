@@ -8,6 +8,9 @@ import (
 )
 
 var (
+	ErrParseUnexpectedToken                       = errors.New("expected expression.")
+	ErrParseUnexpectedVariableName                = errors.New("expect variable name.")
+	ErrParseInvalidAssignmentTarget               = errors.New("invalid assignment target.")
 	ErrParseExpectedRightParenToken               = errors.New("expected ')' after expression.")
 	ErrParseExpectedLeftParentIfToken             = errors.New("expected '(' after if.")
 	ErrParseExpectedRightParentIfToken            = errors.New("expected ')' after if condition.")
@@ -20,9 +23,10 @@ var (
 	ErrParseExpectedSemicolonTokenAfterExpr       = errors.New("expect ';' after value.")
 	ErrParseExpectedSemicolonTokenAfterVar        = errors.New("expect ';' after variable declaration.")
 	ErrParseExpectedSemicolonAfterForLoopCond     = errors.New("expect ';' after loop condition.")
-	ErrParseUnexpectedToken                       = errors.New("expected expression.")
-	ErrParseUnexpectedVariableName                = errors.New("expect variable name.")
-	ErrParseInvalidAssignmentTarget               = errors.New("invalid assignment target.")
+	ErrParseExpectedSemicolonTokenAfterBreak      = errors.New("expect ';' after 'break'.")
+	ErrParseExpectedSemicolonTokenAfterContinue   = errors.New("expect ';' after 'continue'.")
+	ErrParseBreakOutsideLoop                      = errors.New("must be inside a loop to use 'break'.")
+	ErrParseContinueOutsideLoop                   = errors.New("must be inside a loop to use 'continue'.")
 )
 
 type ParserError struct {

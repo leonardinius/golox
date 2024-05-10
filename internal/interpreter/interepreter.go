@@ -2,12 +2,18 @@ package interpreter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
 	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/parser"
 	"github.com/leonardinius/golox/internal/token"
+)
+
+var (
+	errBreak    = errors.New("eval:break")
+	errContinue = errors.New("eval:continue")
 )
 
 type Interpreter interface {
@@ -125,7 +131,9 @@ func (i *interpreter) VisitStmtVar(ctx context.Context, stmt *parser.StmtVar) (a
 }
 
 // VisitStmtWhile implements parser.StmtVisitor.
-func (i *interpreter) VisitStmtWhile(ctx context.Context, stmtWhile *parser.StmtWhile) (condition any, err error) {
+func (i *interpreter) VisitStmtWhile(ctx context.Context, stmtWhile *parser.StmtWhile) (any, error) {
+	var condition any
+	var err error
 	for {
 		if condition, err = i.evaluate(ctx, stmtWhile.Condition); err != nil {
 			break
@@ -136,11 +144,73 @@ func (i *interpreter) VisitStmtWhile(ctx context.Context, stmtWhile *parser.Stmt
 		}
 
 		if _, err = i.execute(ctx, stmtWhile.Body); err != nil {
-			break
+			switch {
+			case err == errBreak:
+				// return immediatelly
+				return nil, nil
+			case err == errContinue:
+				// continue to next iteration
+				err = nil
+			default:
+				break
+			}
 		}
 	}
 
 	return nil, err
+}
+
+// VisitStmtFor implements parser.StmtVisitor.
+func (i *interpreter) VisitStmtFor(ctx context.Context, stmtFor *parser.StmtFor) (any, error) {
+	var condition any
+	var err error
+
+	if stmtFor.Initializer != nil {
+		if _, err = i.execute(ctx, stmtFor.Initializer); err != nil {
+			return nil, err
+		}
+	}
+
+	for {
+		if condition, err = i.evaluate(ctx, stmtFor.Condition); err != nil {
+			break
+		}
+
+		if !i.isTruthy(condition) {
+			break
+		}
+
+		if _, err = i.execute(ctx, stmtFor.Body); err != nil {
+			switch {
+			case err == errBreak:
+				// return immediatelly
+				return nil, nil
+			case err == errContinue:
+				// continue to next iteration
+				err = nil
+			default:
+				break
+			}
+		}
+
+		if stmtFor.Increment != nil {
+			if _, err = i.evaluate(ctx, stmtFor.Increment); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return nil, err
+}
+
+// VisitStmtBreak implements parser.StmtVisitor.
+func (*interpreter) VisitStmtBreak(ctx context.Context, stmtBreak *parser.StmtBreak) (any, error) {
+	return nil, errBreak
+}
+
+// VisitStmtContinue implements parser.StmtVisitor.
+func (*interpreter) VisitStmtContinue(ctx context.Context, stmtContinue *parser.StmtContinue) (any, error) {
+	return nil, errContinue
 }
 
 // VisitStmtBlock implements parser.StmtVisitor.

@@ -36,11 +36,14 @@ func Main(args []string) int {
 
 	if err := defineAst(statementsOutFile, packageName, "Stmt",
 		"StmtBlock      : Statements []Stmt",
+		"StmtBreak      :",
+		"StmtContinue   :",
 		"StmtExpression : Expression Expr",
 		"StmtIf         : Condition Expr, ThenBranch Stmt, ElseBranch Stmt",
 		"StmtPrint      : Expression Expr",
 		"StmtVar        : Name *token.Token, Initializer Expr",
 		"StmtWhile      : Condition Expr, Body Stmt",
+		"StmtFor        : Initializer Stmt, Condition Expr, Increment Expr, Body Stmt",
 	); err != nil {
 		fmt.Printf("Error: %v", err)
 		return 1

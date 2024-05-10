@@ -19,9 +19,10 @@ type Parser interface {
 }
 
 type parser struct {
-	tokens  []token.Token
-	current int
-	err     error
+	tokens    []token.Token
+	current   int
+	err       error
+	loopDepth int
 }
 
 func NewParser(tokens []token.Token) Parser {
@@ -111,12 +112,20 @@ func (p *parser) statement() Stmt {
 		return p.forStatement()
 	}
 
-	if p.match(token.PRINT) {
-		return p.printStatement()
-	}
-
 	if p.match(token.WHILE) {
 		return p.whileStatement()
+	}
+
+	if p.match(token.BREAK) {
+		return p.breakStatement()
+	}
+
+	if p.match(token.CONTINUE) {
+		return p.continueStatement()
+	}
+
+	if p.match(token.PRINT) {
+		return p.printStatement()
 	}
 
 	if p.match(token.LEFT_BRACE) {
@@ -146,6 +155,34 @@ func (p *parser) ifStatement() Stmt {
 	}
 
 	return &StmtIf{Condition: condition, ThenBranch: thenBranch, ElseBranch: elseBranch}
+}
+
+func (p *parser) printStatement() Stmt {
+
+	expr := p.expression()
+
+	if !p.match(token.SEMICOLON) {
+		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterPrintValue)
+	}
+
+	return &StmtPrint{Expression: expr}
+}
+
+func (p *parser) whileStatement() Stmt {
+
+	if !p.match(token.LEFT_PAREN) {
+		return p.reportStmtError(loxerrors.ErrParseExpectedLeftParentWhileToken)
+	}
+	condition := p.expression()
+	if !p.match(token.RIGHT_PAREN) {
+		return p.reportStmtError(loxerrors.ErrParseExpectedRightParentWhileToken)
+	}
+
+	p.loopDepth++
+	defer func() { p.loopDepth-- }()
+	body := p.statement()
+
+	return &StmtWhile{Condition: condition, Body: body}
 }
 
 func (p *parser) forStatement() Stmt {
@@ -178,46 +215,35 @@ func (p *parser) forStatement() Stmt {
 		return p.reportStmtError(loxerrors.ErrParseExpectedRightParentForToken)
 	}
 
+	p.loopDepth++
+	defer func() { p.loopDepth-- }()
 	body := p.statement()
-	if increment != nilExpr {
-		body = &StmtBlock{
-			Statements: []Stmt{body, &StmtExpression{Expression: increment}},
-		}
-	}
+
 	if condition == nilExpr {
 		condition = &ExprLiteral{Value: true}
 	}
-	body = &StmtWhile{Condition: condition, Body: body}
-	if initializer != nilStmt {
-		body = &StmtBlock{Statements: []Stmt{initializer, body}}
-	}
-	return body
+
+	return &StmtFor{Initializer: initializer, Condition: condition, Increment: increment, Body: body}
 }
 
-func (p *parser) printStatement() Stmt {
-
-	expr := p.expression()
-
+func (p *parser) breakStatement() Stmt {
+	if p.loopDepth == 0 {
+		return p.reportStmtError(loxerrors.ErrParseBreakOutsideLoop)
+	}
 	if !p.match(token.SEMICOLON) {
-		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterPrintValue)
+		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterBreak)
 	}
-
-	return &StmtPrint{Expression: expr}
+	return &StmtBreak{}
 }
 
-func (p *parser) whileStatement() Stmt {
-
-	if !p.match(token.LEFT_PAREN) {
-		return p.reportStmtError(loxerrors.ErrParseExpectedLeftParentWhileToken)
+func (p *parser) continueStatement() Stmt {
+	if p.loopDepth == 0 {
+		return p.reportStmtError(loxerrors.ErrParseContinueOutsideLoop)
 	}
-	condition := p.expression()
-	if !p.match(token.RIGHT_PAREN) {
-		return p.reportStmtError(loxerrors.ErrParseExpectedRightParentWhileToken)
+	if !p.match(token.SEMICOLON) {
+		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterContinue)
 	}
-
-	body := p.statement()
-
-	return &StmtWhile{Condition: condition, Body: body}
+	return &StmtContinue{}
 }
 
 func (p *parser) blockStatement() []Stmt {
