@@ -83,6 +83,22 @@ func (i *interpreter) VisitStmtExpression(ctx context.Context, expr *parser.Stmt
 	return i.evaluate(ctx, expr.Expression)
 }
 
+// VisitStmtIf implements parser.StmtVisitor.
+func (i *interpreter) VisitStmtIf(ctx context.Context, stmtIf *parser.StmtIf) (any, error) {
+	condition, err := i.evaluate(ctx, stmtIf.Condition)
+	if err != nil {
+		return nil, err
+	}
+
+	if i.isTruthy(condition) {
+		return i.execute(ctx, stmtIf.ThenBranch)
+	} else if stmtIf.ElseBranch != nil {
+		return i.execute(ctx, stmtIf.ElseBranch)
+	}
+
+	return nil, nil
+}
+
 // VisitPrint implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtPrint(ctx context.Context, expr *parser.StmtPrint) (any, error) {
 	value, err := i.evaluate(ctx, expr.Expression)

@@ -7,10 +7,11 @@ import "github.com/leonardinius/golox/internal/token"
 
 // StmtVisitor is the interface that wraps the Visit method.
 type StmtVisitor interface {
-	VisitStmtBlock(ctx context.Context, block *StmtBlock) (any, error)
-	VisitStmtExpression(ctx context.Context, expression *StmtExpression) (any, error)
-	VisitStmtPrint(ctx context.Context, print *StmtPrint) (any, error)
-	VisitStmtVar(ctx context.Context, v *StmtVar) (any, error)
+	VisitStmtBlock(ctx context.Context, stmtBlock *StmtBlock) (any, error)
+	VisitStmtExpression(ctx context.Context, stmtExpression *StmtExpression) (any, error)
+	VisitStmtIf(ctx context.Context, stmtIf *StmtIf) (any, error)
+	VisitStmtPrint(ctx context.Context, stmtPrint *StmtPrint) (any, error)
+	VisitStmtVar(ctx context.Context, stmtVar *StmtVar) (any, error)
 }
 
 type Stmt interface {
@@ -35,6 +36,18 @@ var _ Stmt = (*StmtExpression)(nil)
 
 func (e *StmtExpression) Accept(ctx context.Context, v StmtVisitor) (any, error) {
 	return v.VisitStmtExpression(ctx, e)
+}
+
+type StmtIf struct {
+	Condition  Expr
+	ThenBranch Stmt
+	ElseBranch Stmt
+}
+
+var _ Stmt = (*StmtIf)(nil)
+
+func (e *StmtIf) Accept(ctx context.Context, v StmtVisitor) (any, error) {
+	return v.VisitStmtIf(ctx, e)
 }
 
 type StmtPrint struct {

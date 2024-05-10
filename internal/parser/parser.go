@@ -104,6 +104,10 @@ func (p *parser) varDeclaration() Stmt {
 
 func (p *parser) statement() Stmt {
 
+	if p.match(token.IF) {
+		return p.ifStatement()
+	}
+
 	if p.match(token.PRINT) {
 		return p.printStatement()
 	}
@@ -114,6 +118,27 @@ func (p *parser) statement() Stmt {
 	}
 
 	return p.expressionStatement()
+}
+
+func (p *parser) ifStatement() Stmt {
+
+	if !p.match(token.LEFT_PAREN) {
+		return p.reportStmtError(errors.New("expect '(' after if"))
+	}
+
+	condition := p.expression()
+
+	if !p.match(token.RIGHT_PAREN) {
+		return p.reportStmtError(errors.New("expect ')' after if condition."))
+	}
+
+	thenBranch := p.statement()
+	var elseBranch Stmt
+	if p.match(token.ELSE) {
+		elseBranch = p.statement()
+	}
+
+	return &StmtIf{Condition: condition, ThenBranch: thenBranch, ElseBranch: elseBranch}
 }
 
 func (p *parser) printStatement() Stmt {

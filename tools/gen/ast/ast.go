@@ -36,6 +36,7 @@ func Main(args []string) int {
 	if err := defineAst(statementsOutFile, packageName, "Stmt",
 		"StmtBlock      : Statements []Stmt",
 		"StmtExpression : Expression Expr",
+		"StmtIf         : Condition Expr, ThenBranch Stmt, ElseBranch Stmt",
 		"StmtPrint      : Expression Expr",
 		"StmtVar        : Name *token.Token, Initializer Expr",
 	); err != nil {
@@ -108,17 +109,5 @@ func defineType(fprintf func(message string, args ...any), baseClass string, exp
 }
 
 func varify(exprClassName string) string {
-	idx := 0
-	for i, c := range exprClassName[1:] {
-		idx = i + 1
-		if c >= 'A' && c <= 'Z' {
-			break
-		}
-	}
-
-	v := strings.ToLower(exprClassName[idx:])
-	if v == "var" {
-		v = "v"
-	}
-	return v
+	return strings.ToLower(exprClassName[0:1]) + exprClassName[1:]
 }

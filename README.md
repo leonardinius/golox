@@ -6,7 +6,7 @@
 
 ## Features
 
+- [ ] TODO fix synchronize - copy from jlox output
 - [ ] TODO Makefile
 - [ ] TODO Linters
 - [ ] TODO GH actions
-- [ ] TODO scanner work with bufio
