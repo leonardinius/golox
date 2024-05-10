@@ -80,7 +80,7 @@ func TestInterpret(t *testing.T) {
 	}
 }
 
-func TestInterpretRepl(t *testing.T) {
+func TestInterpretReplMultiline(t *testing.T) {
 	testcases := []struct {
 		name          string
 		input         []string
@@ -96,7 +96,7 @@ func TestInterpretRepl(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			output, stdout, err := repl(tc.input...)
+			output, stdout, err := replLineByLine(tc.input...)
 			if tc.expectedError != "" {
 				assert.ErrorContains(t, err, tc.expectedError)
 			} else {
@@ -135,7 +135,7 @@ func evaluate(script string) (string, string, error) {
 	return svalue, stdout.String(), err
 }
 
-func repl(script ...string) ([]string, string, error) {
+func replLineByLine(script ...string) ([]string, string, error) {
 	stdin := strings.NewReader("")
 	stdout := strings.Builder{}
 
