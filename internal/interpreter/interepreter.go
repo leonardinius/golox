@@ -48,7 +48,7 @@ func (i *interpreter) Interpret(ctx context.Context, stmts []parser.Stmt) (strin
 	var v any
 	var err error
 
-	ctx = i.Env.NestContext(ctx)
+	ctx = i.Env.AsContext(ctx)
 
 	for _, stmt := range stmts {
 		if v, err = i.Evaluate(ctx, stmt); err != nil {
@@ -111,7 +111,7 @@ func (i *interpreter) VisitStmtVar(ctx context.Context, stmt *parser.StmtVar) (a
 // VisitStmtBlock implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtBlock(ctx context.Context, block *parser.StmtBlock) (any, error) {
 	env := EnvFromContext(ctx)
-	return i.executeBlock(env.NestContext(ctx), block.Statements)
+	return i.executeBlock(env.NewNestContext(ctx), block.Statements)
 }
 
 // VisitVariable implements parser.ExprVisitor.

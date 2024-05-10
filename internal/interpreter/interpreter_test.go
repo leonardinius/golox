@@ -80,6 +80,34 @@ func TestInterpret(t *testing.T) {
 	}
 }
 
+func TestInterpretRepl(t *testing.T) {
+	testcases := []struct {
+		name          string
+		input         []string
+		expectedEval  []string
+		expectedOut   string
+		expectedError string
+	}{
+		{name: `var repl`,
+			input:        []string{`var dd;print dd;dd;`, `print dd; dd;`, `dd=5;`, `dd;`},
+			expectedEval: []string{`nil`, `nil`, `5`, `5`},
+			expectedOut:  "nil\nnil\n"},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			output, stdout, err := repl(tc.input...)
+			if tc.expectedError != "" {
+				assert.ErrorContains(t, err, tc.expectedError)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expectedEval, output)
+				assert.Equal(t, tc.expectedOut, stdout)
+			}
+		})
+	}
+}
+
 func evaluate(script string) (string, string, error) {
 	stdin := strings.NewReader("")
 	stdout := strings.Builder{}
@@ -89,6 +117,7 @@ func evaluate(script string) (string, string, error) {
 		interpreter.WithStdout(&stdout),
 		interpreter.WithStderr(&stdout),
 	)
+
 	scan := scanner.NewScanner(script)
 
 	tokens, err := scan.Scan()
@@ -104,4 +133,39 @@ func evaluate(script string) (string, string, error) {
 
 	svalue, err := eval.Interpret(context.TODO(), stmts)
 	return svalue, stdout.String(), err
+}
+
+func repl(script ...string) ([]string, string, error) {
+	stdin := strings.NewReader("")
+	stdout := strings.Builder{}
+
+	eval := interpreter.NewInterpreter(
+		interpreter.WithStdin(stdin),
+		interpreter.WithStdout(&stdout),
+		interpreter.WithStderr(&stdout),
+	)
+
+	var results []string
+	for _, s := range script {
+		scan := scanner.NewScanner(s)
+
+		tokens, err := scan.Scan()
+		if err != nil {
+			return nil, stdout.String(), err
+		}
+
+		p := parser.NewParser(tokens)
+		stmts, err := p.Parse()
+		if err != nil {
+			return nil, stdout.String(), err
+		}
+
+		svalue, err := eval.Interpret(context.TODO(), stmts)
+		if err != nil {
+			return nil, stdout.String(), err
+		}
+		results = append(results, svalue)
+	}
+
+	return results, stdout.String(), nil
 }

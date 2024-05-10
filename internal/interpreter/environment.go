@@ -61,7 +61,11 @@ func (e *environment) Nest() *environment {
 	return env
 }
 
-func (e *environment) NestContext(ctx context.Context) context.Context {
+func (e *environment) AsContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, envCtxKey{}, e)
+}
+
+func (e *environment) NewNestContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, envCtxKey{}, e.Nest())
 }
 
