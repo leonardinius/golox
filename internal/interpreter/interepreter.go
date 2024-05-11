@@ -2,12 +2,18 @@ package interpreter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
 	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/parser"
 	"github.com/leonardinius/golox/internal/token"
+)
+
+var (
+	errBreak    = errors.New("eval:break")
+	errContinue = errors.New("eval:continue")
 )
 
 type Interpreter interface {
@@ -83,6 +89,22 @@ func (i *interpreter) VisitStmtExpression(ctx context.Context, expr *parser.Stmt
 	return i.evaluate(ctx, expr.Expression)
 }
 
+// VisitStmtIf implements parser.StmtVisitor.
+func (i *interpreter) VisitStmtIf(ctx context.Context, stmtIf *parser.StmtIf) (any, error) {
+	condition, err := i.evaluate(ctx, stmtIf.Condition)
+	if err != nil {
+		return nil, err
+	}
+
+	if i.isTruthy(condition) {
+		return i.execute(ctx, stmtIf.ThenBranch)
+	} else if stmtIf.ElseBranch != nil {
+		return i.execute(ctx, stmtIf.ElseBranch)
+	}
+
+	return nil, nil
+}
+
 // VisitPrint implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtPrint(ctx context.Context, expr *parser.StmtPrint) (any, error) {
 	value, err := i.evaluate(ctx, expr.Expression)
@@ -106,6 +128,85 @@ func (i *interpreter) VisitStmtVar(ctx context.Context, stmt *parser.StmtVar) (a
 	env.Define(stmt.Name.Lexeme, value)
 
 	return nil, nil
+}
+
+// VisitStmtWhile implements parser.StmtVisitor.
+func (i *interpreter) VisitStmtWhile(ctx context.Context, stmtWhile *parser.StmtWhile) (any, error) {
+	var condition any
+	var err error
+	for {
+		if condition, err = i.evaluate(ctx, stmtWhile.Condition); err != nil {
+			break
+		}
+
+		if !i.isTruthy(condition) {
+			break
+		}
+
+		if _, err = i.execute(ctx, stmtWhile.Body); err != nil {
+			switch {
+			case err == errBreak:
+				// return immediatelly
+				return nil, nil
+			case err == errContinue:
+				// continue to next iteration
+				err = nil
+			}
+		}
+	}
+
+	return nil, err
+}
+
+// VisitStmtFor implements parser.StmtVisitor.
+func (i *interpreter) VisitStmtFor(ctx context.Context, stmtFor *parser.StmtFor) (any, error) {
+	var condition any
+	var err error
+
+	if stmtFor.Initializer != nil {
+		if _, err = i.execute(ctx, stmtFor.Initializer); err != nil {
+			return nil, err
+		}
+	}
+
+	for {
+		if condition, err = i.evaluate(ctx, stmtFor.Condition); err != nil {
+			break
+		}
+
+		if !i.isTruthy(condition) {
+			break
+		}
+
+		if _, err = i.execute(ctx, stmtFor.Body); err != nil {
+			switch {
+			case err == errBreak:
+				// return immediatelly
+				return nil, nil
+			case err == errContinue:
+				// continue to next iteration
+				err = nil
+			}
+		}
+
+		if stmtFor.Increment != nil {
+			if _, err = i.evaluate(ctx, stmtFor.Increment); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return nil, err
+}
+
+// VisitStmtBreak implements parser.StmtVisitor.
+func (*interpreter) VisitStmtBreak(ctx context.Context, stmtBreak *parser.StmtBreak) (any, error) {
+	return nil, errBreak
+}
+
+// VisitStmtContinue implements parser.StmtVisitor.
+func (*interpreter) VisitStmtContinue(ctx context.Context, stmtContinue *parser.StmtContinue) (any, error) {
+	return nil, errContinue
 }
 
 // VisitStmtBlock implements parser.StmtVisitor.
@@ -211,6 +312,34 @@ func (i *interpreter) VisitExprGrouping(ctx context.Context, expr *parser.ExprGr
 // VisitLiteral implements parser.Visitor.
 func (i *interpreter) VisitExprLiteral(ctx context.Context, expr *parser.ExprLiteral) (any, error) {
 	return expr.Value, nil
+}
+
+// VisitExprLogical implements parser.ExprVisitor.
+func (i *interpreter) VisitExprLogical(ctx context.Context, exprLogical *parser.ExprLogical) (any, error) {
+	switch exprLogical.Operator.Type {
+	case token.AND:
+		return i.evalLogicalAnd(ctx, exprLogical.Left, exprLogical.Right)
+	case token.OR:
+		return i.evalLogicalOr(ctx, exprLogical.Left, exprLogical.Right)
+	default:
+		return i.unreachable()
+	}
+}
+
+func (i *interpreter) evalLogicalAnd(ctx context.Context, left parser.Expr, right parser.Expr) (any, error) {
+	if leftValue, err := i.evaluate(ctx, left); err != nil || !i.isTruthy(leftValue) {
+		return leftValue, err
+	}
+
+	return i.evaluate(ctx, right)
+}
+
+func (i *interpreter) evalLogicalOr(ctx context.Context, left parser.Expr, right parser.Expr) (any, error) {
+	if leftValue, err := i.evaluate(ctx, left); err != nil || i.isTruthy(leftValue) {
+		return leftValue, err
+	}
+
+	return i.evaluate(ctx, right)
 }
 
 // VisitUnary implements parser.Visitor.

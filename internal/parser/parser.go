@@ -19,9 +19,10 @@ type Parser interface {
 }
 
 type parser struct {
-	tokens  []token.Token
-	current int
-	err     []error
+	tokens    []token.Token
+	current   int
+	err       error
+	loopDepth int
 }
 
 func NewParser(tokens []token.Token) Parser {
@@ -52,7 +53,7 @@ func (p *parser) String() string {
 func (p *parser) Parse() (statements []Stmt, err error) {
 	var stmt Stmt
 	for !p.isDone() {
-		stmt, err = p.declaration(), errors.Join(p.err...)
+		stmt, err = p.declaration(), p.err
 		if err != nil {
 			break
 		}
@@ -65,13 +66,12 @@ func (p *parser) Parse() (statements []Stmt, err error) {
 
 	// if we are at error state, we do not return invalid ast tree
 	// return nil, err - errors intead
-	errs := p.err
-	for !p.isAtEnd() {
+	errs := []error{p.err}
+	for !p.isAtEnd() && p.err != nil {
 		p.synchronize()
 		p.err = nil
-		_, errs = p.declaration(), append(errs, p.err...)
+		_, errs = p.declaration(), append(errs, p.err)
 	}
-
 	return nilStatements, errors.Join(errs...)
 }
 
@@ -104,6 +104,26 @@ func (p *parser) varDeclaration() Stmt {
 
 func (p *parser) statement() Stmt {
 
+	if p.match(token.IF) {
+		return p.ifStatement()
+	}
+
+	if p.match(token.FOR) {
+		return p.forStatement()
+	}
+
+	if p.match(token.WHILE) {
+		return p.whileStatement()
+	}
+
+	if p.match(token.BREAK) {
+		return p.breakStatement()
+	}
+
+	if p.match(token.CONTINUE) {
+		return p.continueStatement()
+	}
+
 	if p.match(token.PRINT) {
 		return p.printStatement()
 	}
@@ -116,15 +136,114 @@ func (p *parser) statement() Stmt {
 	return p.expressionStatement()
 }
 
+func (p *parser) ifStatement() Stmt {
+
+	if !p.match(token.LEFT_PAREN) {
+		return p.reportStmtError(loxerrors.ErrParseExpectedLeftParentIfToken)
+	}
+
+	condition := p.expression()
+
+	if !p.match(token.RIGHT_PAREN) {
+		return p.reportStmtError(loxerrors.ErrParseExpectedRightParentIfToken)
+	}
+
+	thenBranch := p.statement()
+	var elseBranch Stmt
+	if p.match(token.ELSE) {
+		elseBranch = p.statement()
+	}
+
+	return &StmtIf{Condition: condition, ThenBranch: thenBranch, ElseBranch: elseBranch}
+}
+
 func (p *parser) printStatement() Stmt {
 
 	expr := p.expression()
 
 	if !p.match(token.SEMICOLON) {
-		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterValue)
+		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterPrintValue)
 	}
 
 	return &StmtPrint{Expression: expr}
+}
+
+func (p *parser) whileStatement() Stmt {
+
+	if !p.match(token.LEFT_PAREN) {
+		return p.reportStmtError(loxerrors.ErrParseExpectedLeftParentWhileToken)
+	}
+	condition := p.expression()
+	if !p.match(token.RIGHT_PAREN) {
+		return p.reportStmtError(loxerrors.ErrParseExpectedRightParentWhileToken)
+	}
+
+	p.loopDepth++
+	defer func() { p.loopDepth-- }()
+	body := p.statement()
+
+	return &StmtWhile{Condition: condition, Body: body}
+}
+
+func (p *parser) forStatement() Stmt {
+	if !p.match(token.LEFT_PAREN) {
+		return p.reportStmtError(loxerrors.ErrParseExpectedLeftParentForToken)
+	}
+
+	var initializer Stmt
+	if p.match(token.SEMICOLON) {
+		initializer = nilStmt
+	} else if p.match(token.VAR) {
+		initializer = p.varDeclaration()
+	} else {
+		initializer = p.expressionStatement()
+	}
+
+	var condition Expr
+	if !p.check(token.SEMICOLON) {
+		condition = p.expression()
+	}
+	if !p.match(token.SEMICOLON) {
+		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonAfterForLoopCond)
+	}
+
+	var increment Expr
+	if !p.check(token.RIGHT_PAREN) {
+		increment = p.expression()
+	}
+	if !p.match(token.RIGHT_PAREN) {
+		return p.reportStmtError(loxerrors.ErrParseExpectedRightParentForToken)
+	}
+
+	p.loopDepth++
+	defer func() { p.loopDepth-- }()
+	body := p.statement()
+
+	if condition == nilExpr {
+		condition = &ExprLiteral{Value: true}
+	}
+
+	return &StmtFor{Initializer: initializer, Condition: condition, Increment: increment, Body: body}
+}
+
+func (p *parser) breakStatement() Stmt {
+	if p.loopDepth == 0 {
+		return p.reportStmtError(loxerrors.ErrParseBreakOutsideLoop)
+	}
+	if !p.match(token.SEMICOLON) {
+		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterBreak)
+	}
+	return &StmtBreak{}
+}
+
+func (p *parser) continueStatement() Stmt {
+	if p.loopDepth == 0 {
+		return p.reportStmtError(loxerrors.ErrParseContinueOutsideLoop)
+	}
+	if !p.match(token.SEMICOLON) {
+		return p.reportStmtError(loxerrors.ErrParseExpectedSemicolonTokenAfterContinue)
+	}
+	return &StmtContinue{}
 }
 
 func (p *parser) blockStatement() []Stmt {
@@ -155,7 +274,7 @@ func (p *parser) expression() Expr {
 }
 
 func (p *parser) assignment() Expr {
-	expr := p.equality()
+	expr := p.logicOr()
 
 	if p.match(token.EQUAL) {
 		equals := p.previous()
@@ -167,6 +286,30 @@ func (p *parser) assignment() Expr {
 		}
 
 		return p.reportTokenExprError(equals, loxerrors.ErrParseInvalidAssignmentTarget)
+	}
+
+	return expr
+}
+
+func (p *parser) logicOr() Expr {
+	expr := p.logicAnd()
+
+	for p.match(token.OR) {
+		operator := p.previous()
+		right := p.logicAnd()
+		return &ExprLogical{Left: expr, Operator: operator, Right: right}
+	}
+
+	return expr
+}
+
+func (p *parser) logicAnd() Expr {
+	expr := p.equality()
+
+	for p.match(token.AND) {
+		operator := p.previous()
+		right := p.equality()
+		return &ExprLogical{Left: expr, Operator: operator, Right: right}
 	}
 
 	return expr
@@ -288,10 +431,7 @@ func (p *parser) match(tokType token.TokenType) bool {
 }
 
 func (p *parser) check(tokenType token.TokenType) bool {
-	if p.isDone() {
-		return false
-	}
-	return p.peek().Type == tokenType
+	return !p.isDone() && p.peek().Type == tokenType
 }
 
 func (p *parser) peek() *token.Token {
@@ -317,23 +457,25 @@ func (p *parser) isAtEnd() bool {
 }
 
 func (p *parser) isDone() bool {
-	// et the end, OR, have errors
-	return p.isAtEnd() || len(p.err) > 0
+	// is at the end, OR, have errors
+	return p.isAtEnd() || p.err != nil
 }
 
 func (p *parser) reportStmtError(err error) Stmt {
-	t := p.peek()
-
-	p.err = append(p.err, loxerrors.NewParseError(t, err))
-
+	// do not overwrite present error.
+	// preserves the original error and bubbles up to return in Parse() with .err
+	if p.err == nil {
+		p.err = loxerrors.NewParseError(p.peek(), err)
+	}
 	return nilStmt
 }
 
 func (p *parser) reportStmtsError(err error) []Stmt {
-	t := p.peek()
-
-	p.err = append(p.err, loxerrors.NewParseError(t, err))
-
+	// do not overwrite present error.
+	// preserves the original error and bubbles up to return in Parse() with .err
+	if p.err == nil {
+		p.err = loxerrors.NewParseError(p.peek(), err)
+	}
 	return nilStatements
 }
 
@@ -342,9 +484,11 @@ func (p *parser) reportExprError(err error) Expr {
 }
 
 func (p *parser) reportTokenExprError(tok *token.Token, err error) Expr {
-
-	p.err = append(p.err, loxerrors.NewParseError(tok, err))
-
+	// do not overwrite present error.
+	// preserves the original error and bubbles up to return in Parse() with .err
+	if p.err == nil {
+		p.err = loxerrors.NewParseError(tok, err)
+	}
 	return nilExpr
 }
 

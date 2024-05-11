@@ -7,12 +7,13 @@ import "github.com/leonardinius/golox/internal/token"
 
 // ExprVisitor is the interface that wraps the Visit method.
 type ExprVisitor interface {
-	VisitExprAssign(ctx context.Context, assign *ExprAssign) (any, error)
-	VisitExprBinary(ctx context.Context, binary *ExprBinary) (any, error)
-	VisitExprGrouping(ctx context.Context, grouping *ExprGrouping) (any, error)
-	VisitExprLiteral(ctx context.Context, literal *ExprLiteral) (any, error)
-	VisitExprUnary(ctx context.Context, unary *ExprUnary) (any, error)
-	VisitExprVariable(ctx context.Context, variable *ExprVariable) (any, error)
+	VisitExprAssign(ctx context.Context, exprAssign *ExprAssign) (any, error)
+	VisitExprBinary(ctx context.Context, exprBinary *ExprBinary) (any, error)
+	VisitExprGrouping(ctx context.Context, exprGrouping *ExprGrouping) (any, error)
+	VisitExprLiteral(ctx context.Context, exprLiteral *ExprLiteral) (any, error)
+	VisitExprLogical(ctx context.Context, exprLogical *ExprLogical) (any, error)
+	VisitExprUnary(ctx context.Context, exprUnary *ExprUnary) (any, error)
+	VisitExprVariable(ctx context.Context, exprVariable *ExprVariable) (any, error)
 }
 
 type Expr interface {
@@ -60,6 +61,18 @@ var _ Expr = (*ExprLiteral)(nil)
 
 func (e *ExprLiteral) Accept(ctx context.Context, v ExprVisitor) (any, error) {
 	return v.VisitExprLiteral(ctx, e)
+}
+
+type ExprLogical struct {
+	Left     Expr
+	Operator *token.Token
+	Right    Expr
+}
+
+var _ Expr = (*ExprLogical)(nil)
+
+func (e *ExprLogical) Accept(ctx context.Context, v ExprVisitor) (any, error) {
+	return v.VisitExprLogical(ctx, e)
 }
 
 type ExprUnary struct {

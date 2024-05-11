@@ -26,6 +26,7 @@ func Main(args []string) int {
 		"ExprBinary   : Left Expr, Operator *token.Token, Right Expr",
 		"ExprGrouping : Expression Expr",
 		"ExprLiteral  : Value any",
+		"ExprLogical  : Left Expr, Operator *token.Token, Right Expr",
 		"ExprUnary    : Operator *token.Token, Right Expr",
 		"ExprVariable : Name *token.Token",
 	); err != nil {
@@ -35,9 +36,14 @@ func Main(args []string) int {
 
 	if err := defineAst(statementsOutFile, packageName, "Stmt",
 		"StmtBlock      : Statements []Stmt",
+		"StmtBreak      :",
+		"StmtContinue   :",
 		"StmtExpression : Expression Expr",
+		"StmtIf         : Condition Expr, ThenBranch Stmt, ElseBranch Stmt",
 		"StmtPrint      : Expression Expr",
 		"StmtVar        : Name *token.Token, Initializer Expr",
+		"StmtWhile      : Condition Expr, Body Stmt",
+		"StmtFor        : Initializer Stmt, Condition Expr, Increment Expr, Body Stmt",
 	); err != nil {
 		fmt.Printf("Error: %v", err)
 		return 1
@@ -108,17 +114,5 @@ func defineType(fprintf func(message string, args ...any), baseClass string, exp
 }
 
 func varify(exprClassName string) string {
-	idx := 0
-	for i, c := range exprClassName[1:] {
-		idx = i + 1
-		if c >= 'A' && c <= 'Z' {
-			break
-		}
-	}
-
-	v := strings.ToLower(exprClassName[idx:])
-	if v == "var" {
-		v = "v"
-	}
-	return v
+	return strings.ToLower(exprClassName[0:1]) + exprClassName[1:]
 }

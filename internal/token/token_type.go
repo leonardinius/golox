@@ -38,6 +38,8 @@ const (
 
 	// Keywords.
 	AND
+	BREAK
+	CONTINUE
 	CLASS
 	ELSE
 	FALSE
@@ -87,22 +89,24 @@ var tokenTypeStrings = map[TokenType]string{
 	NUMBER:     "NUMBER",
 
 	// Keywords.
-	AND:    "AND",
-	CLASS:  "CLASS",
-	ELSE:   "ELSE",
-	FALSE:  "FALSE",
-	FUN:    "FUN",
-	FOR:    "FOR",
-	IF:     "IF",
-	NIL:    "NIL",
-	OR:     "OR",
-	PRINT:  "PRINT",
-	RETURN: "RETURN",
-	SUPER:  "SUPER",
-	THIS:   "THIS",
-	TRUE:   "TRUE",
-	VAR:    "VAR",
-	WHILE:  "WHILE",
+	AND:      "AND",
+	BREAK:    "BREAK",
+	CONTINUE: "CONTINUE",
+	CLASS:    "CLASS",
+	ELSE:     "ELSE",
+	FALSE:    "FALSE",
+	FUN:      "FUN",
+	FOR:      "FOR",
+	IF:       "IF",
+	NIL:      "NIL",
+	OR:       "OR",
+	PRINT:    "PRINT",
+	RETURN:   "RETURN",
+	SUPER:    "SUPER",
+	THIS:     "THIS",
+	TRUE:     "TRUE",
+	VAR:      "VAR",
+	WHILE:    "WHILE",
 }
 
 func (t TokenType) String() string {
