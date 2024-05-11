@@ -71,7 +71,7 @@ func (p *parser) Parse() (statements []Stmt, err error) {
 	for !p.isAtEnd() {
 		p.synchronize()
 		p.panic = nil
-		_, _ = p.declaration(), p.panic
+		_ = p.declaration()
 	}
 
 	return nilStatements, loxerrors.ErrParseError
