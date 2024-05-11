@@ -151,8 +151,6 @@ func (i *interpreter) VisitStmtWhile(ctx context.Context, stmtWhile *parser.Stmt
 			case err == errContinue:
 				// continue to next iteration
 				err = nil
-			default:
-				break
 			}
 		}
 	}
@@ -188,8 +186,6 @@ func (i *interpreter) VisitStmtFor(ctx context.Context, stmtFor *parser.StmtFor)
 			case err == errContinue:
 				// continue to next iteration
 				err = nil
-			default:
-				break
 			}
 		}
 
