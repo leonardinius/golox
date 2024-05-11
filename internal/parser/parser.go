@@ -67,12 +67,11 @@ func (p *parser) Parse() (statements []Stmt, err error) {
 	}
 
 	// if we are at error state, we do not return invalid ast tree
-	// return nil, err - errors intead
-	errs := []error{p.panic}
-	for !p.isAtEnd() && p.panic != nil {
+	// return nil, err instead
+	for !p.isAtEnd() {
 		p.synchronize()
 		p.panic = nil
-		_, errs = p.declaration(), append(errs, p.panic)
+		_, _ = p.declaration(), p.panic
 	}
 
 	return nilStatements, loxerrors.ErrParseError
