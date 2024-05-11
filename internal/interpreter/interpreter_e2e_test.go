@@ -100,27 +100,27 @@ func TestInterpret(t *testing.T) {
 
 func TestInterpretReplMultiline(t *testing.T) {
 	testcases := []struct {
-		name          string
-		input         []string
-		expectedEval  []string
-		expectedOut   string
-		expectedError string
+		name string
+		in   []string // Input
+		eval []string // Expected eval
+		out  string   // Expected output
+		err  string   // Expected error
 	}{
 		{name: `var repl`,
-			input:        []string{`var dd;print dd;dd;`, `print dd;dd;`, `dd=5;`, `dd;`},
-			expectedEval: []string{`nil`, `nil`, `5`, `5`},
-			expectedOut:  "nil\nnil\n"},
+			in:   []string{`var dd;print dd;dd;`, `print dd;dd;`, `dd=5;`, `dd;`},
+			eval: []string{`nil`, `nil`, `5`, `5`},
+			out:  "nil\nnil\n"},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			output, stdout, err := replLineByLine(tc.input...)
-			if tc.expectedError != "" {
-				assert.ErrorContains(t, err, tc.expectedError)
+			output, stdout, err := replLineByLine(tc.in...)
+			if tc.err != "" {
+				assert.ErrorContains(t, err, tc.err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tc.expectedEval, output)
-				assert.Equal(t, tc.expectedOut, stdout)
+				assert.Equal(t, tc.eval, output)
+				assert.Equal(t, tc.out, stdout)
 			}
 		})
 	}
