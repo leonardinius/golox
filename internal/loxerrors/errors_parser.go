@@ -28,6 +28,7 @@ var (
 	ErrParseExpectedSemicolonTokenAfterContinue   = errors.New("expect ';' after 'continue'.")
 	ErrParseBreakOutsideLoop                      = errors.New("must be inside a loop to use 'break'.")
 	ErrParseContinueOutsideLoop                   = errors.New("must be inside a loop to use 'continue'.")
+	ErrParseTooManyArguments                      = errors.New("can't have more than 255 arguments.")
 )
 
 type ParserError struct {

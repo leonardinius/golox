@@ -9,6 +9,7 @@ import "github.com/leonardinius/golox/internal/token"
 type ExprVisitor interface {
 	VisitExprAssign(ctx context.Context, exprAssign *ExprAssign) (any, error)
 	VisitExprBinary(ctx context.Context, exprBinary *ExprBinary) (any, error)
+	VisitExprCall(ctx context.Context, exprCall *ExprCall) (any, error)
 	VisitExprGrouping(ctx context.Context, exprGrouping *ExprGrouping) (any, error)
 	VisitExprLiteral(ctx context.Context, exprLiteral *ExprLiteral) (any, error)
 	VisitExprLogical(ctx context.Context, exprLogical *ExprLogical) (any, error)
@@ -41,6 +42,18 @@ var _ Expr = (*ExprBinary)(nil)
 
 func (e *ExprBinary) Accept(ctx context.Context, v ExprVisitor) (any, error) {
 	return v.VisitExprBinary(ctx, e)
+}
+
+type ExprCall struct {
+	Callee     Expr
+	CloseParen *token.Token
+	Arguments  []Expr
+}
+
+var _ Expr = (*ExprCall)(nil)
+
+func (e *ExprCall) Accept(ctx context.Context, v ExprVisitor) (any, error) {
+	return v.VisitExprCall(ctx, e)
 }
 
 type ExprGrouping struct {

@@ -21,8 +21,8 @@ type parser struct {
 	tokens    []token.Token
 	current   int
 	reporter  loxerrors.ErrReporter
+	panic     error
 	err       error
-	warn      error
 	loopDepth int
 }
 
@@ -43,36 +43,36 @@ func NewParser(tokens []token.Token, reporter loxerrors.ErrReporter) Parser {
 
 // GoString implements fmt.GoStringer.
 func (p *parser) GoString() string {
-	return fmt.Sprintf("parser{tokens: %#v, current: %d, err: %#v}", p.tokens, p.current, p.err)
+	return fmt.Sprintf("parser{tokens: %#v, current: %d, err: %#v}", p.tokens, p.current, p.panic)
 }
 
 // String implements fmt.Stringer.
 func (p *parser) String() string {
-	return fmt.Sprintf("parser{tokens: %d, err: %v}", len(p.tokens), p.err)
+	return fmt.Sprintf("parser{tokens: %d, err: %v}", len(p.tokens), p.panic)
 }
 
 // Parse implements Parser.
 func (p *parser) Parse() (statements []Stmt, err error) {
 	var stmt Stmt
 	for !p.isDone() {
-		stmt, err = p.declaration(), p.err
+		stmt, err = p.declaration(), p.panic
 		if err != nil {
 			break
 		}
 		statements = append(statements, stmt)
 	}
 
-	if err == nil && p.warn == nil {
+	if err == nil && p.err == nil {
 		return statements, nil
 	}
 
 	// if we are at error state, we do not return invalid ast tree
 	// return nil, err - errors intead
-	errs := []error{p.err}
-	for !p.isAtEnd() && p.err != nil {
+	errs := []error{p.panic}
+	for !p.isAtEnd() && p.panic != nil {
 		p.synchronize()
-		p.err = nil
-		_, errs = p.declaration(), append(errs, p.err)
+		p.panic = nil
+		_, errs = p.declaration(), append(errs, p.panic)
 	}
 
 	return nilStatements, loxerrors.ErrParseError
@@ -89,7 +89,7 @@ func (p *parser) declaration() Stmt {
 func (p *parser) varDeclaration() Stmt {
 
 	if !p.match(token.IDENTIFIER) {
-		return p.reportErrorStmt(loxerrors.ErrParseUnexpectedVariableName)
+		return p.reportFatalErrorStmt(loxerrors.ErrParseUnexpectedVariableName)
 	}
 	name := p.previous()
 
@@ -99,7 +99,7 @@ func (p *parser) varDeclaration() Stmt {
 	}
 
 	if !p.match(token.SEMICOLON) {
-		return p.reportErrorStmt(loxerrors.ErrParseExpectedSemicolonTokenAfterVar)
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedSemicolonTokenAfterVar)
 	}
 
 	return &StmtVar{Name: name, Initializer: initializer}
@@ -142,13 +142,13 @@ func (p *parser) statement() Stmt {
 func (p *parser) ifStatement() Stmt {
 
 	if !p.match(token.LEFT_PAREN) {
-		return p.reportErrorStmt(loxerrors.ErrParseExpectedLeftParentIfToken)
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedLeftParentIfToken)
 	}
 
 	condition := p.expression()
 
 	if !p.match(token.RIGHT_PAREN) {
-		return p.reportErrorStmt(loxerrors.ErrParseExpectedRightParentIfToken)
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedRightParentIfToken)
 	}
 
 	thenBranch := p.statement()
@@ -165,7 +165,7 @@ func (p *parser) printStatement() Stmt {
 	expr := p.expression()
 
 	if !p.match(token.SEMICOLON) {
-		return p.reportErrorStmt(loxerrors.ErrParseExpectedSemicolonTokenAfterPrintValue)
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedSemicolonTokenAfterPrintValue)
 	}
 
 	return &StmtPrint{Expression: expr}
@@ -174,11 +174,11 @@ func (p *parser) printStatement() Stmt {
 func (p *parser) whileStatement() Stmt {
 
 	if !p.match(token.LEFT_PAREN) {
-		return p.reportErrorStmt(loxerrors.ErrParseExpectedLeftParentWhileToken)
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedLeftParentWhileToken)
 	}
 	condition := p.expression()
 	if !p.match(token.RIGHT_PAREN) {
-		return p.reportErrorStmt(loxerrors.ErrParseExpectedRightParentWhileToken)
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedRightParentWhileToken)
 	}
 
 	p.loopDepth++
@@ -190,7 +190,7 @@ func (p *parser) whileStatement() Stmt {
 
 func (p *parser) forStatement() Stmt {
 	if !p.match(token.LEFT_PAREN) {
-		return p.reportErrorStmt(loxerrors.ErrParseExpectedLeftParentForToken)
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedLeftParentForToken)
 	}
 
 	var initializer Stmt
@@ -207,7 +207,7 @@ func (p *parser) forStatement() Stmt {
 		condition = p.expression()
 	}
 	if !p.match(token.SEMICOLON) {
-		return p.reportErrorStmt(loxerrors.ErrParseExpectedSemicolonAfterForLoopCond)
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedSemicolonAfterForLoopCond)
 	}
 
 	var increment Expr
@@ -215,7 +215,7 @@ func (p *parser) forStatement() Stmt {
 		increment = p.expression()
 	}
 	if !p.match(token.RIGHT_PAREN) {
-		return p.reportErrorStmt(loxerrors.ErrParseExpectedRightParentForToken)
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedRightParentForToken)
 	}
 
 	p.loopDepth++
@@ -231,20 +231,20 @@ func (p *parser) forStatement() Stmt {
 
 func (p *parser) breakStatement() Stmt {
 	if p.loopDepth == 0 {
-		return p.reportErrorStmt(loxerrors.ErrParseBreakOutsideLoop)
+		return p.reportFatalErrorStmt(loxerrors.ErrParseBreakOutsideLoop)
 	}
 	if !p.match(token.SEMICOLON) {
-		return p.reportErrorStmt(loxerrors.ErrParseExpectedSemicolonTokenAfterBreak)
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedSemicolonTokenAfterBreak)
 	}
 	return &StmtBreak{}
 }
 
 func (p *parser) continueStatement() Stmt {
 	if p.loopDepth == 0 {
-		return p.reportErrorStmt(loxerrors.ErrParseContinueOutsideLoop)
+		return p.reportFatalErrorStmt(loxerrors.ErrParseContinueOutsideLoop)
 	}
 	if !p.match(token.SEMICOLON) {
-		return p.reportErrorStmt(loxerrors.ErrParseExpectedSemicolonTokenAfterContinue)
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedSemicolonTokenAfterContinue)
 	}
 	return &StmtContinue{}
 }
@@ -258,7 +258,7 @@ func (p *parser) blockStatement() []Stmt {
 	}
 
 	if !p.match(token.RIGHT_BRACE) {
-		return p.reportErrorStmtlist(loxerrors.ErrParseExpectedRightCurlyBlockToken)
+		return p.reportFatalErrorStmtlist(loxerrors.ErrParseExpectedRightCurlyBlockToken)
 	}
 
 	return stmts
@@ -267,7 +267,7 @@ func (p *parser) blockStatement() []Stmt {
 func (p *parser) expressionStatement() Stmt {
 	expr := p.expression()
 	if !p.match(token.SEMICOLON) {
-		return p.reportErrorStmt(loxerrors.ErrParseExpectedSemicolonTokenAfterExpr)
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedSemicolonTokenAfterExpr)
 	}
 	return &StmtExpression{Expression: expr}
 }
@@ -288,7 +288,7 @@ func (p *parser) assignment() Expr {
 			return &ExprAssign{Name: name, Value: value}
 		}
 
-		p.reportWarningExprToken(equals, loxerrors.ErrParseInvalidAssignmentTarget)
+		p.reportErrorExprToken(equals, loxerrors.ErrParseInvalidAssignmentTarget)
 	}
 
 	return expr
@@ -370,13 +370,47 @@ func (p *parser) unary() Expr {
 	if p.anyMatch(token.BANG, token.MINUS) {
 		operator := p.previous()
 		right := p.unary()
-		return &ExprUnary{
-			Operator: operator,
-			Right:    right,
+		return &ExprUnary{Operator: operator, Right: right}
+	}
+
+	return p.call()
+}
+
+func (p *parser) call() Expr {
+	expr := p.primary()
+
+	for {
+		if p.match(token.LEFT_PAREN) {
+			expr = p.finishCall(expr)
+		} else {
+			break
 		}
 	}
 
-	return p.primary()
+	return expr
+}
+
+func (p *parser) finishCall(callee Expr) Expr {
+	var args []Expr
+	if !p.check(token.RIGHT_PAREN) {
+		for {
+			if len(args) >= 255 {
+				p.reportErrorExpr(loxerrors.ErrParseTooManyArguments)
+			}
+			args = append(args, p.expression())
+			if !p.match(token.COMMA) {
+				break
+			}
+		}
+	}
+
+	if !p.match(token.RIGHT_PAREN) {
+		return p.reportFatalErrorExpr(loxerrors.ErrParseExpectedRightParenToken)
+	}
+	paren := p.previous()
+
+	return &ExprCall{Callee: callee, CloseParen: paren, Arguments: args}
+
 }
 
 func (p *parser) primary() Expr {
@@ -407,12 +441,12 @@ func (p *parser) grouping() Expr {
 	if p.match(token.LEFT_PAREN) {
 		expr := p.expression()
 		if !p.match(token.RIGHT_PAREN) {
-			return p.reportErrorExpr(loxerrors.ErrParseExpectedRightParenToken)
+			return p.reportFatalErrorExpr(loxerrors.ErrParseExpectedRightParenToken)
 		}
 		return &ExprGrouping{Expression: expr}
 	}
 
-	return p.reportErrorExpr(loxerrors.ErrParseUnexpectedToken)
+	return p.reportFatalErrorExpr(loxerrors.ErrParseUnexpectedToken)
 }
 
 func (p *parser) anyMatch(types ...token.TokenType) bool {
@@ -461,53 +495,57 @@ func (p *parser) isAtEnd() bool {
 
 func (p *parser) isDone() bool {
 	// is at the end, OR, have errors
-	return p.isAtEnd() || p.err != nil
+	return p.isAtEnd() || p.panic != nil
 }
 
-func (p *parser) reportErrorStmt(err error) Stmt {
+func (p *parser) reportFatalErrorStmt(err error) Stmt {
 	// do not overwrite present error.
 	// preserves the original error and bubbles up to return in Parse() with .err
-	if p.err == nil {
-		p.err = loxerrors.NewParseError(p.peek(), err)
-		p.error(p.err)
+	if p.panic == nil {
+		p.panic = loxerrors.NewParseError(p.peek(), err)
+		p.fatal(p.panic)
 	}
 	return nilStmt
 }
 
-func (p *parser) reportErrorStmtlist(err error) []Stmt {
+func (p *parser) reportFatalErrorStmtlist(err error) []Stmt {
 	// do not overwrite present error.
 	// preserves the original error and bubbles up to return in Parse() with .err
-	if p.err == nil {
-		p.err = loxerrors.NewParseError(p.peek(), err)
-		p.error(p.err)
+	if p.panic == nil {
+		p.panic = loxerrors.NewParseError(p.peek(), err)
+		p.fatal(p.panic)
 	}
 	return nilStatements
 }
 
-func (p *parser) reportErrorExpr(err error) Expr {
-	return p.reportErrorExprToken(p.peek(), err)
+func (p *parser) reportFatalErrorExpr(err error) Expr {
+	return p.reportFatalErrorExprToken(p.peek(), err)
 }
 
-func (p *parser) reportErrorExprToken(tok *token.Token, err error) Expr {
+func (p *parser) reportFatalErrorExprToken(tok *token.Token, err error) Expr {
 	// do not overwrite present error.
 	// preserves the original error and bubbles up to return in Parse() with .err
-	if p.err == nil {
-		p.err = loxerrors.NewParseError(tok, err)
-		p.error(p.err)
+	if p.panic == nil {
+		p.panic = loxerrors.NewParseError(tok, err)
+		p.fatal(p.panic)
 	}
 	return nilExpr
 }
 
-func (p *parser) reportWarningExprToken(tok *token.Token, err error) {
-	p.warning(loxerrors.NewParseError(tok, err))
+func (p *parser) reportErrorExpr(err error) {
+	p.reportErrorExprToken(p.peek(), err)
 }
 
-func (p *parser) warning(err error) {
-	p.warn = err
-	p.reporter.ReportWarning(err)
+func (p *parser) reportErrorExprToken(tok *token.Token, err error) {
+	p.error(loxerrors.NewParseError(tok, err))
+}
+
+func (p *parser) fatal(err error) {
+	p.reporter.ReportPanic(err)
 }
 
 func (p *parser) error(err error) {
+	p.err = err
 	p.reporter.ReportError(err)
 }
 

@@ -302,6 +302,11 @@ func (i *interpreter) VisitExprBinary(ctx context.Context, expr *parser.ExprBina
 	return i.unreachable()
 }
 
+// VisitExprCall implements parser.ExprVisitor.
+func (i *interpreter) VisitExprCall(ctx context.Context, exprCall *parser.ExprCall) (any, error) {
+	panic("unimplemented")
+}
+
 // VisitGrouping implements parser.Visitor.
 func (i *interpreter) VisitExprGrouping(ctx context.Context, expr *parser.ExprGrouping) (any, error) {
 	return i.evaluate(ctx, expr.Expression)
