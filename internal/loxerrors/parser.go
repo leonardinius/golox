@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	ErrParseError                                 = errors.New("parse error.")
 	ErrParseUnexpectedToken                       = errors.New("expected expression.")
 	ErrParseUnexpectedVariableName                = errors.New("expect variable name.")
 	ErrParseInvalidAssignmentTarget               = errors.New("invalid assignment target.")

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/leonardinius/golox/internal/interpreter"
+	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/parser"
 	"github.com/leonardinius/golox/internal/scanner"
 	"github.com/stretchr/testify/assert"
@@ -47,7 +48,7 @@ func TestInterpret(t *testing.T) {
 		{name: `gt number`, input: `1 > 1;`, expectedEval: `false`},
 		{name: `gte number`, input: `1 >= 2;`, expectedEval: `false`},
 		{name: `gte number`, input: `1 >= 1;`, expectedEval: `true`},
-		{name: `invalid expression`, input: `1 + 2 +;`, expectedError: `parse error at ';': expected expression`},
+		{name: `invalid expression`, input: `1 + 2 +;`, expectedError: `parse error.`, expectedOut: `parse error at ';': expected expression`},
 		{name: `invalid expression sum`, input: `"a" + 0;`, expectedError: `at +: operands must be two numbers or two strings.`},
 		{name: `invalid expression minus`, input: `0 - "";`, expectedError: `at -: operands must be numbers.`},
 		{name: `invalid expression minus string`, input: `-"a";`, expectedError: `at -: operand must be a number.`},
@@ -57,9 +58,9 @@ func TestInterpret(t *testing.T) {
 		{name: `var init`, input: `var a =1;a;`, expectedEval: `1`},
 		{name: `var assign`, input: `var a =1;a=2;`, expectedEval: `2`},
 		{name: `var multiple var math`, input: `var a =1;var b=2;a+b;`, expectedEval: `3`},
-		{name: `var syntax error 1`, input: `var print;`, expectedError: `parse error at 'print': expect variable name.`},
-		{name: `var syntax error 2`, input: `var a`, expectedError: `parse error at end: expect ';' after variable declaration.`},
-		{name: `var assign error`, input: `var a;(a)=1;`, expectedError: `parse error at '=': invalid assignment target.`},
+		{name: `var syntax error 1`, input: `var print;`, expectedError: `parse error.`, expectedOut: `parse error at 'print': expect variable name.`},
+		{name: `var syntax error 2`, input: `var a`, expectedError: `parse error.`, expectedOut: `parse error at end: expect ';' after variable declaration.`},
+		{name: `var assign error`, input: `var a;(a)=1;`, expectedError: `parse error.`, expectedOut: `parse error at '=': invalid assignment target.`},
 		{name: `var assign error unrecognized var`, input: `b=1;`, expectedError: `at b: undefined variable 'b'.`},
 		{name: `var scope top level`, input: `var a=1;{a=2; print a; {a=3; print a;{a=4; print a; }}}print a;a;`, expectedEval: `4`, expectedOut: "2\n3\n4\n4\n"},
 		{name: `var scope nested`, input: `var a=1;{var a=2; print a; {var a=3; print a;{var a=4; print a; }}}print a;a;`, expectedEval: `1`, expectedOut: "2\n3\n4\n1\n"},
@@ -74,8 +75,8 @@ func TestInterpret(t *testing.T) {
 		{name: `logic or short circuit`, input: `1 or Unknown;`, expectedEval: `1`},
 		{name: `while loop`, input: `var a=1; while(a<10){print a; a=a+1;}`, expectedEval: `nil`, expectedOut: "1\n2\n3\n4\n5\n6\n7\n8\n9\n"},
 		{name: `for loop`, input: `for(var a=1;a<10;a=a+1){print a;}`, expectedEval: `nil`, expectedOut: "1\n2\n3\n4\n5\n6\n7\n8\n9\n"},
-		{name: `break invalid syntax`, input: `break;1;`, expectedError: `parse error at ';': must be inside a loop to use 'break'`},
-		{name: `continue invalid syntax`, input: `continue;1;`, expectedError: `parse error at ';': must be inside a loop to use 'continue'`},
+		{name: `break invalid syntax`, input: `break;1;`, expectedError: `parse error.`, expectedOut: `parse error at ';': must be inside a loop to use 'break'`},
+		{name: `continue invalid syntax`, input: `continue;1;`, expectedError: `parse error.`, expectedOut: `parse error at ';': must be inside a loop to use 'continue'`},
 		{name: `for loop`, input: `for(var a=1;a<10;a=a+1){print a;}`, expectedEval: `nil`, expectedOut: "1\n2\n3\n4\n5\n6\n7\n8\n9\n"},
 		{name: `while break`, input: `var a=0; while(true){ if(a>3)break; a=a+1; print a;}`, expectedEval: `nil`, expectedOut: "1\n2\n3\n4\n"},
 		{name: `for break`, input: `for(var a=0;a<10;a=a+1){ if(a>3)break; print a;}`, expectedEval: `nil`, expectedOut: "0\n1\n2\n3\n"},
@@ -127,62 +128,66 @@ func TestInterpretReplMultiline(t *testing.T) {
 
 func evaluate(script string) (string, string, error) {
 	stdin := strings.NewReader("")
-	stdout := strings.Builder{}
+	stdouterr := strings.Builder{}
+	reporter := loxerrors.NewErrReporter(&stdouterr)
 
 	eval := interpreter.NewInterpreter(
 		interpreter.WithStdin(stdin),
-		interpreter.WithStdout(&stdout),
-		interpreter.WithStderr(&stdout),
+		interpreter.WithStdout(&stdouterr),
+		interpreter.WithStderr(&stdouterr),
+		interpreter.WithErrorReporter(reporter),
 	)
 
-	scan := scanner.NewScanner(script)
+	scan := scanner.NewScanner(script, reporter)
 
 	tokens, err := scan.Scan()
 	if err != nil {
-		return "", stdout.String(), err
+		return "", stdouterr.String(), err
 	}
 
-	p := parser.NewParser(tokens)
+	p := parser.NewParser(tokens, reporter)
 	stmts, err := p.Parse()
 	if err != nil {
-		return "", stdout.String(), err
+		return "", stdouterr.String(), err
 	}
 
 	svalue, err := eval.Interpret(context.TODO(), stmts)
-	return svalue, stdout.String(), err
+	return svalue, stdouterr.String(), err
 }
 
 func replLineByLine(script ...string) ([]string, string, error) {
 	stdin := strings.NewReader("")
-	stdout := strings.Builder{}
+	stdouterr := strings.Builder{}
+	reporter := loxerrors.NewErrReporter(&stdouterr)
 
 	eval := interpreter.NewInterpreter(
 		interpreter.WithStdin(stdin),
-		interpreter.WithStdout(&stdout),
-		interpreter.WithStderr(&stdout),
+		interpreter.WithStdout(&stdouterr),
+		interpreter.WithStderr(&stdouterr),
+		interpreter.WithErrorReporter(reporter),
 	)
 
 	var results []string
 	for _, s := range script {
-		scan := scanner.NewScanner(s)
+		scan := scanner.NewScanner(s, reporter)
 
 		tokens, err := scan.Scan()
 		if err != nil {
-			return nil, stdout.String(), err
+			return nil, stdouterr.String(), err
 		}
 
-		p := parser.NewParser(tokens)
+		p := parser.NewParser(tokens, reporter)
 		stmts, err := p.Parse()
 		if err != nil {
-			return nil, stdout.String(), err
+			return nil, stdouterr.String(), err
 		}
 
 		svalue, err := eval.Interpret(context.TODO(), stmts)
 		if err != nil {
-			return nil, stdout.String(), err
+			return nil, stdouterr.String(), err
 		}
 		results = append(results, svalue)
 	}
 
-	return results, stdout.String(), nil
+	return results, stdouterr.String(), nil
 }

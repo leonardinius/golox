@@ -2,8 +2,10 @@ package scanner_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/scanner"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,9 +18,10 @@ func TestScanTokens(t *testing.T) {
 		input    string
 		expected []string
 		err      string
+		reported string
 	}{
-		{"empty", "", []string{`{Type: EOF, Literal: <nil>, Line: 1}`}, ""},
-		{"syntax error", "⌘", nil, "[line 1] syntax error: Unexpected character. '⌘'"},
+		{"empty", "", []string{`{Type: EOF, Literal: <nil>, Line: 1}`}, "", ""},
+		{"syntax error", "⌘", nil, "scan error.", "[line 1] syntax error: Unexpected character. '⌘'"},
 		{
 			"basic",
 			"(){},*+-;",
@@ -35,6 +38,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
+			"",
 		},
 		{
 			"bang",
@@ -43,6 +47,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: BANG, Literal: <nil>, Line: 1}`,
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
+			"",
 			"",
 		},
 		{
@@ -53,6 +58,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: BANG, Literal: <nil>, Line: 1}`,
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
+			"",
 			"",
 		},
 		{
@@ -65,6 +71,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
+			"",
 		},
 		{
 			"lt",
@@ -74,6 +81,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
+			"",
 		},
 		{
 			"lteq",
@@ -82,6 +90,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: LESS_EQUAL, Literal: <nil>, Line: 1}`,
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
+			"",
 			"",
 		},
 		{
@@ -94,6 +103,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
+			"",
 		},
 		{
 			"gt",
@@ -103,6 +113,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
+			"",
 		},
 		{
 			"gteq",
@@ -111,6 +122,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: GREATER_EQUAL, Literal: <nil>, Line: 1}`,
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
+			"",
 			"",
 		},
 		{
@@ -123,6 +135,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
+			"",
 		},
 		{
 			"comment",
@@ -130,6 +143,7 @@ func TestScanTokens(t *testing.T) {
 			[]string{
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
+			"",
 			"",
 		},
 		{
@@ -139,6 +153,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: BANG, Literal: <nil>, Line: 1}`,
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
+			"",
 			"",
 		},
 		{
@@ -150,6 +165,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
+			"",
 		},
 		{
 			"string",
@@ -158,6 +174,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: STRING, Literal: "string", Line: 1}`,
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
+			"",
 			"",
 		},
 		{
@@ -168,6 +185,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
+			"",
 		},
 		{
 			"string-nl",
@@ -176,6 +194,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: STRING, Literal: "string\\nstring", Line: 1}`,
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
+			"",
 			"",
 		},
 		{
@@ -186,6 +205,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
+			"",
 		},
 		{
 			"number-integer-leading-zeroes",
@@ -194,6 +214,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: NUMBER, Literal: 10, Line: 1}`,
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
+			"",
 			"",
 		},
 		{
@@ -204,6 +225,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
+			"",
 		},
 		{
 			"number-decimal-leading-zeroes",
@@ -212,6 +234,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: NUMBER, Literal: 12.34, Line: 1}`,
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
+			"",
 			"",
 		},
 		{
@@ -223,6 +246,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
+			"",
 		},
 		{
 			"identifier",
@@ -231,6 +255,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: IDENTIFIER, Literal: <nil>, Line: 1}`,
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
+			"",
 			"",
 		},
 		{
@@ -256,6 +281,7 @@ func TestScanTokens(t *testing.T) {
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
 			"",
+			"",
 		},
 		{
 			"comment-asterix",
@@ -263,6 +289,7 @@ func TestScanTokens(t *testing.T) {
 			[]string{
 				`{Type: EOF, Literal: <nil>, Line: 1}`,
 			},
+			"",
 			"",
 		},
 		{
@@ -285,12 +312,15 @@ func TestScanTokens(t *testing.T) {
 				`{Type: EOF, Literal: <nil>, Line: 12}`,
 			},
 			"",
+			"",
 		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(tt *testing.T) {
-			s := scanner.NewScanner(tc.input)
+			stderr := &strings.Builder{}
+			reporter := loxerrors.NewErrReporter(stderr)
+			s := scanner.NewScanner(tc.input, reporter)
 			tokens, err := s.Scan()
 			if tc.err != "" {
 				assert.ErrorContainsf(tt, err, tc.err, "expected error %v, got %v", tc.err, err)

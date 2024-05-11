@@ -10,6 +10,7 @@ import (
 	"github.com/chzyer/readline"
 
 	"github.com/leonardinius/golox/internal/interpreter"
+	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/parser"
 	"github.com/leonardinius/golox/internal/scanner"
 )
@@ -23,9 +24,16 @@ func NewLoxApp() *LoxApp {
 	return &LoxApp{interpeter: interpreter.NewInterpreter()}
 }
 
-func (app *LoxApp) reportError(err error) {
-	fmt.Fprintln(os.Stderr, err)
+// ReportError implements loxerrors.ErrReporter.
+func (app *LoxApp) ReportError(err error) {
 	app.err = err
+	loxerrors.DefaultReportError(os.Stderr, err)
+}
+
+// ReportWarning implements loxerrors.ErrReporter.
+func (app *LoxApp) ReportWarning(err error) {
+	app.err = err
+	loxerrors.DefaultReportWarning(os.Stderr, err)
 }
 
 func (app *LoxApp) Main(args []string) int {
@@ -42,7 +50,7 @@ func (app *LoxApp) Main(args []string) int {
 	}
 
 	if err != nil {
-		app.reportError(err)
+		app.ReportError(err)
 	}
 
 	if app.err != nil {
@@ -74,7 +82,7 @@ func (app *LoxApp) runPrompt(ctx context.Context) error {
 
 		err = app.run(ctx, line)
 		if err != nil {
-			app.reportError(err)
+			app.ReportError(err)
 			app.resetError()
 		}
 	}
@@ -90,14 +98,12 @@ func (app *LoxApp) runFile(ctx context.Context, scriptPath string) error {
 }
 
 func (app *LoxApp) run(ctx context.Context, input string) error {
-	s := scanner.NewScanner(input)
+	s := scanner.NewScanner(input, app)
 
 	tokens, err := s.Scan()
-	if err != nil {
-		return err
-	}
+	app.err = err
 
-	p := parser.NewParser(tokens)
+	p := parser.NewParser(tokens, app)
 	stmts, err := p.Parse()
 	if err != nil {
 		return err
@@ -108,11 +114,13 @@ func (app *LoxApp) run(ctx context.Context, input string) error {
 
 func (app *LoxApp) interpret(ctx context.Context, stmts []parser.Stmt) error {
 
-	if out, err := app.interpeter.Interpret(ctx, stmts); err != nil {
+	if eval, err := app.interpeter.Interpret(ctx, stmts); err != nil {
 		return err
 	} else {
-		fmt.Println(out)
+		fmt.Println(eval)
 	}
 
 	return nil
 }
+
+var _ loxerrors.ErrReporter = (*LoxApp)(nil)

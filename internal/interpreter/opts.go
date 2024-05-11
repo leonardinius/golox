@@ -3,19 +3,23 @@ package interpreter
 import (
 	"io"
 	"os"
+
+	"github.com/leonardinius/golox/internal/loxerrors"
 )
 
 type interpreterOpts struct {
-	env    *environment
-	stdin  io.Reader
-	stdout io.Writer
-	stderr io.Writer
+	env      *environment
+	stdin    io.Reader
+	stdout   io.Writer
+	stderr   io.Writer
+	reporter loxerrors.ErrReporter
 }
 
 var defaultInterpreterOpts = interpreterOpts{
-	stdin:  os.Stdin,
-	stdout: os.Stdout,
-	stderr: os.Stderr,
+	stdin:    os.Stdin,
+	stdout:   os.Stdout,
+	stderr:   os.Stderr,
+	reporter: loxerrors.NewErrReporter(os.Stderr),
 }
 
 type InterpreterOption func(*interpreterOpts)
@@ -41,6 +45,12 @@ func WithStdout(stdout io.Writer) InterpreterOption {
 func WithStderr(stderr io.Writer) InterpreterOption {
 	return func(opts *interpreterOpts) {
 		opts.stderr = stderr
+	}
+}
+
+func WithErrorReporter(r loxerrors.ErrReporter) InterpreterOption {
+	return func(opts *interpreterOpts) {
+		opts.reporter = r
 	}
 }
 

@@ -12,44 +12,23 @@ type Scanner interface {
 	Scan() ([]token.Token, error)
 }
 
-var reservedKeywords = map[string]token.TokenType{
-	"and":      token.AND,
-	"break":    token.BREAK,
-	"continue": token.CONTINUE,
-	"class":    token.CLASS,
-	"else":     token.ELSE,
-	"false":    token.FALSE,
-	"for":      token.FOR,
-	"fun":      token.FUN,
-	"if":       token.IF,
-	"nil":      token.NIL,
-	"or":       token.OR,
-	"print":    token.PRINT,
-	"return":   token.RETURN,
-	"super":    token.SUPER,
-	"this":     token.THIS,
-	"true":     token.TRUE,
-	"var":      token.VAR,
-	"while":    token.WHILE,
-}
-
 type scanner struct {
 	source               []rune
 	tokens               []token.Token
 	start, current, line int
 	err                  error
+	reporter             loxerrors.ErrReporter
 }
 
 // NewScanner returns a new Scanner.
-func NewScanner(input string) Scanner {
-	return &scanner{source: []rune(input), start: 0, current: 0, line: 1}
+func NewScanner(input string, reporter loxerrors.ErrReporter) Scanner {
+	return &scanner{source: []rune(input), start: 0, current: 0, line: 1, reporter: reporter}
 }
 
 // Scan implements Scanner.
 func (s *scanner) Scan() ([]token.Token, error) {
-	// return tokens;”
 
-	for !s.isDone() {
+	for !s.isAtEnd() {
 		// We are at the beginning of the next lexeme.
 		s.start = s.current
 		s.scanToken()
@@ -57,19 +36,15 @@ func (s *scanner) Scan() ([]token.Token, error) {
 
 	s.tokens = append(s.tokens, token.NewToken(token.EOF, "", nil, s.line))
 
-	return s.tokens, s.err
+	if s.err != nil {
+		return nil, loxerrors.ErrScanError
+	}
+
+	return s.tokens, nil
 }
 
 func (s *scanner) isAtEnd() bool {
 	return s.current >= len(s.source)
-}
-
-func (s *scanner) hasErr() bool {
-	return s.err != nil
-}
-
-func (s *scanner) isDone() bool {
-	return s.isAtEnd() || s.hasErr()
 }
 
 func (s *scanner) scanToken() {
@@ -256,7 +231,7 @@ func (s *scanner) reservedOrIdentifier() {
 }
 
 func (s *scanner) reserved(identifier string) (tokenType token.TokenType, ok bool) {
-	tokenType, ok = reservedKeywords[identifier]
+	tokenType, ok = token.Keywords[identifier]
 	return
 }
 
@@ -275,11 +250,16 @@ func (s *scanner) isAlphaNumeric(c rune) bool {
 }
 
 func (s *scanner) reportUnexpectedCharater(c rune) {
-	s.err = loxerrors.NewScanError(s.line, loxerrors.ErrScanUnexpectedCharacter, strconv.QuoteRune(c))
+	s.report(loxerrors.NewScanError(s.line, loxerrors.ErrScanUnexpectedCharacter, strconv.QuoteRune(c)))
 }
 
 func (s *scanner) reportError(err error) {
-	s.err = loxerrors.NewScanError(s.line, err, "")
+	s.report(loxerrors.NewScanError(s.line, err, ""))
+}
+
+func (s *scanner) report(err error) {
+	s.err = err
+	s.reporter.ReportError(err)
 }
 
 var _ Scanner = (*scanner)(nil)

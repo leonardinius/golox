@@ -6,6 +6,7 @@ import (
 )
 
 var (
+	ErrScanError               = errors.New("scan error.")
 	ErrScanUnexpectedCharacter = errors.New("Unexpected character.")
 	ErrScanUnterminatedString  = errors.New("Unterminated string.")
 	ErrScanUnterminatedComment = errors.New("Unterminated comment.")

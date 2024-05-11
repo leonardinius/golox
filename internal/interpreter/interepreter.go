@@ -33,19 +33,21 @@ type Interpreter interface {
 }
 
 type interpreter struct {
-	Env    *environment
-	Stdin  io.Reader
-	Stdout io.Writer
-	Stderr io.Writer
+	Env         *environment
+	Stdin       io.Reader
+	Stdout      io.Writer
+	Stderr      io.Writer
+	ErrReporter loxerrors.ErrReporter
 }
 
 func NewInterpreter(options ...InterpreterOption) Interpreter {
 	opts := newInterpreterOpts(options...)
 	return &interpreter{
-		Env:    opts.env,
-		Stdin:  opts.stdin,
-		Stdout: opts.stdout,
-		Stderr: opts.stderr,
+		Env:         opts.env,
+		Stdin:       opts.stdin,
+		Stdout:      opts.stdout,
+		Stderr:      opts.stderr,
+		ErrReporter: opts.reporter,
 	}
 }
 
@@ -134,7 +136,7 @@ func (i *interpreter) VisitStmtVar(ctx context.Context, stmt *parser.StmtVar) (a
 func (i *interpreter) VisitStmtWhile(ctx context.Context, stmtWhile *parser.StmtWhile) (any, error) {
 	var condition any
 	var err error
-	for {
+	for err == nil {
 		if condition, err = i.evaluate(ctx, stmtWhile.Condition); err != nil {
 			break
 		}
@@ -164,12 +166,10 @@ func (i *interpreter) VisitStmtFor(ctx context.Context, stmtFor *parser.StmtFor)
 	var err error
 
 	if stmtFor.Initializer != nil {
-		if _, err = i.execute(ctx, stmtFor.Initializer); err != nil {
-			return nil, err
-		}
+		_, err = i.execute(ctx, stmtFor.Initializer)
 	}
 
-	for {
+	for err == nil {
 		if condition, err = i.evaluate(ctx, stmtFor.Condition); err != nil {
 			break
 		}
@@ -189,10 +189,8 @@ func (i *interpreter) VisitStmtFor(ctx context.Context, stmtFor *parser.StmtFor)
 			}
 		}
 
-		if stmtFor.Increment != nil {
-			if _, err = i.evaluate(ctx, stmtFor.Increment); err != nil {
-				return nil, err
-			}
+		if err == nil && stmtFor.Increment != nil {
+			_, err = i.evaluate(ctx, stmtFor.Increment)
 		}
 	}
 
@@ -363,7 +361,8 @@ func (i *interpreter) VisitExprUnary(ctx context.Context, expr *parser.ExprUnary
 }
 
 func (i *interpreter) execute(ctx context.Context, stmt parser.Stmt) (any, error) {
-	return stmt.Accept(ctx, i)
+	v, err := stmt.Accept(ctx, i)
+	return v, err
 }
 
 func (i *interpreter) executeBlock(ctx context.Context, stmt []parser.Stmt) (value any, err error) {
