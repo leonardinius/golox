@@ -28,10 +28,12 @@ func (e *errReporter) ReportWarning(err error) {
 	DefaultReportWarning(e.w, err)
 }
 
+// DefaultReportError is the default implementation of ErrReporter.ReportError.
 func DefaultReportError(w io.Writer, err error) {
 	fmt.Fprintf(w, "ERR  %v\n", err)
 }
 
+// DefaultReportWarning is the default implementation of ErrReporter.ReportWarning.
 func DefaultReportWarning(w io.Writer, err error) {
 	fmt.Fprintf(w, "WARN %v\n", err)
 }
