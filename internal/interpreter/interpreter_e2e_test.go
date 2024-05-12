@@ -82,6 +82,14 @@ func TestInterpret(t *testing.T) {
 		{name: `for break`, in: `for(var a=0;a<10;a=a+1){if(a>3)break;print a;}`, eval: `nil`, out: "0\n1\n2\n3\n"},
 		{name: `while continue`, in: `var a=0;while(a<10){a=a+1;if(a<5)continue;print a;}`, eval: `nil`, out: "5\n6\n7\n8\n9\n10\n"},
 		{name: `for continue`, in: `for(var a=0;a<10;a=a+1){if(a<5)continue;print a;}`, eval: `nil`, out: "5\n6\n7\n8\n9\n"},
+		{name: `built in pprint`, in: `pprint();`, eval: `nil`, out: "\n"},
+		{name: `built in pprint varargs`, in: `pprint(1,2,nil,3,4);`, eval: `nil`, out: "1 2 nil 3 4\n"},
+		{name: `built in time`, in: `clock(1,2);`, eval: `nil`, err: "expected 0 arguments but got 2."},
+		{name: `call non function`, in: `"non function"();`, eval: `nil`, err: "can only call functions and classes."},
+		{name: `define fun add`, in: `fun add(a,b){return a+b;}add(1,2);`, eval: `3`},
+		{name: `define fun error 1`, in: `fun add(a,b){return a+b;};add(1,2);`, err: "parse error.", out: "FATAL [line 1] parse error at ';': expected expression.\n"},
+		{name: `recursive fun`, in: `fun a(i){if (i==0) return "Exit"; else {print(i);return a(i-1);}} a(3);`, eval: `"Exit"`, out: "3\n2\n1\n"},
+		{name: `anon fun`, in: `var a=fun (i){return i;};a(1);`, eval: `1`},
 	}
 
 	for _, tc := range testcases {

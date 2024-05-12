@@ -24,16 +24,16 @@ func NewLoxApp() *LoxApp {
 	return &LoxApp{interpeter: interpreter.NewInterpreter()}
 }
 
+// ReportPanic implements loxerrors.ErrReporter.
+func (app *LoxApp) ReportPanic(err error) {
+	app.err = err
+	loxerrors.DefaultReportPanic(os.Stderr, err)
+}
+
 // ReportError implements loxerrors.ErrReporter.
 func (app *LoxApp) ReportError(err error) {
 	app.err = err
 	loxerrors.DefaultReportError(os.Stderr, err)
-}
-
-// ReportWarning implements loxerrors.ErrReporter.
-func (app *LoxApp) ReportWarning(err error) {
-	app.err = err
-	loxerrors.DefaultReportWarning(os.Stderr, err)
 }
 
 func (app *LoxApp) Main(args []string) int {
@@ -50,7 +50,7 @@ func (app *LoxApp) Main(args []string) int {
 	}
 
 	if err != nil {
-		app.ReportError(err)
+		app.ReportPanic(err)
 	}
 
 	if app.err != nil {
@@ -82,7 +82,7 @@ func (app *LoxApp) runPrompt(ctx context.Context) error {
 
 		err = app.run(ctx, line)
 		if err != nil {
-			app.ReportError(err)
+			app.ReportPanic(err)
 			app.resetError()
 		}
 	}

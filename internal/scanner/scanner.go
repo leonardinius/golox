@@ -259,7 +259,7 @@ func (s *scanner) reportError(err error) {
 
 func (s *scanner) report(err error) {
 	s.err = err
-	s.reporter.ReportError(err)
+	s.reporter.ReportPanic(err)
 }
 
 var _ Scanner = (*scanner)(nil)

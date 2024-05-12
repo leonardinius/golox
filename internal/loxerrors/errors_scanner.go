@@ -18,7 +18,7 @@ type ScannerError struct {
 	details string
 }
 
-func NewScanError(line int, cause error, details string) *ScannerError {
+func NewScanError(line int, cause error, details string) error {
 	return &ScannerError{line, cause, details}
 }
 

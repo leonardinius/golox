@@ -26,17 +26,34 @@ var (
 	ErrParseExpectedSemicolonAfterForLoopCond     = errors.New("expect ';' after loop condition.")
 	ErrParseExpectedSemicolonTokenAfterBreak      = errors.New("expect ';' after 'break'.")
 	ErrParseExpectedSemicolonTokenAfterContinue   = errors.New("expect ';' after 'continue'.")
+	ErrParseExpectedSemicolonTokenAfterReturn     = errors.New("expect ';' after return value.")
+	ErrParseReturnOutsideFunction                 = errors.New("must be inside a function to use 'return'.")
+	ErrParseUnexpectedParameterName               = errors.New("expect parameter name.")
+	ErrParseExpectedRightParentFunToken           = errors.New("expect ')' after parameters.")
 	ErrParseBreakOutsideLoop                      = errors.New("must be inside a loop to use 'break'.")
 	ErrParseContinueOutsideLoop                   = errors.New("must be inside a loop to use 'continue'.")
+	ErrParseTooManyArguments                      = errors.New("can't have more than 255 arguments.")
 )
+
+func ErrParseExpectedIdentifierKindError(kind string) error {
+	return fmt.Errorf("expect %s name.", kind)
+}
+
+func ErrParseExpectedLeftParenError(kind string) error {
+	return fmt.Errorf("expect '(' after %s name.", kind)
+}
+
+func ErrParseExpectedLeftBraceFunToken(kind string) error {
+	return fmt.Errorf("expect '{' before %s body.", kind)
+}
+
+func NewParseError(tok *token.Token, cause error) error {
+	return &ParserError{tok: tok, cause: cause}
+}
 
 type ParserError struct {
 	tok   *token.Token
 	cause error
-}
-
-func NewParseError(tok *token.Token, cause error) *ParserError {
-	return &ParserError{tok: tok, cause: cause}
 }
 
 // Error implements error.

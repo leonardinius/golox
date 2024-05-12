@@ -42,6 +42,10 @@ type interpreter struct {
 
 func NewInterpreter(options ...InterpreterOption) Interpreter {
 	opts := newInterpreterOpts(options...)
+	globals := opts.env
+	globals.Define("clock", NativeFunction0(StdFnTime))
+	globals.Define("pprint", NativeFunctionVarArgs(StdFnPPrint))
+
 	return &interpreter{
 		Env:         opts.env,
 		Stdin:       opts.stdin,
@@ -72,11 +76,14 @@ func (i *interpreter) Evaluate(ctx context.Context, stmt parser.Stmt) (any, erro
 	return i.execute(ctx, stmt)
 }
 
-func (i *interpreter) print(v any) {
-	if v == nil {
-		v = "nil"
+func (i *interpreter) print(v ...any) {
+	for i, vv := range v {
+		if vv == nil {
+			v[i] = "nil"
+		}
 	}
-	_, _ = fmt.Fprintln(i.Stdout, v)
+
+	_, _ = fmt.Fprintln(i.Stdout, v...)
 }
 
 func (i *interpreter) stringify(v any) string {
@@ -89,6 +96,14 @@ func (i *interpreter) stringify(v any) string {
 // VisitExpression implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtExpression(ctx context.Context, expr *parser.StmtExpression) (any, error) {
 	return i.evaluate(ctx, expr.Expression)
+}
+
+// VisitStmtFunction implements parser.StmtVisitor.
+func (i *interpreter) VisitStmtFunction(ctx context.Context, stmtFunction *parser.StmtFunction) (any, error) {
+	env := EnvFromContext(ctx)
+	function := NewLoxFunction(stmtFunction.Name, stmtFunction.Fn, env)
+	env.Define(stmtFunction.Name.Lexeme, function)
+	return nil, nil
 }
 
 // VisitStmtIf implements parser.StmtVisitor.
@@ -116,6 +131,17 @@ func (i *interpreter) VisitStmtPrint(ctx context.Context, expr *parser.StmtPrint
 	return nil, err
 }
 
+// VisitStmtReturn implements parser.StmtVisitor.
+func (i *interpreter) VisitStmtReturn(ctx context.Context, stmtReturn *parser.StmtReturn) (value any, err error) {
+	if stmtReturn.Value != nil {
+		if value, err = i.evaluate(ctx, stmtReturn.Value); err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, &ReturnValue{Value: value}
+}
+
 // VisitVar implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtVar(ctx context.Context, stmt *parser.StmtVar) (any, error) {
 	var value any
@@ -135,7 +161,9 @@ func (i *interpreter) VisitStmtVar(ctx context.Context, stmt *parser.StmtVar) (a
 // VisitStmtWhile implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtWhile(ctx context.Context, stmtWhile *parser.StmtWhile) (any, error) {
 	var condition any
+	var value any
 	var err error
+
 	for err == nil {
 		if condition, err = i.evaluate(ctx, stmtWhile.Condition); err != nil {
 			break
@@ -145,7 +173,7 @@ func (i *interpreter) VisitStmtWhile(ctx context.Context, stmtWhile *parser.Stmt
 			break
 		}
 
-		if _, err = i.execute(ctx, stmtWhile.Body); err != nil {
+		if value, err = i.execute(ctx, stmtWhile.Body); err != nil {
 			switch {
 			case err == errBreak:
 				// return immediatelly
@@ -157,12 +185,13 @@ func (i *interpreter) VisitStmtWhile(ctx context.Context, stmtWhile *parser.Stmt
 		}
 	}
 
-	return nil, err
+	return value, err
 }
 
 // VisitStmtFor implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtFor(ctx context.Context, stmtFor *parser.StmtFor) (any, error) {
 	var condition any
+	var value any
 	var err error
 
 	if stmtFor.Initializer != nil {
@@ -178,7 +207,7 @@ func (i *interpreter) VisitStmtFor(ctx context.Context, stmtFor *parser.StmtFor)
 			break
 		}
 
-		if _, err = i.execute(ctx, stmtFor.Body); err != nil {
+		if value, err = i.execute(ctx, stmtFor.Body); err != nil {
 			switch {
 			case err == errBreak:
 				// return immediatelly
@@ -194,7 +223,7 @@ func (i *interpreter) VisitStmtFor(ctx context.Context, stmtFor *parser.StmtFor)
 		}
 	}
 
-	return nil, err
+	return value, err
 }
 
 // VisitStmtBreak implements parser.StmtVisitor.
@@ -210,7 +239,8 @@ func (*interpreter) VisitStmtContinue(ctx context.Context, stmtContinue *parser.
 // VisitStmtBlock implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtBlock(ctx context.Context, block *parser.StmtBlock) (any, error) {
 	env := EnvFromContext(ctx)
-	return i.executeBlock(env.NewNestContext(ctx), block.Statements)
+	newCtx := env.Nest().AsContext(ctx)
+	return i.executeBlock(newCtx, block.Statements)
 }
 
 // VisitVariable implements parser.ExprVisitor.
@@ -286,7 +316,7 @@ func (i *interpreter) VisitExprBinary(ctx context.Context, expr *parser.ExprBina
 				return left + right, nil
 			}
 		}
-		return nil, i.runtimeError(expr.Operator, loxerrors.ErrRuntimeOperandsMustNumbersOrStrings)
+		return i.returnRuntimeError(expr.Operator, loxerrors.ErrRuntimeOperandsMustNumbersOrStrings)
 	case token.SLASH:
 		if err = i.checkNumberOperands(expr.Operator, left, right); err != nil {
 			return nil, err
@@ -300,6 +330,43 @@ func (i *interpreter) VisitExprBinary(ctx context.Context, expr *parser.ExprBina
 	}
 
 	return i.unreachable()
+}
+
+// VisitExprFunction implements parser.ExprVisitor.
+func (i *interpreter) VisitExprFunction(ctx context.Context, exprFunction *parser.ExprFunction) (any, error) {
+	env := EnvFromContext(ctx)
+	fn := NewLoxFunction(nil, exprFunction, env)
+	return fn, nil
+}
+
+// VisitExprCall implements parser.ExprVisitor.
+func (i *interpreter) VisitExprCall(ctx context.Context, exprCall *parser.ExprCall) (any, error) {
+	callee, err := i.evaluate(ctx, exprCall.Callee)
+	if err != nil {
+		return nil, err
+	}
+	callable, ok := callee.(Callable)
+	if !ok {
+		return i.returnRuntimeError(exprCall.CloseParen, loxerrors.ErrRuntimeCalleeMustBeCallable)
+	}
+
+	var args []any
+	for _, arg := range exprCall.Arguments {
+		argValue, err := i.evaluate(ctx, arg)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, argValue)
+	}
+
+	if !callable.Arity().IsVarArgs() && len(args) != int(callable.Arity()) {
+		return i.returnRuntimeError(exprCall.CloseParen,
+			loxerrors.ErrRuntimeCalleeArityError(
+				int(callable.Arity()),
+				len(args),
+			))
+	}
+	return callable.Call(ctx, i, args)
 }
 
 // VisitGrouping implements parser.Visitor.
@@ -361,19 +428,19 @@ func (i *interpreter) VisitExprUnary(ctx context.Context, expr *parser.ExprUnary
 }
 
 func (i *interpreter) execute(ctx context.Context, stmt parser.Stmt) (any, error) {
-	v, err := stmt.Accept(ctx, i)
-	return v, err
+	value, err := stmt.Accept(ctx, i)
+	return value, err
 }
 
 func (i *interpreter) executeBlock(ctx context.Context, stmt []parser.Stmt) (value any, err error) {
 
 	for _, stmt := range stmt {
-		if value, err = i.execute(ctx, stmt); err != nil {
+		if _, err = i.execute(ctx, stmt); err != nil {
 			return nil, err
 		}
 	}
 
-	return value, nil
+	return nil, nil
 }
 
 func (i *interpreter) evaluate(ctx context.Context, expr parser.Expr) (any, error) {
@@ -413,6 +480,10 @@ func (i *interpreter) checkNumberOperand(tok *token.Token, val any) error {
 	}
 
 	return nil
+}
+
+func (i *interpreter) returnRuntimeError(tok *token.Token, err error) (any, error) {
+	return nil, i.runtimeError(tok, err)
 }
 
 func (i *interpreter) runtimeError(tok *token.Token, err error) error {

@@ -12,15 +12,20 @@ var (
 	ErrRuntimeOperandsMustBeNumbers        = errors.New("operands must be numbers.")
 	ErrRuntimeOperandsMustNumbersOrStrings = errors.New("operands must be two numbers or two strings.")
 	ErrRuntimeUndefinedVariable            = errors.New("undefined variable")
+	ErrRuntimeCalleeMustBeCallable         = errors.New("can only call functions and classes.")
 )
+
+func ErrRuntimeCalleeArityError(expectedArity int, actualArity int) error {
+	return fmt.Errorf("expected %d arguments but got %d.", expectedArity, actualArity)
+}
+
+func NewRuntimeError(tok *token.Token, cause error) error {
+	return &RuntimeError{tok, cause}
+}
 
 type RuntimeError struct {
 	tok   *token.Token
 	cause error
-}
-
-func NewRuntimeError(tok *token.Token, cause error) *RuntimeError {
-	return &RuntimeError{tok, cause}
 }
 
 // Error implements error.

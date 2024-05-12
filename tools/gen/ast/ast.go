@@ -22,8 +22,10 @@ func Main(args []string) int {
 	packageName := args[2]
 
 	if err := defineAst(expressionsOutFile, packageName, "Expr",
-		"ExprAssign    : Name *token.Token, Value Expr",
+		"ExprAssign   : Name *token.Token, Value Expr",
 		"ExprBinary   : Left Expr, Operator *token.Token, Right Expr",
+		"ExprCall     : Callee Expr, CloseParen *token.Token, Arguments []Expr",
+		"ExprFunction : Parameters []*token.Token, Body []Stmt",
 		"ExprGrouping : Expression Expr",
 		"ExprLiteral  : Value any",
 		"ExprLogical  : Left Expr, Operator *token.Token, Right Expr",
@@ -39,8 +41,10 @@ func Main(args []string) int {
 		"StmtBreak      :",
 		"StmtContinue   :",
 		"StmtExpression : Expression Expr",
+		"StmtFunction   : Name *token.Token, Fn *ExprFunction",
 		"StmtIf         : Condition Expr, ThenBranch Stmt, ElseBranch Stmt",
 		"StmtPrint      : Expression Expr",
+		"StmtReturn     : Keyword  *token.Token, Value Expr",
 		"StmtVar        : Name *token.Token, Initializer Expr",
 		"StmtWhile      : Condition Expr, Body Stmt",
 		"StmtFor        : Initializer Stmt, Condition Expr, Increment Expr, Body Stmt",

@@ -65,10 +65,6 @@ func (e *environment) AsContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, envCtxKey{}, e)
 }
 
-func (e *environment) NewNestContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, envCtxKey{}, e.Nest())
-}
-
 func (e *environment) undefinedVariable(name *token.Token) error {
 	err := fmt.Errorf("%w '%s'.", loxerrors.ErrRuntimeUndefinedVariable, name.Lexeme)
 	return loxerrors.NewRuntimeError(name, err)
