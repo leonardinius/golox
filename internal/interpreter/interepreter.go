@@ -101,7 +101,7 @@ func (i *interpreter) VisitStmtExpression(ctx context.Context, expr *parser.Stmt
 // VisitStmtFunction implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtFunction(ctx context.Context, stmtFunction *parser.StmtFunction) (any, error) {
 	env := EnvFromContext(ctx)
-	function := NewLoxFunction(stmtFunction, env)
+	function := NewLoxFunction(stmtFunction.Name, stmtFunction.Fn, env)
 	env.Define(stmtFunction.Name.Lexeme, function)
 	return nil, nil
 }
@@ -330,6 +330,13 @@ func (i *interpreter) VisitExprBinary(ctx context.Context, expr *parser.ExprBina
 	}
 
 	return i.unreachable()
+}
+
+// VisitExprFunction implements parser.ExprVisitor.
+func (i *interpreter) VisitExprFunction(ctx context.Context, exprFunction *parser.ExprFunction) (any, error) {
+	env := EnvFromContext(ctx)
+	fn := NewLoxFunction(nil, exprFunction, env)
+	return fn, nil
 }
 
 // VisitExprCall implements parser.ExprVisitor.

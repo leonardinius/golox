@@ -6,15 +6,17 @@ import (
 	"fmt"
 
 	"github.com/leonardinius/golox/internal/parser"
+	"github.com/leonardinius/golox/internal/token"
 )
 
 type LoxFunction struct {
-	Fn  *parser.StmtFunction
-	Env *environment
+	Name *token.Token
+	Fn   *parser.ExprFunction
+	Env  *environment
 }
 
-func NewLoxFunction(fn *parser.StmtFunction, env *environment) *LoxFunction {
-	return &LoxFunction{Fn: fn, Env: env}
+func NewLoxFunction(name *token.Token, fn *parser.ExprFunction, env *environment) *LoxFunction {
+	return &LoxFunction{Name: name, Fn: fn, Env: env}
 }
 
 // Arity implements Callable.
@@ -47,7 +49,10 @@ func (l *LoxFunction) returnValue(err error) (any, error) {
 
 // String implements fmt.Stringer.
 func (l *LoxFunction) String() string {
-	return fmt.Sprintf("<fn:%s/%s>", l.Fn.Name.Lexeme, l.Arity())
+	if l.Name == nil {
+		return fmt.Sprintf("<fn:#anon/%s>", l.Arity())
+	}
+	return fmt.Sprintf("<fn:%s/%s>", l.Name.Lexeme, l.Arity())
 }
 
 // GoString implements fmt.GoStringer.

@@ -63,9 +63,8 @@ func (e *StmtExpression) Accept(ctx context.Context, v StmtVisitor) (any, error)
 }
 
 type StmtFunction struct {
-	Name       *token.Token
-	Parameters []*token.Token
-	Body       []Stmt
+	Name *token.Token
+	Fn   *ExprFunction
 }
 
 var _ Stmt = (*StmtFunction)(nil)

@@ -80,7 +80,8 @@ func (p *parser) Parse() (statements []Stmt, err error) {
 }
 
 func (p *parser) declaration() Stmt {
-	if p.match(token.FUN) {
+	if p.check(token.FUN) && p.checkNext(token.IDENTIFIER) {
+		p.advance()
 		return p.funDeclaration("function")
 	}
 
@@ -97,8 +98,13 @@ func (p *parser) funDeclaration(kind string) Stmt {
 		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedIdentifierKindError(kind))
 	}
 	name := p.previous()
+	fn := p.functionBody(kind)
+	return &StmtFunction{Name: name, Fn: fn.(*ExprFunction)}
+}
+
+func (p *parser) functionBody(kind string) Expr {
 	if !p.match(token.LEFT_PAREN) {
-		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedLeftParenError(kind))
+		return p.reportFatalErrorExpr(loxerrors.ErrParseExpectedLeftParenError(kind))
 	}
 
 	// function parameters declaration:
@@ -112,7 +118,7 @@ func (p *parser) funDeclaration(kind string) Stmt {
 			}
 
 			if !p.match(token.IDENTIFIER) {
-				return p.reportFatalErrorStmt(loxerrors.ErrParseUnexpectedParameterName)
+				return p.reportFatalErrorExpr(loxerrors.ErrParseUnexpectedParameterName)
 			}
 			params = append(params, p.previous())
 
@@ -124,17 +130,17 @@ func (p *parser) funDeclaration(kind string) Stmt {
 
 	// function body
 	if !p.match(token.RIGHT_PAREN) {
-		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedRightParentFunToken)
+		return p.reportFatalErrorExpr(loxerrors.ErrParseExpectedRightParentFunToken)
 	}
 	if !p.match(token.LEFT_BRACE) {
-		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedLeftBraceFunToken(kind))
+		return p.reportFatalErrorExpr(loxerrors.ErrParseExpectedLeftBraceFunToken(kind))
 	}
 
 	p.funcDepth++
 	defer func() { p.funcDepth-- }()
 	body := p.blockStatement()
 
-	return &StmtFunction{Name: name, Parameters: params, Body: body}
+	return &ExprFunction{Parameters: params, Body: body}
 }
 
 func (p *parser) varDeclaration() Stmt {
@@ -495,6 +501,9 @@ func (p *parser) primary() Expr {
 	if p.match(token.NIL) {
 		return &ExprLiteral{Value: nil}
 	}
+	if p.match(token.FUN) {
+		return p.functionBody("function")
+	}
 
 	if p.anyMatch(token.NUMBER, token.STRING) {
 		tok := p.previous()
@@ -541,6 +550,16 @@ func (p *parser) match(tokType token.TokenType) bool {
 
 func (p *parser) check(tokenType token.TokenType) bool {
 	return !p.isDone() && p.peek().Type == tokenType
+}
+
+func (p *parser) checkNext(tokenType token.TokenType) bool {
+	if p.isDone() {
+		return false
+	}
+	if p.peek().Type == token.EOF {
+		return false
+	}
+	return p.tokens[p.current+1].Type == tokenType
 }
 
 func (p *parser) peek() *token.Token {
