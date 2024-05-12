@@ -14,6 +14,7 @@ type StmtVisitor interface {
 	VisitStmtFunction(ctx context.Context, stmtFunction *StmtFunction) (any, error)
 	VisitStmtIf(ctx context.Context, stmtIf *StmtIf) (any, error)
 	VisitStmtPrint(ctx context.Context, stmtPrint *StmtPrint) (any, error)
+	VisitStmtReturn(ctx context.Context, stmtReturn *StmtReturn) (any, error)
 	VisitStmtVar(ctx context.Context, stmtVar *StmtVar) (any, error)
 	VisitStmtWhile(ctx context.Context, stmtWhile *StmtWhile) (any, error)
 	VisitStmtFor(ctx context.Context, stmtFor *StmtFor) (any, error)
@@ -93,6 +94,17 @@ var _ Stmt = (*StmtPrint)(nil)
 
 func (e *StmtPrint) Accept(ctx context.Context, v StmtVisitor) (any, error) {
 	return v.VisitStmtPrint(ctx, e)
+}
+
+type StmtReturn struct {
+	Keyword *token.Token
+	Value   Expr
+}
+
+var _ Stmt = (*StmtReturn)(nil)
+
+func (e *StmtReturn) Accept(ctx context.Context, v StmtVisitor) (any, error) {
+	return v.VisitStmtReturn(ctx, e)
 }
 
 type StmtVar struct {

@@ -131,6 +131,17 @@ func (i *interpreter) VisitStmtPrint(ctx context.Context, expr *parser.StmtPrint
 	return nil, err
 }
 
+// VisitStmtReturn implements parser.StmtVisitor.
+func (i *interpreter) VisitStmtReturn(ctx context.Context, stmtReturn *parser.StmtReturn) (value any, err error) {
+	if stmtReturn.Value != nil {
+		if value, err = i.evaluate(ctx, stmtReturn.Value); err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, &ReturnValue{Value: value}
+}
+
 // VisitVar implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtVar(ctx context.Context, stmt *parser.StmtVar) (any, error) {
 	var value any
@@ -150,7 +161,9 @@ func (i *interpreter) VisitStmtVar(ctx context.Context, stmt *parser.StmtVar) (a
 // VisitStmtWhile implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtWhile(ctx context.Context, stmtWhile *parser.StmtWhile) (any, error) {
 	var condition any
+	var value any
 	var err error
+
 	for err == nil {
 		if condition, err = i.evaluate(ctx, stmtWhile.Condition); err != nil {
 			break
@@ -160,7 +173,7 @@ func (i *interpreter) VisitStmtWhile(ctx context.Context, stmtWhile *parser.Stmt
 			break
 		}
 
-		if _, err = i.execute(ctx, stmtWhile.Body); err != nil {
+		if value, err = i.execute(ctx, stmtWhile.Body); err != nil {
 			switch {
 			case err == errBreak:
 				// return immediatelly
@@ -172,12 +185,13 @@ func (i *interpreter) VisitStmtWhile(ctx context.Context, stmtWhile *parser.Stmt
 		}
 	}
 
-	return nil, err
+	return value, err
 }
 
 // VisitStmtFor implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtFor(ctx context.Context, stmtFor *parser.StmtFor) (any, error) {
 	var condition any
+	var value any
 	var err error
 
 	if stmtFor.Initializer != nil {
@@ -193,7 +207,7 @@ func (i *interpreter) VisitStmtFor(ctx context.Context, stmtFor *parser.StmtFor)
 			break
 		}
 
-		if _, err = i.execute(ctx, stmtFor.Body); err != nil {
+		if value, err = i.execute(ctx, stmtFor.Body); err != nil {
 			switch {
 			case err == errBreak:
 				// return immediatelly
@@ -209,7 +223,7 @@ func (i *interpreter) VisitStmtFor(ctx context.Context, stmtFor *parser.StmtFor)
 		}
 	}
 
-	return nil, err
+	return value, err
 }
 
 // VisitStmtBreak implements parser.StmtVisitor.
@@ -406,19 +420,19 @@ func (i *interpreter) VisitExprUnary(ctx context.Context, expr *parser.ExprUnary
 }
 
 func (i *interpreter) execute(ctx context.Context, stmt parser.Stmt) (any, error) {
-	v, err := stmt.Accept(ctx, i)
-	return v, err
+	value, err := stmt.Accept(ctx, i)
+	return value, err
 }
 
 func (i *interpreter) executeBlock(ctx context.Context, stmt []parser.Stmt) (value any, err error) {
 
 	for _, stmt := range stmt {
-		if value, err = i.execute(ctx, stmt); err != nil {
+		if _, err = i.execute(ctx, stmt); err != nil {
 			return nil, err
 		}
 	}
 
-	return value, nil
+	return nil, nil
 }
 
 func (i *interpreter) evaluate(ctx context.Context, expr parser.Expr) (any, error) {

@@ -25,6 +25,7 @@ type parser struct {
 	panic     error
 	err       error
 	loopDepth int
+	funcDepth int
 }
 
 func NewParser(tokens []token.Token, reporter loxerrors.ErrReporter) Parser {
@@ -128,6 +129,9 @@ func (p *parser) funDeclaration(kind string) Stmt {
 	if !p.match(token.LEFT_BRACE) {
 		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedLeftBraceFunToken(kind))
 	}
+
+	p.funcDepth++
+	defer func() { p.funcDepth-- }()
 	body := p.blockStatement()
 
 	return &StmtFunction{Name: name, Parameters: params, Body: body}
@@ -178,6 +182,10 @@ func (p *parser) statement() Stmt {
 		return p.printStatement()
 	}
 
+	if p.match(token.RETURN) {
+		return p.returnStatement()
+	}
+
 	if p.match(token.LEFT_BRACE) {
 		block := p.blockStatement()
 		return &StmtBlock{Statements: block}
@@ -216,6 +224,25 @@ func (p *parser) printStatement() Stmt {
 	}
 
 	return &StmtPrint{Expression: expr}
+}
+
+func (p *parser) returnStatement() Stmt {
+	tok := p.previous()
+
+	if p.funcDepth == 0 {
+		return p.reportFatalErrorStmtToken(tok, loxerrors.ErrParseReturnOutsideFunction)
+	}
+
+	var value Expr = nilExpr
+	if !p.check(token.SEMICOLON) {
+		value = p.expression()
+	}
+
+	if !p.match(token.SEMICOLON) {
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedSemicolonTokenAfterReturn)
+	}
+
+	return &StmtReturn{Keyword: tok, Value: value}
 }
 
 func (p *parser) whileStatement() Stmt {
@@ -544,10 +571,14 @@ func (p *parser) isDone() bool {
 }
 
 func (p *parser) reportFatalErrorStmt(err error) Stmt {
+	return p.reportFatalErrorStmtToken(p.peek(), err)
+}
+
+func (p *parser) reportFatalErrorStmtToken(tok *token.Token, err error) Stmt {
 	// do not overwrite present error.
 	// preserves the original error and bubbles up to return in Parse() with .err
 	if p.panic == nil {
-		p.panic = loxerrors.NewParseError(p.peek(), err)
+		p.panic = loxerrors.NewParseError(tok, err)
 		p.fatal(p.panic)
 	}
 	return nilStmt

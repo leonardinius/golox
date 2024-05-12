@@ -2,6 +2,7 @@ package interpreter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/leonardinius/golox/internal/parser"
@@ -24,7 +25,19 @@ func (l *LoxFunction) Call(ctx context.Context, interpreter *interpreter, argume
 		env.Define(e.Lexeme, arguments[idx])
 	}
 
-	return interpreter.executeBlock(env.AsContext(ctx), l.Fn.Body)
+	value, err := interpreter.executeBlock(env.AsContext(ctx), l.Fn.Body)
+	if err != nil {
+		return l.returnValue(err)
+	}
+	return value, nil
+}
+
+func (l *LoxFunction) returnValue(err error) (any, error) {
+	var ret *ReturnValue
+	if errors.As(err, &ret) {
+		return ret.Value, nil
+	}
+	return nil, err
 }
 
 // String implements fmt.Stringer.
@@ -40,3 +53,11 @@ func (l *LoxFunction) GoString() string {
 var _ Callable = (*LoxFunction)(nil)
 var _ fmt.Stringer = (*LoxFunction)(nil)
 var _ fmt.GoStringer = (*LoxFunction)(nil)
+
+type ReturnValue struct {
+	Value any
+}
+
+func (r *ReturnValue) Error() string {
+	return fmt.Sprintf("fatal value: %v", r.Value)
+}

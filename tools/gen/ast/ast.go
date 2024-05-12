@@ -43,6 +43,7 @@ func Main(args []string) int {
 		"StmtFunction   : Name *token.Token, Parameters []*token.Token, Body []Stmt",
 		"StmtIf         : Condition Expr, ThenBranch Stmt, ElseBranch Stmt",
 		"StmtPrint      : Expression Expr",
+		"StmtReturn     : Keyword  *token.Token, Value Expr",
 		"StmtVar        : Name *token.Token, Initializer Expr",
 		"StmtWhile      : Condition Expr, Body Stmt",
 		"StmtFor        : Initializer Stmt, Condition Expr, Increment Expr, Body Stmt",

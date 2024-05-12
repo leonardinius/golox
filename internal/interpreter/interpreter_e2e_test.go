@@ -86,9 +86,9 @@ func TestInterpret(t *testing.T) {
 		{name: `built in pprint varargs`, in: `pprint(1,2,nil,3,4);`, eval: `nil`, out: "1 2 nil 3 4\n"},
 		{name: `built in time`, in: `clock(1,2);`, eval: `nil`, err: "expected 0 arguments but got 2."},
 		{name: `call non function`, in: `"non function"();`, eval: `nil`, err: "can only call functions and classes."},
-		{name: `define fun add`, in: `fun add(a,b){a+b;}add(1,2);`, eval: `3`},
-		{name: `define fun error 1`, in: `fun add(a,b){a+b;};add(1,2);`, err: "parse error.", out: "FATAL [line 1] parse error at ';': expected expression.\n"},
-		{name: `recursive fun`, in: `fun a(i){if (i==0) "Exit"; else {print(i);a(i-1);}} a(3);`, eval: `"Exit"`, out: "3\n2\n1\n"},
+		{name: `define fun add`, in: `fun add(a,b){return a+b;}add(1,2);`, eval: `3`},
+		{name: `define fun error 1`, in: `fun add(a,b){return a+b;};add(1,2);`, err: "parse error.", out: "FATAL [line 1] parse error at ';': expected expression.\n"},
+		{name: `recursive fun`, in: `fun a(i){if (i==0) return "Exit"; else {print(i);return a(i-1);}} a(3);`, eval: `"Exit"`, out: "3\n2\n1\n"},
 	}
 
 	for _, tc := range testcases {

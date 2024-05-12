@@ -26,6 +26,8 @@ var (
 	ErrParseExpectedSemicolonAfterForLoopCond     = errors.New("expect ';' after loop condition.")
 	ErrParseExpectedSemicolonTokenAfterBreak      = errors.New("expect ';' after 'break'.")
 	ErrParseExpectedSemicolonTokenAfterContinue   = errors.New("expect ';' after 'continue'.")
+	ErrParseExpectedSemicolonTokenAfterReturn     = errors.New("expect ';' after return value.")
+	ErrParseReturnOutsideFunction                 = errors.New("must be inside a function to use 'return'.")
 	ErrParseUnexpectedParameterName               = errors.New("expect parameter name.")
 	ErrParseExpectedRightParentFunToken           = errors.New("expect ')' after parameters.")
 	ErrParseBreakOutsideLoop                      = errors.New("must be inside a loop to use 'break'.")
