@@ -9,7 +9,12 @@ import (
 )
 
 type LoxFunction struct {
-	Fn *parser.StmtFunction
+	Fn  *parser.StmtFunction
+	Env *environment
+}
+
+func NewLoxFunction(fn *parser.StmtFunction, env *environment) *LoxFunction {
+	return &LoxFunction{Fn: fn, Env: env}
 }
 
 // Arity implements Callable.
@@ -19,7 +24,7 @@ func (l *LoxFunction) Arity() Arity {
 
 // Call implements Callable.
 func (l *LoxFunction) Call(ctx context.Context, interpreter *interpreter, arguments []any) (any, error) {
-	env := EnvFromContext(ctx).Nest()
+	env := l.Env.Nest()
 
 	for idx, e := range l.Fn.Parameters {
 		env.Define(e.Lexeme, arguments[idx])

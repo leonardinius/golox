@@ -101,7 +101,7 @@ func (i *interpreter) VisitStmtExpression(ctx context.Context, expr *parser.Stmt
 // VisitStmtFunction implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtFunction(ctx context.Context, stmtFunction *parser.StmtFunction) (any, error) {
 	env := EnvFromContext(ctx)
-	function := &LoxFunction{Fn: stmtFunction}
+	function := NewLoxFunction(stmtFunction, env)
 	env.Define(stmtFunction.Name.Lexeme, function)
 	return nil, nil
 }
@@ -239,7 +239,8 @@ func (*interpreter) VisitStmtContinue(ctx context.Context, stmtContinue *parser.
 // VisitStmtBlock implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtBlock(ctx context.Context, block *parser.StmtBlock) (any, error) {
 	env := EnvFromContext(ctx)
-	return i.executeBlock(env.NewNestContext(ctx), block.Statements)
+	newCtx := env.Nest().AsContext(ctx)
+	return i.executeBlock(newCtx, block.Statements)
 }
 
 // VisitVariable implements parser.ExprVisitor.
