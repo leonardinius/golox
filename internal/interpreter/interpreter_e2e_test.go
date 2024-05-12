@@ -82,6 +82,10 @@ func TestInterpret(t *testing.T) {
 		{name: `for break`, in: `for(var a=0;a<10;a=a+1){if(a>3)break;print a;}`, eval: `nil`, out: "0\n1\n2\n3\n"},
 		{name: `while continue`, in: `var a=0;while(a<10){a=a+1;if(a<5)continue;print a;}`, eval: `nil`, out: "5\n6\n7\n8\n9\n10\n"},
 		{name: `for continue`, in: `for(var a=0;a<10;a=a+1){if(a<5)continue;print a;}`, eval: `nil`, out: "5\n6\n7\n8\n9\n"},
+		{name: `built in pprint`, in: `pprint();`, eval: `nil`, out: "\n"},
+		{name: `built in pprint varargs`, in: `pprint(1,2,nil,3,4);`, eval: `nil`, out: "1 2 nil 3 4\n"},
+		{name: `built in time`, in: `time(1,2);`, eval: `nil`, err: "expected 0 arguments but got 2."},
+		{name: `call non function`, in: `"non function"();`, eval: `nil`, err: "can only call functions and classes."},
 	}
 
 	for _, tc := range testcases {

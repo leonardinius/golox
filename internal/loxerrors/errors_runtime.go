@@ -12,6 +12,7 @@ var (
 	ErrRuntimeOperandsMustBeNumbers        = errors.New("operands must be numbers.")
 	ErrRuntimeOperandsMustNumbersOrStrings = errors.New("operands must be two numbers or two strings.")
 	ErrRuntimeUndefinedVariable            = errors.New("undefined variable")
+	ErrRuntimeCalleeMustBeCallable         = errors.New("can only call functions and classes.")
 )
 
 type RuntimeError struct {

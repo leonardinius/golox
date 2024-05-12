@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/parser"
@@ -42,6 +43,17 @@ type interpreter struct {
 
 func NewInterpreter(options ...InterpreterOption) Interpreter {
 	opts := newInterpreterOpts(options...)
+	globals := opts.env
+	globals.Define("time", NativeFunction0(func(ctx context.Context, interpeter Interpreter) (any, error) {
+		return time.Now().UnixMilli(), nil
+	}))
+	globals.Define("clock", NativeFunction0(func(ctx context.Context, interpeter Interpreter) (any, error) {
+		return time.Now().UnixMilli(), nil
+	}))
+	globals.Define("pprint", NativeFunctionVarArgs(func(ctx context.Context, interpeter Interpreter, args ...any) (any, error) {
+		iPrint(opts.stdout, args...)
+		return nil, nil
+	}))
 	return &interpreter{
 		Env:         opts.env,
 		Stdin:       opts.stdin,
@@ -73,10 +85,7 @@ func (i *interpreter) Evaluate(ctx context.Context, stmt parser.Stmt) (any, erro
 }
 
 func (i *interpreter) print(v any) {
-	if v == nil {
-		v = "nil"
-	}
-	_, _ = fmt.Fprintln(i.Stdout, v)
+	iPrint(i.Stdout, v)
 }
 
 func (i *interpreter) stringify(v any) string {
@@ -286,7 +295,7 @@ func (i *interpreter) VisitExprBinary(ctx context.Context, expr *parser.ExprBina
 				return left + right, nil
 			}
 		}
-		return nil, i.runtimeError(expr.Operator, loxerrors.ErrRuntimeOperandsMustNumbersOrStrings)
+		return i.returnRuntimeError(expr.Operator, loxerrors.ErrRuntimeOperandsMustNumbersOrStrings)
 	case token.SLASH:
 		if err = i.checkNumberOperands(expr.Operator, left, right); err != nil {
 			return nil, err
@@ -304,7 +313,32 @@ func (i *interpreter) VisitExprBinary(ctx context.Context, expr *parser.ExprBina
 
 // VisitExprCall implements parser.ExprVisitor.
 func (i *interpreter) VisitExprCall(ctx context.Context, exprCall *parser.ExprCall) (any, error) {
-	panic("unimplemented")
+	callee, err := i.evaluate(ctx, exprCall.Callee)
+	if err != nil {
+		return nil, err
+	}
+	callable, ok := callee.(Callable)
+	if !ok {
+		return i.returnRuntimeError(exprCall.CloseParen, loxerrors.ErrRuntimeCalleeMustBeCallable)
+	}
+
+	var args []any
+	for _, arg := range exprCall.Arguments {
+		argValue, err := i.evaluate(ctx, arg)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, argValue)
+	}
+
+	if !callable.Arity().IsVarArgs() && len(args) != int(callable.Arity()) {
+		return i.returnRuntimeError(exprCall.CloseParen,
+			fmt.Errorf("expected %d arguments but got %d.",
+				callable.Arity(),
+				len(args)))
+	}
+
+	return callable.Call(ctx, i, args)
 }
 
 // VisitGrouping implements parser.Visitor.
@@ -420,12 +454,26 @@ func (i *interpreter) checkNumberOperand(tok *token.Token, val any) error {
 	return nil
 }
 
+func (i *interpreter) returnRuntimeError(tok *token.Token, err error) (any, error) {
+	return nil, i.runtimeError(tok, err)
+}
+
 func (i *interpreter) runtimeError(tok *token.Token, err error) error {
 	return loxerrors.NewRuntimeError(tok, err)
 }
 
 func (i *interpreter) unreachable() (any, error) {
 	panic("unreachable")
+}
+
+func iPrint(w io.Writer, v ...any) {
+	for i, vv := range v {
+		if vv == nil {
+			v[i] = "nil"
+		}
+	}
+
+	_, _ = fmt.Fprintln(w, v...)
 }
 
 var _ parser.ExprVisitor = (*interpreter)(nil)
