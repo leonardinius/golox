@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/parser"
@@ -44,16 +43,9 @@ type interpreter struct {
 func NewInterpreter(options ...InterpreterOption) Interpreter {
 	opts := newInterpreterOpts(options...)
 	globals := opts.env
-	globals.Define("time", NativeFunction0(func(ctx context.Context, interpeter *interpreter) (any, error) {
-		return time.Now().UnixMilli(), nil
-	}))
-	globals.Define("clock", NativeFunction0(func(ctx context.Context, interpeter *interpreter) (any, error) {
-		return time.Now().UnixMilli(), nil
-	}))
-	globals.Define("pprint", NativeFunctionVarArgs(func(ctx context.Context, interpeter *interpreter, args ...any) (any, error) {
-		interpeter.print(args...)
-		return nil, nil
-	}))
+	globals.Define("clock", NativeFunction0(StdFnTime))
+	globals.Define("pprint", NativeFunctionVarArgs(StdFnPPrint))
+
 	return &interpreter{
 		Env:         opts.env,
 		Stdin:       opts.stdin,
