@@ -44,14 +44,14 @@ type interpreter struct {
 func NewInterpreter(options ...InterpreterOption) Interpreter {
 	opts := newInterpreterOpts(options...)
 	globals := opts.env
-	globals.Define("time", NativeFunction0(func(ctx context.Context, interpeter Interpreter) (any, error) {
+	globals.Define("time", NativeFunction0(func(ctx context.Context, interpeter *interpreter) (any, error) {
 		return time.Now().UnixMilli(), nil
 	}))
-	globals.Define("clock", NativeFunction0(func(ctx context.Context, interpeter Interpreter) (any, error) {
+	globals.Define("clock", NativeFunction0(func(ctx context.Context, interpeter *interpreter) (any, error) {
 		return time.Now().UnixMilli(), nil
 	}))
-	globals.Define("pprint", NativeFunctionVarArgs(func(ctx context.Context, interpeter Interpreter, args ...any) (any, error) {
-		iPrint(opts.stdout, args...)
+	globals.Define("pprint", NativeFunctionVarArgs(func(ctx context.Context, interpeter *interpreter, args ...any) (any, error) {
+		interpeter.print(args...)
 		return nil, nil
 	}))
 	return &interpreter{
@@ -84,8 +84,14 @@ func (i *interpreter) Evaluate(ctx context.Context, stmt parser.Stmt) (any, erro
 	return i.execute(ctx, stmt)
 }
 
-func (i *interpreter) print(v any) {
-	iPrint(i.Stdout, v)
+func (i *interpreter) print(v ...any) {
+	for i, vv := range v {
+		if vv == nil {
+			v[i] = "nil"
+		}
+	}
+
+	_, _ = fmt.Fprintln(i.Stdout, v...)
 }
 
 func (i *interpreter) stringify(v any) string {
@@ -98,6 +104,14 @@ func (i *interpreter) stringify(v any) string {
 // VisitExpression implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtExpression(ctx context.Context, expr *parser.StmtExpression) (any, error) {
 	return i.evaluate(ctx, expr.Expression)
+}
+
+// VisitStmtFunction implements parser.StmtVisitor.
+func (i *interpreter) VisitStmtFunction(ctx context.Context, stmtFunction *parser.StmtFunction) (any, error) {
+	env := EnvFromContext(ctx)
+	function := &LoxFunction{Fn: stmtFunction}
+	env.Define(stmtFunction.Name.Lexeme, function)
+	return nil, nil
 }
 
 // VisitStmtIf implements parser.StmtVisitor.
@@ -333,11 +347,11 @@ func (i *interpreter) VisitExprCall(ctx context.Context, exprCall *parser.ExprCa
 
 	if !callable.Arity().IsVarArgs() && len(args) != int(callable.Arity()) {
 		return i.returnRuntimeError(exprCall.CloseParen,
-			fmt.Errorf("expected %d arguments but got %d.",
-				callable.Arity(),
-				len(args)))
+			loxerrors.ErrRuntimeCalleeArityError(
+				int(callable.Arity()),
+				len(args),
+			))
 	}
-
 	return callable.Call(ctx, i, args)
 }
 
@@ -464,16 +478,6 @@ func (i *interpreter) runtimeError(tok *token.Token, err error) error {
 
 func (i *interpreter) unreachable() (any, error) {
 	panic("unreachable")
-}
-
-func iPrint(w io.Writer, v ...any) {
-	for i, vv := range v {
-		if vv == nil {
-			v[i] = "nil"
-		}
-	}
-
-	_, _ = fmt.Fprintln(w, v...)
 }
 
 var _ parser.ExprVisitor = (*interpreter)(nil)

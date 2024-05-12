@@ -11,6 +11,7 @@ var (
 	nilExpr       Expr   = nil
 	nilStmt       Stmt   = nil
 	nilStatements []Stmt = nil
+	maxArguments         = 255
 )
 
 type Parser interface {
@@ -78,11 +79,58 @@ func (p *parser) Parse() (statements []Stmt, err error) {
 }
 
 func (p *parser) declaration() Stmt {
+	if p.match(token.FUN) {
+		return p.funDeclaration("function")
+	}
+
 	if p.match(token.VAR) {
 		return p.varDeclaration()
 	}
 
 	return p.statement()
+}
+
+func (p *parser) funDeclaration(kind string) Stmt {
+	// function name
+	if !p.match(token.IDENTIFIER) {
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedIdentifierKindError(kind))
+	}
+	name := p.previous()
+	if !p.match(token.LEFT_PAREN) {
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedLeftParenError(kind))
+	}
+
+	// function parameters declaration:
+	// parametersbloc: "(" PARAMETERS? ")" ;
+	// parameters: IDENTIFIER ( "," IDENTIFIER )* ;
+	var params []*token.Token
+	if !p.check(token.RIGHT_PAREN) {
+		for {
+			if len(params) > maxArguments {
+				p.reportErrorExpr(loxerrors.ErrParseTooManyArguments)
+			}
+
+			if !p.match(token.IDENTIFIER) {
+				return p.reportFatalErrorStmt(loxerrors.ErrParseUnexpectedParameterName)
+			}
+			params = append(params, p.previous())
+
+			if !p.match(token.COMMA) {
+				break
+			}
+		}
+	}
+
+	// function body
+	if !p.match(token.RIGHT_PAREN) {
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedRightParentFunToken)
+	}
+	if !p.match(token.LEFT_BRACE) {
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedLeftBraceFunToken(kind))
+	}
+	body := p.blockStatement()
+
+	return &StmtFunction{Name: name, Parameters: params, Body: body}
 }
 
 func (p *parser) varDeclaration() Stmt {
@@ -249,9 +297,7 @@ func (p *parser) continueStatement() Stmt {
 }
 
 func (p *parser) blockStatement() []Stmt {
-
 	var stmts []Stmt
-
 	for !p.check(token.RIGHT_BRACE) && !p.isDone() {
 		stmts = append(stmts, p.declaration())
 	}
@@ -393,7 +439,7 @@ func (p *parser) finishCall(callee Expr) Expr {
 	var args []Expr
 	if !p.check(token.RIGHT_PAREN) {
 		for {
-			if len(args) >= 255 {
+			if len(args) > maxArguments {
 				p.reportErrorExpr(loxerrors.ErrParseTooManyArguments)
 			}
 			args = append(args, p.expression())
