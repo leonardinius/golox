@@ -4,9 +4,12 @@
 
 ---
 
+WIP - ch 11
+DONE - ch 10
+
 ## Features
 
-- [x] TODO fix synchronize - copy from jlox output
+- [x] TODO fix synchronize
 - [ ] TODO Makefile
 - [ ] TODO Linters
 - [ ] TODO GH actions
