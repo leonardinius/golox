@@ -107,7 +107,8 @@ func (e *environment) String() string {
 	for self := e; self != nil; self = self.enclosing {
 		_, _ = fmt.Fprintf(w, "%v", e.values)
 		if e.enclosing != nil {
-		_, _ = fmt.Fprint(w, " -> ")
+			_, _ = fmt.Fprint(w, " -> ")
+		}
 	}
 
 	return w.String()
