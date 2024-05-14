@@ -33,25 +33,27 @@ type Interpreter interface {
 }
 
 type interpreter struct {
-	Env         *environment
+	Globals     *environment
 	Stdin       io.Reader
 	Stdout      io.Writer
 	Stderr      io.Writer
 	ErrReporter loxerrors.ErrReporter
+	Locals      map[parser.Expr]int
 }
 
-func NewInterpreter(options ...InterpreterOption) Interpreter {
+func NewInterpreter(options ...InterpreterOption) *interpreter {
 	opts := newInterpreterOpts(options...)
-	globals := opts.env
+	globals := opts.globals
 	globals.Define("clock", NativeFunction0(StdFnTime))
 	globals.Define("pprint", NativeFunctionVarArgs(StdFnPPrint))
 
 	return &interpreter{
-		Env:         opts.env,
+		Globals:     opts.globals,
 		Stdin:       opts.stdin,
 		Stdout:      opts.stdout,
 		Stderr:      opts.stderr,
 		ErrReporter: opts.reporter,
+		Locals:      make(map[parser.Expr]int),
 	}
 }
 
@@ -60,7 +62,7 @@ func (i *interpreter) Interpret(ctx context.Context, stmts []parser.Stmt) (strin
 	var v any
 	var err error
 
-	ctx = i.Env.AsContext(ctx)
+	ctx = i.Globals.AsContext(ctx)
 
 	for _, stmt := range stmts {
 		if v, err = i.Evaluate(ctx, stmt); err != nil {
@@ -245,8 +247,7 @@ func (i *interpreter) VisitStmtBlock(ctx context.Context, block *parser.StmtBloc
 
 // VisitVariable implements parser.ExprVisitor.
 func (i *interpreter) VisitExprVariable(ctx context.Context, expr *parser.ExprVariable) (any, error) {
-	env := EnvFromContext(ctx)
-	return env.Get(expr.Name)
+	return i.lookupVariable(ctx, expr.Name, expr)
 }
 
 // VisitExprAssign implements parser.ExprVisitor.
@@ -256,12 +257,7 @@ func (i *interpreter) VisitExprAssign(ctx context.Context, assign *parser.ExprAs
 		return nil, err
 	}
 
-	env := EnvFromContext(ctx)
-	if err = env.Assign(assign.Name, value); err != nil {
-		return nil, err
-	}
-
-	return value, nil
+	return i.assignVariable(ctx, assign, value)
 }
 
 // VisitBinary implements parser.Visitor.
@@ -488,6 +484,28 @@ func (i *interpreter) returnRuntimeError(tok *token.Token, err error) (any, erro
 
 func (i *interpreter) runtimeError(tok *token.Token, err error) error {
 	return loxerrors.NewRuntimeError(tok, err)
+}
+
+func (i *interpreter) resolve(_ context.Context, expr parser.Expr, depth int) {
+	i.Locals[expr] = depth
+}
+
+func (i *interpreter) lookupVariable(ctx context.Context, name *token.Token, expr parser.Expr) (any, error) {
+	env := EnvFromContext(ctx)
+	if distance, ok := i.Locals[expr]; ok {
+		return env.GetAt(distance, name.Lexeme)
+	}
+
+	return i.Globals.Get(name)
+}
+
+func (i *interpreter) assignVariable(ctx context.Context, expr *parser.ExprAssign, value any) (any, error) {
+	env := EnvFromContext(ctx)
+	if distance, ok := i.Locals[expr]; ok {
+		return env.AssignAt(distance, expr.Name, value)
+	}
+
+	return value, i.Globals.Assign(expr.Name, value)
 }
 
 func (i *interpreter) unreachable() (any, error) {

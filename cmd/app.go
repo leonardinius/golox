@@ -109,7 +109,16 @@ func (app *LoxApp) run(ctx context.Context, input string) error {
 		return err
 	}
 
+	if err = app.resolve(ctx, stmts); err != nil {
+		return err
+	}
+
 	return app.interpret(ctx, stmts)
+}
+
+func (app *LoxApp) resolve(ctx context.Context, stmts []parser.Stmt) error {
+	resolver := interpreter.NewResolver(app.interpeter)
+	return resolver.Resolve(ctx, stmts)
 }
 
 func (app *LoxApp) interpret(ctx context.Context, stmts []parser.Stmt) error {
