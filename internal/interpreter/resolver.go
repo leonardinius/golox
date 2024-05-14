@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/parser"
@@ -189,12 +190,12 @@ func (r *resolver) VisitExprVariable(ctx context.Context, exprVariable *parser.E
 }
 
 func (r *resolver) beginScope(_ context.Context) {
-	r.debugScopes(">>> scopes")
+	// r.debugScopes(">>> scopes")
 	r.scopes.PushBack(map[string]bool{})
 }
 
 func (r *resolver) endScope(_ context.Context) {
-	r.debugScopes("<<< scopes")
+	// r.debugScopes("<<< scopes")
 	r.scopes.Remove(r.scopes.Back())
 }
 
@@ -276,19 +277,36 @@ func (r *resolver) reportError(tok *token.Token, err error) {
 	r.err = append(r.err, loxerrors.NewParseError(tok, err))
 }
 
-func (r *resolver) debugScopes(_ string) {
-	// w := new(strings.Builder)
+func (r *resolver) String() string {
+	w := new(strings.Builder)
 
-	// i := 0
-	// el := r.scopes.Front()
-	// for el != nil {
-	// 	_, _ = fmt.Fprintf(w, "%d{%v} ", i, el.Value.(map[string]bool))
-	// 	i++
-	// 	el = el.Next()
-	// }
-	// fmt.Printf("%s %s\n", message, w.String())
+	index := 0
+	delimiter := ""
+	element := r.scopes.Front()
+	for element != nil {
+		_, _ = fmt.Fprintf(w, "%s%d{%v}", delimiter, index, element.Value.(map[string]bool))
+		index++
+		element = element.Next()
+		delimiter = " ->"
+	}
+
+	return fmt.Sprintf("resolver{err: %v, scopes: %s}", r.err, w)
 }
+
+// func (r *resolver) debugScopes(_ string) {
+// w := new(strings.Builder)
+//
+// i := 0
+// el := r.scopes.Front()
+// for el != nil {
+// 	_, _ = fmt.Fprintf(w, "%d{%v} ", i, el.Value.(map[string]bool))
+// 	i++
+// 	el = el.Next()
+// }
+// fmt.Printf("%s %s\n", message, w.String())
+// }
 
 var _ parser.ExprVisitor = (*resolver)(nil)
 var _ parser.StmtVisitor = (*resolver)(nil)
 var _ Resolver = (*resolver)(nil)
+var _ fmt.Stringer = (*resolver)(nil)

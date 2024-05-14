@@ -3,6 +3,7 @@ package interpreter
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/token"
@@ -99,3 +100,17 @@ func (e *environment) undefinedVariable(name *token.Token) error {
 	err := fmt.Errorf("%w '%s'.", loxerrors.ErrRuntimeUndefinedVariable, name.Lexeme)
 	return loxerrors.NewRuntimeError(name, err)
 }
+
+func (e *environment) String() string {
+	w := new(strings.Builder)
+
+	for self := e; self != nil; self = self.enclosing {
+		_, _ = fmt.Fprintf(w, "%v", e.values)
+		if e.enclosing != nil {
+		_, _ = fmt.Fprint(w, " -> ")
+	}
+
+	return w.String()
+}
+
+var _ fmt.Stringer = (*environment)(nil)
