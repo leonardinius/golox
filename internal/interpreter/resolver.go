@@ -182,7 +182,7 @@ func (r *resolver) VisitExprUnary(ctx context.Context, exprUnary *parser.ExprUna
 func (r *resolver) VisitExprVariable(ctx context.Context, exprVariable *parser.ExprVariable) (any, error) {
 	var err error
 	if defined, ok := r.peekScopeVar(ctx, exprVariable.Name.Lexeme); ok && !defined {
-		r.reportError(exprVariable.Name, "Can't read local variable in its own initializer.")
+		r.reportError(exprVariable.Name, loxerrors.ErrParseCantInitVarSelfReference)
 	}
 	r.resolveLocal(ctx, exprVariable, exprVariable.Name)
 	return nil, err
@@ -240,7 +240,7 @@ func (r *resolver) resolveLocal(ctx context.Context, expr parser.Expr, tok *toke
 func (r *resolver) declare(ctx context.Context, tok *token.Token) {
 	if scope, ok := r.peekScope(ctx); ok {
 		if _, ok := scope[tok.Lexeme]; ok {
-			r.reportError(tok, "Already a variable with this name in this scope.")
+			r.reportError(tok, loxerrors.ErrParseCantDuplicateVariableDefinition)
 		}
 		scope[tok.Lexeme] = false
 	}
@@ -272,12 +272,8 @@ func (r *resolver) scopeFromListElem(el *list.Element) map[string]bool {
 	return el.Value.(map[string]bool)
 }
 
-func (r *resolver) reportError(tok *token.Token, msg string) {
-	//TODO: replace msgs with errors
-	e := fmt.Errorf(msg)
-	// TODO: what typoe of error is this?
-	err := loxerrors.NewParseError(tok, e)
-	r.err = append(r.err, err)
+func (r *resolver) reportError(tok *token.Token, err error) {
+	r.err = append(r.err, loxerrors.NewParseError(tok, err))
 }
 
 func (r *resolver) debugScopes(_ string) {
