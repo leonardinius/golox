@@ -25,6 +25,8 @@ type resolver struct {
 // Resolve implements Resolver.
 func (r *resolver) Resolve(ctx context.Context, statements []parser.Stmt) error {
 	r.err = nil
+	r.beginScope(ctx)
+	defer r.endScope(ctx)
 	r.resolveStmts(ctx, statements)
 	return errors.Join(r.err...)
 }
@@ -34,7 +36,7 @@ func NewResolver(interpreterInstance Interpreter) Resolver {
 	if !ok {
 		panic(fmt.Errorf("failed to cast interpreter to struct *interpreter"))
 	}
-	return &resolver{interpreter: interpreterStructPtr, scopes: list.New()}
+	return &resolver{interpreter: interpreterStructPtr, scopes: list.New(), err: nil}
 }
 
 // VisitStmtBlock implements parser.StmtVisitor.
@@ -190,12 +192,10 @@ func (r *resolver) VisitExprVariable(ctx context.Context, exprVariable *parser.E
 }
 
 func (r *resolver) beginScope(_ context.Context) {
-	// r.debugScopes(">>> scopes")
 	r.scopes.PushBack(map[string]bool{})
 }
 
 func (r *resolver) endScope(_ context.Context) {
-	// r.debugScopes("<<< scopes")
 	r.scopes.Remove(r.scopes.Back())
 }
 
@@ -292,19 +292,6 @@ func (r *resolver) String() string {
 
 	return fmt.Sprintf("resolver{err: %v, scopes: %s}", r.err, w)
 }
-
-// func (r *resolver) debugScopes(_ string) {
-// w := new(strings.Builder)
-//
-// i := 0
-// el := r.scopes.Front()
-// for el != nil {
-// 	_, _ = fmt.Fprintf(w, "%d{%v} ", i, el.Value.(map[string]bool))
-// 	i++
-// 	el = el.Next()
-// }
-// fmt.Printf("%s %s\n", message, w.String())
-// }
 
 var _ parser.ExprVisitor = (*resolver)(nil)
 var _ parser.StmtVisitor = (*resolver)(nil)
