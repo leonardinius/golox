@@ -11,6 +11,8 @@ var (
 	ErrParseError                                 = errors.New("parse error.")
 	ErrParseUnexpectedToken                       = errors.New("expected expression.")
 	ErrParseUnexpectedVariableName                = errors.New("expect variable name.")
+	ErrParseCantInitVarSelfReference              = errors.New("can't read local variable in its own initializer.")
+	ErrParseCantDuplicateVariableDefinition       = errors.New("already a variable with this name in this scope.")
 	ErrParseInvalidAssignmentTarget               = errors.New("invalid assignment target.")
 	ErrParseExpectedRightParenToken               = errors.New("expected ')' after expression.")
 	ErrParseExpectedLeftParentIfToken             = errors.New("expected '(' after if.")
@@ -33,6 +35,7 @@ var (
 	ErrParseBreakOutsideLoop                      = errors.New("must be inside a loop to use 'break'.")
 	ErrParseContinueOutsideLoop                   = errors.New("must be inside a loop to use 'continue'.")
 	ErrParseTooManyArguments                      = errors.New("can't have more than 255 arguments.")
+	ErrParseLocalVariableNotUsed                  = errors.New("local variable is not used.")
 )
 
 func ErrParseExpectedIdentifierKindError(kind string) error {

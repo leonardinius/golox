@@ -8,7 +8,7 @@ import (
 )
 
 type interpreterOpts struct {
-	env      *environment
+	globals  *environment
 	stdin    io.Reader
 	stdout   io.Writer
 	stderr   io.Writer
@@ -24,9 +24,9 @@ var defaultInterpreterOpts = interpreterOpts{
 
 type InterpreterOption func(*interpreterOpts)
 
-func WithEnvironment(env *environment) InterpreterOption {
+func WithGlobals(globals *environment) InterpreterOption {
 	return func(opts *interpreterOpts) {
-		opts.env = env
+		opts.globals = globals
 	}
 }
 
@@ -60,8 +60,8 @@ func newInterpreterOpts(options ...InterpreterOption) *interpreterOpts {
 		opt(&opts)
 	}
 
-	if opts.env == nil {
-		opts.env = NewEnvironment()
+	if opts.globals == nil {
+		opts.globals = NewEnvironment()
 	}
 
 	return &opts
