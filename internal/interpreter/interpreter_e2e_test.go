@@ -90,7 +90,7 @@ func TestInterpret(t *testing.T) {
 		{name: `define fun error 1`, in: `fun add(a,b){return a+b;};add(1,2);`, err: "parse error.", out: "FATAL [line 1] parse error at ';': expected expression.\n"},
 		{name: `recursive fun`, in: `fun a(i){if (i==0) return "Exit"; else {print(i);return a(i-1);}} a(3);`, eval: `"Exit"`, out: "3\n2\n1\n"},
 		{name: `anon fun`, in: `var a=fun (i){return i;};a(1);`, eval: `1`},
-		{name: `closures`, in: `var a="global";{fun showA(){pprint(a);}showA();var a="block";showA();}`, eval: `nil`, out: "global\nglobal\n"},
+		{name: `closures`, in: `var a="global";{fun showA(){pprint(a);}showA();var a="block";showA();print a;}`, eval: `nil`, out: "global\nglobal\nblock\n"},
 	}
 
 	for _, tc := range testcases {

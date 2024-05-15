@@ -16,6 +16,19 @@ type Resolver interface {
 	Resolve(ctx context.Context, statements []parser.Stmt) error
 }
 
+type VarState int
+
+const (
+	DECLARED VarState = iota
+	DEFINED
+	READ
+)
+
+type ResolveVariable struct {
+	Name  *token.Token
+	State VarState
+}
+
 type resolver struct {
 	interpreter *interpreter
 	scopes      *list.List
@@ -131,7 +144,7 @@ func (r *resolver) VisitStmtWhile(ctx context.Context, stmtWhile *parser.StmtWhi
 // VisitExprAssign implements parser.ExprVisitor.
 func (r *resolver) VisitExprAssign(ctx context.Context, exprAssign *parser.ExprAssign) (any, error) {
 	r.resolveExpr(ctx, exprAssign.Value)
-	r.resolveLocal(ctx, exprAssign, exprAssign.Name)
+	r.resolveLocal(ctx, exprAssign, exprAssign.Name, false)
 	return nil, nil
 }
 
@@ -184,18 +197,26 @@ func (r *resolver) VisitExprUnary(ctx context.Context, exprUnary *parser.ExprUna
 // VisitExprVariable implements parser.ExprVisitor.
 func (r *resolver) VisitExprVariable(ctx context.Context, exprVariable *parser.ExprVariable) (any, error) {
 	var err error
-	if defined, ok := r.peekScopeVar(ctx, exprVariable.Name.Lexeme); ok && !defined {
+	if state, ok := r.peekScopeVar(ctx, exprVariable.Name.Lexeme); ok && state.State == DECLARED {
 		r.reportError(exprVariable.Name, loxerrors.ErrParseCantInitVarSelfReference)
 	}
-	r.resolveLocal(ctx, exprVariable, exprVariable.Name)
+	r.resolveLocal(ctx, exprVariable, exprVariable.Name, true)
 	return nil, err
 }
 
 func (r *resolver) beginScope(_ context.Context) {
-	r.scopes.PushBack(map[string]bool{})
+	r.scopes.PushBack(map[string]*ResolveVariable{})
 }
 
-func (r *resolver) endScope(_ context.Context) {
+func (r *resolver) endScope(ctx context.Context) {
+	if scope, ok := r.peekScope(ctx); ok {
+		for _, name := range scope {
+			if name.State == DEFINED {
+				r.reportError(name.Name, loxerrors.ErrParseLocalVariableNotUsed)
+			}
+		}
+	}
+
 	r.scopes.Remove(r.scopes.Back())
 }
 
@@ -225,13 +246,17 @@ func (r *resolver) resolveFunction(ctx context.Context, function *parser.ExprFun
 	r.resolveStmts(ctx, function.Body)
 }
 
-func (r *resolver) resolveLocal(ctx context.Context, expr parser.Expr, tok *token.Token) {
+func (r *resolver) resolveLocal(ctx context.Context, expr parser.Expr, tok *token.Token, isRead bool) {
 	depth := r.scopes.Len()
 	back := r.scopes.Back()
 	for i := 0; i < depth; i = i + 1 {
 		scope := r.scopeFromListElem(back)
 		if _, ok := scope[tok.Lexeme]; ok {
 			r.interpreter.resolve(ctx, expr, i)
+
+			if isRead {
+				scope[tok.Lexeme].State = READ
+			}
 			return
 		}
 		back = back.Prev()
@@ -243,34 +268,34 @@ func (r *resolver) declare(ctx context.Context, tok *token.Token) {
 		if _, ok := scope[tok.Lexeme]; ok {
 			r.reportError(tok, loxerrors.ErrParseCantDuplicateVariableDefinition)
 		}
-		scope[tok.Lexeme] = false
+		scope[tok.Lexeme] = &ResolveVariable{Name: tok, State: DECLARED}
 	}
 }
 
 func (r *resolver) define(ctx context.Context, tok *token.Token) {
 	if scope, ok := r.peekScope(ctx); ok {
-		scope[tok.Lexeme] = true
+		scope[tok.Lexeme].State = DEFINED
 	}
 }
 
-func (r *resolver) peekScope(_ context.Context) (map[string]bool, bool) {
+func (r *resolver) peekScope(_ context.Context) (map[string]*ResolveVariable, bool) {
 	if r.scopes.Len() == 0 {
 		return nil, false
 	}
 	return r.scopeFromListElem(r.scopes.Back()), true
 }
 
-func (r *resolver) peekScopeVar(ctx context.Context, name string) (bool, bool) {
+func (r *resolver) peekScopeVar(ctx context.Context, name string) (*ResolveVariable, bool) {
 	if scope, ok := r.peekScope(ctx); ok {
 		if value, ok := scope[name]; ok {
 			return value, true
 		}
 	}
-	return false, false
+	return nil, false
 }
 
-func (r *resolver) scopeFromListElem(el *list.Element) map[string]bool {
-	return el.Value.(map[string]bool)
+func (r *resolver) scopeFromListElem(el *list.Element) map[string]*ResolveVariable {
+	return el.Value.(map[string]*ResolveVariable)
 }
 
 func (r *resolver) reportError(tok *token.Token, err error) {
@@ -284,7 +309,7 @@ func (r *resolver) String() string {
 	delimiter := ""
 	element := r.scopes.Front()
 	for element != nil {
-		_, _ = fmt.Fprintf(w, "%s%d{%v}", delimiter, index, element.Value.(map[string]bool))
+		_, _ = fmt.Fprintf(w, "%s%d{%v}", delimiter, index, element.Value.(map[string]*ResolveVariable))
 		index++
 		element = element.Next()
 		delimiter = " ->"
