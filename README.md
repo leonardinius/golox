@@ -4,9 +4,14 @@
 
 ---
 
-WIP - ch 11
+WIP:
 
-DONE - ch 10
+- ch 12 - oop and classes
+
+DONE:
+
+- ch 11 - variables and binding
+- ch 10 - functions
 
 ## Features
 
