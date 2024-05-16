@@ -33,6 +33,14 @@ const (
 	FN_METHOD
 )
 
+type ClassType int
+
+const (
+	CT_NONE ClassType = iota
+	CT_CLASS
+	CT_SUBCLASS
+)
+
 type ResolverVariable struct {
 	Name  *token.Token
 	State VarState
@@ -43,6 +51,7 @@ type resolver struct {
 	scopes          *list.List
 	err             []error
 	currentFunction FunctionType
+	currentClass    ClassType
 }
 
 // Resolve implements Resolver.
@@ -65,6 +74,7 @@ func NewResolver(interpreterInstance Interpreter) Resolver {
 		scopes:          list.New(),
 		err:             nil,
 		currentFunction: FN_NONE,
+		currentClass:    CT_NONE,
 	}
 
 	return newResolver
@@ -80,8 +90,17 @@ func (r *resolver) VisitStmtBlock(ctx context.Context, stmtBlock *parser.StmtBlo
 
 // VisitStmtClass implements parser.StmtVisitor.
 func (r *resolver) VisitStmtClass(ctx context.Context, stmtClass *parser.StmtClass) (any, error) {
+	enclosingClass := r.currentClass
+	defer func() { r.currentClass = enclosingClass }()
+	r.currentClass = CT_CLASS
+
 	r.declare(ctx, stmtClass.Name)
 	r.define(ctx, stmtClass.Name)
+
+	r.beginScope(ctx)
+	defer r.endScope(ctx)
+
+	r.defineInternal(ctx, "this")
 
 	for _, method := range stmtClass.Methods {
 		r.resolveFunction(ctx, method.Fn, FN_METHOD)
@@ -231,6 +250,15 @@ func (r *resolver) VisitExprSet(ctx context.Context, exprSet *parser.ExprSet) (a
 	return nil, nil
 }
 
+// VisitExprThis implements parser.ExprVisitor.
+func (r *resolver) VisitExprThis(ctx context.Context, exprThis *parser.ExprThis) (any, error) {
+	if r.currentClass == CT_NONE {
+		r.reportError(exprThis.Keyword, loxerrors.ErrParseThisOutsideClass)
+	}
+	r.resolveLocal(ctx, exprThis, exprThis.Keyword, true)
+	return nil, nil
+}
+
 // VisitExprUnary implements parser.ExprVisitor.
 func (r *resolver) VisitExprUnary(ctx context.Context, exprUnary *parser.ExprUnary) (any, error) {
 	r.resolveExpr(ctx, exprUnary.Right)
@@ -322,6 +350,12 @@ func (r *resolver) declare(ctx context.Context, tok *token.Token) {
 func (r *resolver) define(ctx context.Context, tok *token.Token) {
 	if scope, ok := r.peekScope(ctx); ok {
 		scope[tok.Lexeme].State = VAR_DEFINED
+	}
+}
+
+func (r *resolver) defineInternal(ctx context.Context, name string) {
+	if scope, ok := r.peekScope(ctx); ok {
+		scope[name] = &ResolverVariable{Name: nil, State: VAR_READ}
 	}
 }
 

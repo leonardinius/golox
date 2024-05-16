@@ -549,6 +549,11 @@ func (p *parser) primary() Expr {
 		return &ExprLiteral{Value: tok.Literal}
 	}
 
+	if p.match(token.THIS) {
+		tok := p.previous()
+		return &ExprThis{Keyword: tok}
+	}
+
 	if p.match(token.IDENTIFIER) {
 		tok := p.previous()
 		return &ExprVariable{Name: tok}

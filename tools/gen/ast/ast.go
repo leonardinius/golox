@@ -30,8 +30,9 @@ func Main(args []string) int {
 		"ExprGrouping : Expression Expr",
 		"ExprLiteral  : Value any",
 		"ExprLogical  : Left Expr, Operator *token.Token, Right Expr",
-		"ExprUnary    : Operator *token.Token, Right Expr",
 		"ExprSet      : Instance Expr, Name *token.Token, Value Expr",
+		"ExprThis     : Keyword *token.Token",
+		"ExprUnary    : Operator *token.Token, Right Expr",
 		"ExprVariable : Name *token.Token",
 	); err != nil {
 		fmt.Printf("Error: %v", err)

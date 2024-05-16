@@ -250,7 +250,7 @@ func (i *interpreter) VisitStmtClass(ctx context.Context, stmtClass *parser.Stmt
 	env := EnvFromContext(ctx)
 	env.Define(stmtClass.Name.Lexeme, nil)
 
-	methods := make(map[string]Callable)
+	methods := make(map[string]*LoxFunction)
 	for _, method := range stmtClass.Methods {
 		function := NewLoxFunction(method.Name, method.Fn, env)
 		methods[method.Name.Lexeme] = function
@@ -438,6 +438,11 @@ func (i *interpreter) VisitExprSet(ctx context.Context, exprSet *parser.ExprSet)
 	}
 
 	return instance.(*LoxInstance).Set(ctx, exprSet.Name, value)
+}
+
+// VisitExprThis implements parser.ExprVisitor.
+func (i *interpreter) VisitExprThis(ctx context.Context, exprThis *parser.ExprThis) (any, error) {
+	return i.lookupVariable(ctx, exprThis.Keyword, exprThis)
 }
 
 func (i *interpreter) evalLogicalAnd(ctx context.Context, left parser.Expr, right parser.Expr) (any, error) {

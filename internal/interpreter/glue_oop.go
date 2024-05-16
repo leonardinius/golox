@@ -11,10 +11,10 @@ import (
 
 type LoxClass struct {
 	Name    string
-	Methods map[string]Callable
+	Methods map[string]*LoxFunction
 }
 
-func NewLoxClass(name string, methods map[string]Callable) *LoxClass {
+func NewLoxClass(name string, methods map[string]*LoxFunction) *LoxClass {
 	return &LoxClass{Name: name, Methods: methods}
 }
 
@@ -28,7 +28,7 @@ func (l *LoxClass) Call(ctx context.Context, interpreter *interpreter, arguments
 	return &LoxInstance{Class: l, Fields: make(map[string]any)}, nil
 }
 
-func (l *LoxClass) findMethod(_ context.Context, name string) Callable {
+func (l *LoxClass) FindMethod(_ context.Context, name string) *LoxFunction {
 	if method, ok := l.Methods[name]; ok {
 		return method
 	}
@@ -72,8 +72,9 @@ func (l *LoxInstance) Get(ctx context.Context, name *token.Token) (any, error) {
 		return value, nil
 	}
 
-	if method := l.Class.findMethod(ctx, name.Lexeme); method != nil {
-		return method, nil
+	if method := l.Class.FindMethod(ctx, name.Lexeme); method != nil {
+		boundMethod := method.Bind(l)
+		return boundMethod, nil
 	}
 
 	return nil, loxerrors.NewRuntimeError(name, loxerrors.ErrRuntimeUndefinedProperty(name.Lexeme))

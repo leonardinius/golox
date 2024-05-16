@@ -95,6 +95,7 @@ func TestInterpret(t *testing.T) {
 		{name: `oop class method decl`, in: `class A{a(){}}`, eval: `nil`},
 		{name: `oop class fields decl`, in: `class A{} var a = A();a.a = 1; a.a;`, eval: `1`},
 		{name: `oop class method call`, in: `class Bacon{eat(){print "bacon";return 1;}} Bacon().eat();`, eval: `1`, out: "bacon\n"},
+		{name: `oop class this bind`, in: `class Thing { getCallback() { this.a = 1; fun localFunction() { return this.a + 2; } return localFunction; } } var callback = Thing().getCallback(); callback();`, eval: `3`},
 	}
 
 	for _, tc := range testcases {
