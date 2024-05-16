@@ -91,6 +91,9 @@ func TestInterpret(t *testing.T) {
 		{name: `recursive fun`, in: `fun a(i){if (i==0) return "Exit"; else {print(i);return a(i-1);}} a(3);`, eval: `"Exit"`, out: "3\n2\n1\n"},
 		{name: `anon fun`, in: `var a=fun (i){return i;};a(1);`, eval: `1`},
 		{name: `closures`, in: `var a="global";{fun showA(){pprint(a);}showA();var a="block";showA();print a;}`, eval: `nil`, out: "global\nglobal\nblock\n"},
+		{name: `oop class`, in: `class A{} print A;`, eval: `nil`, out: "<class:A/0>\n"},
+		{name: `oop class method decl`, in: `class A{a(){}}`, eval: `nil`},
+		{name: `oop class fields decl`, in: `class A{} var a = A();a.a = 1; a.a;`, eval: `1`},
 	}
 
 	for _, tc := range testcases {

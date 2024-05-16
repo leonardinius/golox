@@ -13,10 +13,15 @@ var (
 	ErrRuntimeOperandsMustNumbersOrStrings = errors.New("operands must be two numbers or two strings.")
 	ErrRuntimeUndefinedVariable            = errors.New("undefined variable")
 	ErrRuntimeCalleeMustBeCallable         = errors.New("can only call functions and classes.")
+	ErrRuntimeOnlyInstancesHaveProperties  = errors.New("only instances have properties.")
 )
 
 func ErrRuntimeCalleeArityError(expectedArity int, actualArity int) error {
 	return fmt.Errorf("expected %d arguments but got %d.", expectedArity, actualArity)
+}
+
+func ErrRuntimeUndefinedProperty(name string) error {
+	return fmt.Errorf("undefined property %s.", name)
 }
 
 func NewRuntimeError(tok *token.Token, cause error) error {

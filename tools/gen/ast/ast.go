@@ -26,10 +26,12 @@ func Main(args []string) int {
 		"ExprBinary   : Left Expr, Operator *token.Token, Right Expr",
 		"ExprCall     : Callee Expr, CloseParen *token.Token, Arguments []Expr",
 		"ExprFunction : Parameters []*token.Token, Body []Stmt",
+		"ExprGet      : Instance Expr, Name *token.Token",
 		"ExprGrouping : Expression Expr",
 		"ExprLiteral  : Value any",
 		"ExprLogical  : Left Expr, Operator *token.Token, Right Expr",
 		"ExprUnary    : Operator *token.Token, Right Expr",
+		"ExprSet      : Instance Expr, Name *token.Token, Value Expr",
 		"ExprVariable : Name *token.Token",
 	); err != nil {
 		fmt.Printf("Error: %v", err)
@@ -38,8 +40,7 @@ func Main(args []string) int {
 
 	if err := defineAst(statementsOutFile, packageName, "Stmt",
 		"StmtBlock      : Statements []Stmt",
-		"StmtBreak      :",
-		"StmtContinue   :",
+		"StmtClass      : Name *token.Token, Methods []*StmtFunction",
 		"StmtExpression : Expression Expr",
 		"StmtFunction   : Name *token.Token, Fn *ExprFunction",
 		"StmtIf         : Condition Expr, ThenBranch Stmt, ElseBranch Stmt",
@@ -48,6 +49,8 @@ func Main(args []string) int {
 		"StmtVar        : Name *token.Token, Initializer Expr",
 		"StmtWhile      : Condition Expr, Body Stmt",
 		"StmtFor        : Initializer Stmt, Condition Expr, Increment Expr, Body Stmt",
+		"StmtBreak      :",
+		"StmtContinue   :",
 	); err != nil {
 		fmt.Printf("Error: %v", err)
 		return 1

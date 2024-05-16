@@ -245,6 +245,31 @@ func (i *interpreter) VisitStmtBlock(ctx context.Context, block *parser.StmtBloc
 	return i.executeBlock(newCtx, block.Statements)
 }
 
+// VisitStmtClass implements parser.StmtVisitor.
+func (i *interpreter) VisitStmtClass(ctx context.Context, stmtClass *parser.StmtClass) (any, error) {
+	env := EnvFromContext(ctx)
+	env.Define(stmtClass.Name.Lexeme, nil)
+	class := NewLoxClass(stmtClass.Name.Lexeme)
+	return nil, env.Assign(stmtClass.Name, class)
+}
+
+// VisitExprGet implements parser.ExprVisitor.
+func (i *interpreter) VisitExprGet(ctx context.Context, exprGet *parser.ExprGet) (any, error) {
+	var instance any
+	var err error
+	if instance, err = i.evaluate(ctx, exprGet.Instance); err == nil {
+		if _, ok := instance.(*LoxInstance); !ok {
+			err = i.runtimeError(exprGet.Name, loxerrors.ErrRuntimeOnlyInstancesHaveProperties)
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return instance.(*LoxInstance).Get(ctx, exprGet.Name)
+
+}
+
 // VisitVariable implements parser.ExprVisitor.
 func (i *interpreter) VisitExprVariable(ctx context.Context, expr *parser.ExprVariable) (any, error) {
 	return i.lookupVariable(ctx, expr.Name, expr)
@@ -385,6 +410,27 @@ func (i *interpreter) VisitExprLogical(ctx context.Context, exprLogical *parser.
 	default:
 		return i.unreachable()
 	}
+}
+
+// VisitExprSet implements parser.ExprVisitor.
+func (i *interpreter) VisitExprSet(ctx context.Context, exprSet *parser.ExprSet) (any, error) {
+	var instance any
+	var err error
+	if instance, err = i.evaluate(ctx, exprSet.Instance); err == nil {
+		if _, ok := instance.(*LoxInstance); !ok {
+			err = i.runtimeError(exprSet.Name, loxerrors.ErrRuntimeOnlyInstancesHaveProperties)
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	value, err := i.evaluate(ctx, exprSet.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	return instance.(*LoxInstance).Set(ctx, exprSet.Name, value)
 }
 
 func (i *interpreter) evalLogicalAnd(ctx context.Context, left parser.Expr, right parser.Expr) (any, error) {

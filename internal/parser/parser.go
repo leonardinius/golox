@@ -80,6 +80,10 @@ func (p *parser) Parse() (statements []Stmt, err error) {
 }
 
 func (p *parser) declaration() Stmt {
+	if p.match(token.CLASS) {
+		return p.classDeclaration()
+	}
+
 	if p.check(token.FUN) && p.checkNext(token.IDENTIFIER) {
 		p.advance()
 		return p.funDeclaration("function")
@@ -92,14 +96,42 @@ func (p *parser) declaration() Stmt {
 	return p.statement()
 }
 
+func (p *parser) classDeclaration() Stmt {
+	if !p.match(token.IDENTIFIER) {
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectClassName)
+	}
+	name := p.previous()
+	if !p.match(token.LEFT_BRACE) {
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectLeftCurlyBeforeClassBody)
+	}
+
+	var methodsStmts []Stmt
+	for !p.check(token.RIGHT_BRACE) && !p.isDone() {
+		methodsStmts = append(methodsStmts, p.funDeclaration("method"))
+	}
+
+	if !p.match(token.RIGHT_BRACE) {
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectRightCurlyAfterClassBody)
+	}
+
+	var methods []*StmtFunction = make([]*StmtFunction, len(methodsStmts))
+	for i, stmt := range methodsStmts {
+		methods[i] = stmt.(*StmtFunction)
+	}
+	return &StmtClass{Name: name, Methods: methods}
+}
+
 func (p *parser) funDeclaration(kind string) Stmt {
 	// function name
 	if !p.match(token.IDENTIFIER) {
 		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedIdentifierKindError(kind))
 	}
 	name := p.previous()
-	fn := p.functionBody(kind)
-	return &StmtFunction{Name: name, Fn: fn.(*ExprFunction)}
+	if fn, ok := p.functionBody(kind).(*ExprFunction); ok {
+		return &StmtFunction{Name: name, Fn: fn}
+	}
+
+	return nilStmt
 }
 
 func (p *parser) functionBody(kind string) Expr {
@@ -362,8 +394,9 @@ func (p *parser) assignment() Expr {
 		value := p.assignment()
 
 		if v, ok := expr.(*ExprVariable); ok {
-			name := v.Name
-			return &ExprAssign{Name: name, Value: value}
+			return &ExprAssign{Name: v.Name, Value: value}
+		} else if v, ok := expr.(*ExprGet); ok {
+			return &ExprSet{Instance: v.Instance, Name: v.Name, Value: value}
 		}
 
 		p.reportErrorExprToken(equals, loxerrors.ErrParseInvalidAssignmentTarget)
@@ -460,6 +493,12 @@ func (p *parser) call() Expr {
 	for {
 		if p.match(token.LEFT_PAREN) {
 			expr = p.finishCall(expr)
+		} else if p.match(token.DOT) {
+			if !p.match(token.IDENTIFIER) {
+				return p.reportFatalErrorExpr(loxerrors.ErrParseExpectedPropertyNameAfterDot)
+			}
+			name := p.previous()
+			expr = &ExprGet{Instance: expr, Name: name}
 		} else {
 			break
 		}

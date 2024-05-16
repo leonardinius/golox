@@ -60,6 +60,13 @@ func (r *resolver) VisitStmtBlock(ctx context.Context, stmtBlock *parser.StmtBlo
 	return nil, nil
 }
 
+// VisitStmtClass implements parser.StmtVisitor.
+func (r *resolver) VisitStmtClass(ctx context.Context, stmtClass *parser.StmtClass) (any, error) {
+	r.declare(ctx, stmtClass.Name)
+	r.define(ctx, stmtClass.Name)
+	return nil, nil
+}
+
 // VisitStmtBreak implements parser.StmtVisitor.
 func (r *resolver) VisitStmtBreak(ctx context.Context, stmtBreak *parser.StmtBreak) (any, error) {
 	return nil, nil
@@ -164,6 +171,12 @@ func (r *resolver) VisitExprCall(ctx context.Context, exprCall *parser.ExprCall)
 	return nil, nil
 }
 
+// VisitExprGet implements parser.ExprVisitor.
+func (r *resolver) VisitExprGet(ctx context.Context, exprGet *parser.ExprGet) (any, error) {
+	r.resolveExpr(ctx, exprGet.Instance)
+	return nil, nil
+}
+
 // VisitExprFunction implements parser.ExprVisitor.
 func (r *resolver) VisitExprFunction(ctx context.Context, exprFunction *parser.ExprFunction) (any, error) {
 	r.resolveFunction(ctx, exprFunction)
@@ -185,6 +198,13 @@ func (r *resolver) VisitExprLiteral(ctx context.Context, exprLiteral *parser.Exp
 func (r *resolver) VisitExprLogical(ctx context.Context, exprLogical *parser.ExprLogical) (any, error) {
 	r.resolveExpr(ctx, exprLogical.Left)
 	r.resolveExpr(ctx, exprLogical.Right)
+	return nil, nil
+}
+
+// VisitExprSet implements parser.ExprVisitor.
+func (r *resolver) VisitExprSet(ctx context.Context, exprSet *parser.ExprSet) (any, error) {
+	r.resolveExpr(ctx, exprSet.Value)
+	r.resolveExpr(ctx, exprSet.Instance)
 	return nil, nil
 }
 

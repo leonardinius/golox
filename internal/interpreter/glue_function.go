@@ -9,6 +9,14 @@ import (
 	"github.com/leonardinius/golox/internal/token"
 )
 
+type ReturnValue struct {
+	Value any
+}
+
+func (r *ReturnValue) Error() string {
+	return fmt.Sprintf("fatal value: %v", r.Value)
+}
+
 type LoxFunction struct {
 	Name *token.Token
 	Fn   *parser.ExprFunction
@@ -63,11 +71,3 @@ func (l *LoxFunction) GoString() string {
 var _ Callable = (*LoxFunction)(nil)
 var _ fmt.Stringer = (*LoxFunction)(nil)
 var _ fmt.GoStringer = (*LoxFunction)(nil)
-
-type ReturnValue struct {
-	Value any
-}
-
-func (r *ReturnValue) Error() string {
-	return fmt.Sprintf("fatal value: %v", r.Value)
-}
