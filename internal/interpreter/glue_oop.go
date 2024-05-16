@@ -10,11 +10,12 @@ import (
 )
 
 type LoxClass struct {
-	Name string
+	Name    string
+	Methods map[string]Callable
 }
 
-func NewLoxClass(name string) *LoxClass {
-	return &LoxClass{Name: name}
+func NewLoxClass(name string, methods map[string]Callable) *LoxClass {
+	return &LoxClass{Name: name, Methods: methods}
 }
 
 // Arity implements Callable.
@@ -25,6 +26,14 @@ func (l *LoxClass) Arity() Arity {
 // Call implements Callable.
 func (l *LoxClass) Call(ctx context.Context, interpreter *interpreter, arguments []any) (any, error) {
 	return &LoxInstance{Class: l, Fields: make(map[string]any)}, nil
+}
+
+func (l *LoxClass) findMethod(_ context.Context, name string) Callable {
+	if method, ok := l.Methods[name]; ok {
+		return method
+	}
+
+	return nil
 }
 
 // String implements fmt.Stringer.
@@ -58,14 +67,13 @@ func (l *LoxInstance) Arity() Arity {
 	panic("unimplemented")
 }
 
-// Call implements Callable.
-func (l *LoxInstance) Call(ctx context.Context, interpreter *interpreter, arguments []any) (any, error) {
-	panic("unimplemented")
-}
-
-func (l *LoxInstance) Get(_ context.Context, name *token.Token) (any, error) {
+func (l *LoxInstance) Get(ctx context.Context, name *token.Token) (any, error) {
 	if value, ok := l.Fields[name.Lexeme]; ok {
 		return value, nil
+	}
+
+	if method := l.Class.findMethod(ctx, name.Lexeme); method != nil {
+		return method, nil
 	}
 
 	return nil, loxerrors.NewRuntimeError(name, loxerrors.ErrRuntimeUndefinedProperty(name.Lexeme))
@@ -80,6 +88,5 @@ var _ Callable = (*LoxClass)(nil)
 var _ fmt.Stringer = (*LoxClass)(nil)
 var _ fmt.GoStringer = (*LoxClass)(nil)
 
-var _ Callable = (*LoxInstance)(nil)
 var _ fmt.Stringer = (*LoxInstance)(nil)
 var _ fmt.GoStringer = (*LoxInstance)(nil)

@@ -94,6 +94,7 @@ func TestInterpret(t *testing.T) {
 		{name: `oop class`, in: `class A{} print A;`, eval: `nil`, out: "<class:A/0>\n"},
 		{name: `oop class method decl`, in: `class A{a(){}}`, eval: `nil`},
 		{name: `oop class fields decl`, in: `class A{} var a = A();a.a = 1; a.a;`, eval: `1`},
+		{name: `oop class method call`, in: `class Bacon{eat(){print "bacon";return 1;}} Bacon().eat();`, eval: `1`, out: "bacon\n"},
 	}
 
 	for _, tc := range testcases {

@@ -249,7 +249,14 @@ func (i *interpreter) VisitStmtBlock(ctx context.Context, block *parser.StmtBloc
 func (i *interpreter) VisitStmtClass(ctx context.Context, stmtClass *parser.StmtClass) (any, error) {
 	env := EnvFromContext(ctx)
 	env.Define(stmtClass.Name.Lexeme, nil)
-	class := NewLoxClass(stmtClass.Name.Lexeme)
+
+	methods := make(map[string]Callable)
+	for _, method := range stmtClass.Methods {
+		function := NewLoxFunction(method.Name, method.Fn, env)
+		methods[method.Name.Lexeme] = function
+	}
+
+	class := NewLoxClass(stmtClass.Name.Lexeme, methods)
 	return nil, env.Assign(stmtClass.Name, class)
 }
 

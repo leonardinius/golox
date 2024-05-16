@@ -19,20 +19,30 @@ type Resolver interface {
 type VarState int
 
 const (
-	DECLARED VarState = iota
-	DEFINED
-	READ
+	VAR_DECLARED VarState = iota
+	VAR_DEFINED
+	VAR_READ
 )
 
-type ResolveVariable struct {
+type FunctionType int
+
+const (
+	FN_NONE FunctionType = iota
+	FN_EXPR
+	FN_FUNCTION
+	FN_METHOD
+)
+
+type ResolverVariable struct {
 	Name  *token.Token
 	State VarState
 }
 
 type resolver struct {
-	interpreter *interpreter
-	scopes      *list.List
-	err         []error
+	interpreter     *interpreter
+	scopes          *list.List
+	err             []error
+	currentFunction FunctionType
 }
 
 // Resolve implements Resolver.
@@ -49,7 +59,15 @@ func NewResolver(interpreterInstance Interpreter) Resolver {
 	if !ok {
 		panic(fmt.Errorf("failed to cast interpreter to struct *interpreter"))
 	}
-	return &resolver{interpreter: interpreterStructPtr, scopes: list.New(), err: nil}
+
+	newResolver := &resolver{
+		interpreter:     interpreterStructPtr,
+		scopes:          list.New(),
+		err:             nil,
+		currentFunction: FN_NONE,
+	}
+
+	return newResolver
 }
 
 // VisitStmtBlock implements parser.StmtVisitor.
@@ -64,6 +82,11 @@ func (r *resolver) VisitStmtBlock(ctx context.Context, stmtBlock *parser.StmtBlo
 func (r *resolver) VisitStmtClass(ctx context.Context, stmtClass *parser.StmtClass) (any, error) {
 	r.declare(ctx, stmtClass.Name)
 	r.define(ctx, stmtClass.Name)
+
+	for _, method := range stmtClass.Methods {
+		r.resolveFunction(ctx, method.Fn, FN_METHOD)
+	}
+
 	return nil, nil
 }
 
@@ -103,7 +126,7 @@ func (r *resolver) VisitStmtFunction(ctx context.Context, stmtFunction *parser.S
 	r.declare(ctx, stmtFunction.Name)
 	r.define(ctx, stmtFunction.Name)
 
-	r.resolveFunction(ctx, stmtFunction.Fn)
+	r.resolveFunction(ctx, stmtFunction.Fn, FN_FUNCTION)
 	return nil, nil
 }
 
@@ -179,7 +202,7 @@ func (r *resolver) VisitExprGet(ctx context.Context, exprGet *parser.ExprGet) (a
 
 // VisitExprFunction implements parser.ExprVisitor.
 func (r *resolver) VisitExprFunction(ctx context.Context, exprFunction *parser.ExprFunction) (any, error) {
-	r.resolveFunction(ctx, exprFunction)
+	r.resolveFunction(ctx, exprFunction, FN_EXPR)
 	return nil, nil
 }
 
@@ -217,7 +240,7 @@ func (r *resolver) VisitExprUnary(ctx context.Context, exprUnary *parser.ExprUna
 // VisitExprVariable implements parser.ExprVisitor.
 func (r *resolver) VisitExprVariable(ctx context.Context, exprVariable *parser.ExprVariable) (any, error) {
 	var err error
-	if state, ok := r.peekScopeVar(ctx, exprVariable.Name.Lexeme); ok && state.State == DECLARED {
+	if state, ok := r.peekScopeVar(ctx, exprVariable.Name.Lexeme); ok && state.State == VAR_DECLARED {
 		r.reportError(exprVariable.Name, loxerrors.ErrParseCantInitVarSelfReference)
 	}
 	r.resolveLocal(ctx, exprVariable, exprVariable.Name, true)
@@ -225,13 +248,13 @@ func (r *resolver) VisitExprVariable(ctx context.Context, exprVariable *parser.E
 }
 
 func (r *resolver) beginScope(_ context.Context) {
-	r.scopes.PushBack(map[string]*ResolveVariable{})
+	r.scopes.PushBack(map[string]*ResolverVariable{})
 }
 
 func (r *resolver) endScope(ctx context.Context) {
 	if scope, ok := r.peekScope(ctx); ok {
 		for _, name := range scope {
-			if name.State == DEFINED {
+			if name.State == VAR_DEFINED {
 				r.reportError(name.Name, loxerrors.ErrParseLocalVariableNotUsed)
 			}
 		}
@@ -254,8 +277,12 @@ func (r *resolver) resolveExpr(ctx context.Context, expr parser.Expr) {
 	_, _ = expr.Accept(ctx, r)
 }
 
-func (r *resolver) resolveFunction(ctx context.Context, function *parser.ExprFunction) {
+func (r *resolver) resolveFunction(ctx context.Context, function *parser.ExprFunction, declaration FunctionType) {
+	enclosingFunction := r.currentFunction
 	r.beginScope(ctx)
+	r.currentFunction = declaration
+
+	defer func() { r.currentFunction = enclosingFunction }()
 	defer r.endScope(ctx)
 
 	for _, param := range function.Parameters {
@@ -275,7 +302,7 @@ func (r *resolver) resolveLocal(ctx context.Context, expr parser.Expr, tok *toke
 			r.interpreter.resolve(ctx, expr, i)
 
 			if isRead {
-				scope[tok.Lexeme].State = READ
+				scope[tok.Lexeme].State = VAR_READ
 			}
 			return
 		}
@@ -288,24 +315,24 @@ func (r *resolver) declare(ctx context.Context, tok *token.Token) {
 		if _, ok := scope[tok.Lexeme]; ok {
 			r.reportError(tok, loxerrors.ErrParseCantDuplicateVariableDefinition)
 		}
-		scope[tok.Lexeme] = &ResolveVariable{Name: tok, State: DECLARED}
+		scope[tok.Lexeme] = &ResolverVariable{Name: tok, State: VAR_DECLARED}
 	}
 }
 
 func (r *resolver) define(ctx context.Context, tok *token.Token) {
 	if scope, ok := r.peekScope(ctx); ok {
-		scope[tok.Lexeme].State = DEFINED
+		scope[tok.Lexeme].State = VAR_DEFINED
 	}
 }
 
-func (r *resolver) peekScope(_ context.Context) (map[string]*ResolveVariable, bool) {
+func (r *resolver) peekScope(_ context.Context) (map[string]*ResolverVariable, bool) {
 	if r.scopes.Len() == 0 {
 		return nil, false
 	}
 	return r.scopeFromListElem(r.scopes.Back()), true
 }
 
-func (r *resolver) peekScopeVar(ctx context.Context, name string) (*ResolveVariable, bool) {
+func (r *resolver) peekScopeVar(ctx context.Context, name string) (*ResolverVariable, bool) {
 	if scope, ok := r.peekScope(ctx); ok {
 		if value, ok := scope[name]; ok {
 			return value, true
@@ -314,8 +341,8 @@ func (r *resolver) peekScopeVar(ctx context.Context, name string) (*ResolveVaria
 	return nil, false
 }
 
-func (r *resolver) scopeFromListElem(el *list.Element) map[string]*ResolveVariable {
-	return el.Value.(map[string]*ResolveVariable)
+func (r *resolver) scopeFromListElem(el *list.Element) map[string]*ResolverVariable {
+	return el.Value.(map[string]*ResolverVariable)
 }
 
 func (r *resolver) reportError(tok *token.Token, err error) {
@@ -329,7 +356,7 @@ func (r *resolver) String() string {
 	delimiter := ""
 	element := r.scopes.Front()
 	for element != nil {
-		_, _ = fmt.Fprintf(w, "%s%d{%v}", delimiter, index, element.Value.(map[string]*ResolveVariable))
+		_, _ = fmt.Fprintf(w, "%s%d{%v}", delimiter, index, element.Value.(map[string]*ResolverVariable))
 		index++
 		element = element.Next()
 		delimiter = " ->"
