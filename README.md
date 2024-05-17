@@ -4,13 +4,19 @@
 
 ---
 
-WIP - ch 11
+WIP:
 
-DONE - ch 10
+- ch 12 - oop and classes
+
+DONE:
+
+- ch 11 - variables and binding
+- ch 10 - functions
 
 ## Features
 
 - [x] TODO fix synchronize
+- [ ] TODO add original crafting gh repo tests as go tests
 - [ ] TODO Makefile
 - [ ] TODO Linters
 - [ ] TODO GH actions

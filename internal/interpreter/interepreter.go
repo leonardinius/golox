@@ -103,7 +103,7 @@ func (i *interpreter) VisitStmtExpression(ctx context.Context, expr *parser.Stmt
 // VisitStmtFunction implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtFunction(ctx context.Context, stmtFunction *parser.StmtFunction) (any, error) {
 	env := EnvFromContext(ctx)
-	function := NewLoxFunction(stmtFunction.Name, stmtFunction.Fn, env)
+	function := NewLoxFunction(stmtFunction.Name, stmtFunction.Fn, env, false)
 	env.Define(stmtFunction.Name.Lexeme, function)
 	return nil, nil
 }
@@ -245,6 +245,43 @@ func (i *interpreter) VisitStmtBlock(ctx context.Context, block *parser.StmtBloc
 	return i.executeBlock(newCtx, block.Statements)
 }
 
+// VisitStmtClass implements parser.StmtVisitor.
+func (i *interpreter) VisitStmtClass(ctx context.Context, stmtClass *parser.StmtClass) (any, error) {
+	env := EnvFromContext(ctx)
+	env.Define(stmtClass.Name.Lexeme, nil)
+
+	classMethods := make(map[string]*LoxFunction)
+	methods := make(map[string]*LoxFunction)
+	for _, method := range stmtClass.ClassMethods {
+		function := NewLoxFunction(method.Name, method.Fn, env, false)
+		classMethods[method.Name.Lexeme] = function
+	}
+	for _, method := range stmtClass.Methods {
+		function := NewLoxFunction(method.Name, method.Fn, env, method.Name.Lexeme == "init")
+		methods[method.Name.Lexeme] = function
+	}
+
+	class := NewLoxClass(stmtClass.Name.Lexeme, methods, classMethods)
+	return nil, env.Assign(stmtClass.Name, class)
+}
+
+// VisitExprGet implements parser.ExprVisitor.
+func (i *interpreter) VisitExprGet(ctx context.Context, exprGet *parser.ExprGet) (any, error) {
+	var instance any
+	var err error
+	if instance, err = i.evaluate(ctx, exprGet.Instance); err == nil {
+		if _, ok := instance.(LoxInstance); !ok {
+			err = i.runtimeError(exprGet.Name, loxerrors.ErrRuntimeOnlyInstancesHaveProperties)
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return instance.(LoxInstance).Get(ctx, exprGet.Name)
+
+}
+
 // VisitVariable implements parser.ExprVisitor.
 func (i *interpreter) VisitExprVariable(ctx context.Context, expr *parser.ExprVariable) (any, error) {
 	return i.lookupVariable(ctx, expr.Name, expr)
@@ -331,7 +368,7 @@ func (i *interpreter) VisitExprBinary(ctx context.Context, expr *parser.ExprBina
 // VisitExprFunction implements parser.ExprVisitor.
 func (i *interpreter) VisitExprFunction(ctx context.Context, exprFunction *parser.ExprFunction) (any, error) {
 	env := EnvFromContext(ctx)
-	fn := NewLoxFunction(nil, exprFunction, env)
+	fn := NewLoxFunction(nil, exprFunction, env, false)
 	return fn, nil
 }
 
@@ -385,6 +422,32 @@ func (i *interpreter) VisitExprLogical(ctx context.Context, exprLogical *parser.
 	default:
 		return i.unreachable()
 	}
+}
+
+// VisitExprSet implements parser.ExprVisitor.
+func (i *interpreter) VisitExprSet(ctx context.Context, exprSet *parser.ExprSet) (any, error) {
+	var instance any
+	var err error
+	if instance, err = i.evaluate(ctx, exprSet.Instance); err == nil {
+		if _, ok := instance.(LoxInstance); !ok {
+			err = i.runtimeError(exprSet.Name, loxerrors.ErrRuntimeOnlyInstancesHaveProperties)
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	value, err := i.evaluate(ctx, exprSet.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	return instance.(LoxInstance).Set(ctx, exprSet.Name, value)
+}
+
+// VisitExprThis implements parser.ExprVisitor.
+func (i *interpreter) VisitExprThis(ctx context.Context, exprThis *parser.ExprThis) (any, error) {
+	return i.lookupVariable(ctx, exprThis.Keyword, exprThis)
 }
 
 func (i *interpreter) evalLogicalAnd(ctx context.Context, left parser.Expr, right parser.Expr) (any, error) {

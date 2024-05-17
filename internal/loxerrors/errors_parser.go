@@ -36,6 +36,12 @@ var (
 	ErrParseContinueOutsideLoop                   = errors.New("must be inside a loop to use 'continue'.")
 	ErrParseTooManyArguments                      = errors.New("can't have more than 255 arguments.")
 	ErrParseLocalVariableNotUsed                  = errors.New("local variable is not used.")
+	ErrParseExpectClassName                       = errors.New("expect class name.")
+	ErrParseExpectLeftCurlyBeforeClassBody        = errors.New("expect '{' before class body.")
+	ErrParseExpectRightCurlyAfterClassBody        = errors.New("expect '}' after class body.")
+	ErrParseExpectedPropertyNameAfterDot          = errors.New("expect property name after '.'.")
+	ErrParseThisOutsideClass                      = errors.New("can't use 'this' outside of a class.")
+	ErrParseCantReturnValueFromInitializer        = errors.New("can't return a value from an initializer.")
 )
 
 func ErrParseExpectedIdentifierKindError(kind string) error {

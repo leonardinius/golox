@@ -8,8 +8,7 @@ import "github.com/leonardinius/golox/internal/token"
 // StmtVisitor is the interface that wraps the Visit method.
 type StmtVisitor interface {
 	VisitStmtBlock(ctx context.Context, stmtBlock *StmtBlock) (any, error)
-	VisitStmtBreak(ctx context.Context, stmtBreak *StmtBreak) (any, error)
-	VisitStmtContinue(ctx context.Context, stmtContinue *StmtContinue) (any, error)
+	VisitStmtClass(ctx context.Context, stmtClass *StmtClass) (any, error)
 	VisitStmtExpression(ctx context.Context, stmtExpression *StmtExpression) (any, error)
 	VisitStmtFunction(ctx context.Context, stmtFunction *StmtFunction) (any, error)
 	VisitStmtIf(ctx context.Context, stmtIf *StmtIf) (any, error)
@@ -18,6 +17,8 @@ type StmtVisitor interface {
 	VisitStmtVar(ctx context.Context, stmtVar *StmtVar) (any, error)
 	VisitStmtWhile(ctx context.Context, stmtWhile *StmtWhile) (any, error)
 	VisitStmtFor(ctx context.Context, stmtFor *StmtFor) (any, error)
+	VisitStmtBreak(ctx context.Context, stmtBreak *StmtBreak) (any, error)
+	VisitStmtContinue(ctx context.Context, stmtContinue *StmtContinue) (any, error)
 }
 
 type Stmt interface {
@@ -34,22 +35,16 @@ func (e *StmtBlock) Accept(ctx context.Context, v StmtVisitor) (any, error) {
 	return v.VisitStmtBlock(ctx, e)
 }
 
-type StmtBreak struct {
+type StmtClass struct {
+	Name         *token.Token
+	Methods      []*StmtFunction
+	ClassMethods []*StmtFunction
 }
 
-var _ Stmt = (*StmtBreak)(nil)
+var _ Stmt = (*StmtClass)(nil)
 
-func (e *StmtBreak) Accept(ctx context.Context, v StmtVisitor) (any, error) {
-	return v.VisitStmtBreak(ctx, e)
-}
-
-type StmtContinue struct {
-}
-
-var _ Stmt = (*StmtContinue)(nil)
-
-func (e *StmtContinue) Accept(ctx context.Context, v StmtVisitor) (any, error) {
-	return v.VisitStmtContinue(ctx, e)
+func (e *StmtClass) Accept(ctx context.Context, v StmtVisitor) (any, error) {
+	return v.VisitStmtClass(ctx, e)
 }
 
 type StmtExpression struct {
@@ -139,4 +134,22 @@ var _ Stmt = (*StmtFor)(nil)
 
 func (e *StmtFor) Accept(ctx context.Context, v StmtVisitor) (any, error) {
 	return v.VisitStmtFor(ctx, e)
+}
+
+type StmtBreak struct {
+}
+
+var _ Stmt = (*StmtBreak)(nil)
+
+func (e *StmtBreak) Accept(ctx context.Context, v StmtVisitor) (any, error) {
+	return v.VisitStmtBreak(ctx, e)
+}
+
+type StmtContinue struct {
+}
+
+var _ Stmt = (*StmtContinue)(nil)
+
+func (e *StmtContinue) Accept(ctx context.Context, v StmtVisitor) (any, error) {
+	return v.VisitStmtContinue(ctx, e)
 }

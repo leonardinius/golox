@@ -80,6 +80,10 @@ func (p *parser) Parse() (statements []Stmt, err error) {
 }
 
 func (p *parser) declaration() Stmt {
+	if p.match(token.CLASS) {
+		return p.classDeclaration()
+	}
+
 	if p.check(token.FUN) && p.checkNext(token.IDENTIFIER) {
 		p.advance()
 		return p.funDeclaration("function")
@@ -92,14 +96,44 @@ func (p *parser) declaration() Stmt {
 	return p.statement()
 }
 
-func (p *parser) funDeclaration(kind string) Stmt {
-	// function name
+func (p *parser) classDeclaration() Stmt {
 	if !p.match(token.IDENTIFIER) {
-		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedIdentifierKindError(kind))
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectClassName)
 	}
 	name := p.previous()
-	fn := p.functionBody(kind)
-	return &StmtFunction{Name: name, Fn: fn.(*ExprFunction)}
+	if !p.match(token.LEFT_BRACE) {
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectLeftCurlyBeforeClassBody)
+	}
+
+	var methods []*StmtFunction
+	var classMethods []*StmtFunction
+	for !p.check(token.RIGHT_BRACE) && !p.isDone() {
+		if p.match(token.CLASS) {
+			classMethods = append(classMethods, p.funDeclaration("method"))
+		} else {
+			methods = append(methods, p.funDeclaration("method"))
+		}
+	}
+
+	if !p.match(token.RIGHT_BRACE) {
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectRightCurlyAfterClassBody)
+	}
+
+	return &StmtClass{Name: name, Methods: methods, ClassMethods: classMethods}
+}
+
+func (p *parser) funDeclaration(kind string) *StmtFunction {
+	// function name
+	if !p.match(token.IDENTIFIER) {
+		p.reportFatalErrorStmt(loxerrors.ErrParseExpectedIdentifierKindError(kind))
+		return nil
+	}
+	name := p.previous()
+	if fn, ok := p.functionBody(kind).(*ExprFunction); ok {
+		return &StmtFunction{Name: name, Fn: fn}
+	}
+
+	return nil
 }
 
 func (p *parser) functionBody(kind string) Expr {
@@ -336,7 +370,7 @@ func (p *parser) blockStatement() []Stmt {
 	}
 
 	if !p.match(token.RIGHT_BRACE) {
-		return p.reportFatalErrorStmtlist(loxerrors.ErrParseExpectedRightCurlyBlockToken)
+		return p.reportFatalErrorStmtList(loxerrors.ErrParseExpectedRightCurlyBlockToken)
 	}
 
 	return stmts
@@ -362,8 +396,9 @@ func (p *parser) assignment() Expr {
 		value := p.assignment()
 
 		if v, ok := expr.(*ExprVariable); ok {
-			name := v.Name
-			return &ExprAssign{Name: name, Value: value}
+			return &ExprAssign{Name: v.Name, Value: value}
+		} else if v, ok := expr.(*ExprGet); ok {
+			return &ExprSet{Instance: v.Instance, Name: v.Name, Value: value}
 		}
 
 		p.reportErrorExprToken(equals, loxerrors.ErrParseInvalidAssignmentTarget)
@@ -460,6 +495,12 @@ func (p *parser) call() Expr {
 	for {
 		if p.match(token.LEFT_PAREN) {
 			expr = p.finishCall(expr)
+		} else if p.match(token.DOT) {
+			if !p.match(token.IDENTIFIER) {
+				return p.reportFatalErrorExpr(loxerrors.ErrParseExpectedPropertyNameAfterDot)
+			}
+			name := p.previous()
+			expr = &ExprGet{Instance: expr, Name: name}
 		} else {
 			break
 		}
@@ -508,6 +549,11 @@ func (p *parser) primary() Expr {
 	if p.anyMatch(token.NUMBER, token.STRING) {
 		tok := p.previous()
 		return &ExprLiteral{Value: tok.Literal}
+	}
+
+	if p.match(token.THIS) {
+		tok := p.previous()
+		return &ExprThis{Keyword: tok}
 	}
 
 	if p.match(token.IDENTIFIER) {
@@ -603,7 +649,7 @@ func (p *parser) reportFatalErrorStmtToken(tok *token.Token, err error) Stmt {
 	return nilStmt
 }
 
-func (p *parser) reportFatalErrorStmtlist(err error) []Stmt {
+func (p *parser) reportFatalErrorStmtList(err error) []Stmt {
 	// do not overwrite present error.
 	// preserves the original error and bubbles up to return in Parse() with .err
 	if p.panic == nil {

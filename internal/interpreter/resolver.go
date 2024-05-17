@@ -19,20 +19,39 @@ type Resolver interface {
 type VarState int
 
 const (
-	DECLARED VarState = iota
-	DEFINED
-	READ
+	VARSTATE_DECLARED VarState = iota
+	VARSTATE_DEFINED
+	VARSTATE_READ
 )
 
-type ResolveVariable struct {
+type FunctionType int
+
+const (
+	FNTYPE_NONE FunctionType = iota
+	FNTYPE_EXPR
+	FNTYPE_FUNCTION
+	FNTYPE_METHOD
+	FNTYPE_INITIALIZER
+)
+
+type ClassType int
+
+const (
+	CTYPE_NONE ClassType = iota
+	CTYPE_CLASS
+)
+
+type ResolverVariable struct {
 	Name  *token.Token
 	State VarState
 }
 
 type resolver struct {
-	interpreter *interpreter
-	scopes      *list.List
-	err         []error
+	interpreter     *interpreter
+	scopes          *list.List
+	err             []error
+	currentFunction FunctionType
+	currentClass    ClassType
 }
 
 // Resolve implements Resolver.
@@ -49,7 +68,16 @@ func NewResolver(interpreterInstance Interpreter) Resolver {
 	if !ok {
 		panic(fmt.Errorf("failed to cast interpreter to struct *interpreter"))
 	}
-	return &resolver{interpreter: interpreterStructPtr, scopes: list.New(), err: nil}
+
+	newResolver := &resolver{
+		interpreter:     interpreterStructPtr,
+		scopes:          list.New(),
+		err:             nil,
+		currentFunction: FNTYPE_NONE,
+		currentClass:    CTYPE_NONE,
+	}
+
+	return newResolver
 }
 
 // VisitStmtBlock implements parser.StmtVisitor.
@@ -57,6 +85,35 @@ func (r *resolver) VisitStmtBlock(ctx context.Context, stmtBlock *parser.StmtBlo
 	r.beginScope(ctx)
 	defer r.endScope(ctx)
 	r.resolveStmts(ctx, stmtBlock.Statements)
+	return nil, nil
+}
+
+// VisitStmtClass implements parser.StmtVisitor.
+func (r *resolver) VisitStmtClass(ctx context.Context, stmtClass *parser.StmtClass) (any, error) {
+	enclosingClass := r.currentClass
+	defer func() { r.currentClass = enclosingClass }()
+	r.currentClass = CTYPE_CLASS
+
+	r.declare(ctx, stmtClass.Name)
+	r.define(ctx, stmtClass.Name)
+
+	r.beginScope(ctx)
+	defer r.endScope(ctx)
+
+	r.defineInternal(ctx, "this")
+
+	for _, method := range stmtClass.ClassMethods {
+		r.resolveFunction(ctx, method.Fn, FNTYPE_METHOD)
+	}
+
+	for _, method := range stmtClass.Methods {
+		functionType := FNTYPE_METHOD
+		if method.Name.Lexeme == "init" {
+			functionType = FNTYPE_INITIALIZER
+		}
+		r.resolveFunction(ctx, method.Fn, functionType)
+	}
+
 	return nil, nil
 }
 
@@ -96,7 +153,7 @@ func (r *resolver) VisitStmtFunction(ctx context.Context, stmtFunction *parser.S
 	r.declare(ctx, stmtFunction.Name)
 	r.define(ctx, stmtFunction.Name)
 
-	r.resolveFunction(ctx, stmtFunction.Fn)
+	r.resolveFunction(ctx, stmtFunction.Fn, FNTYPE_FUNCTION)
 	return nil, nil
 }
 
@@ -119,6 +176,10 @@ func (r *resolver) VisitStmtPrint(ctx context.Context, stmtPrint *parser.StmtPri
 // VisitStmtReturn implements parser.StmtVisitor.
 func (r *resolver) VisitStmtReturn(ctx context.Context, stmtReturn *parser.StmtReturn) (any, error) {
 	if stmtReturn.Value != nil {
+		if r.currentFunction == FNTYPE_INITIALIZER {
+			r.reportError(stmtReturn.Keyword, loxerrors.ErrParseCantReturnValueFromInitializer)
+			return nil, nil
+		}
 		r.resolveExpr(ctx, stmtReturn.Value)
 	}
 	return nil, nil
@@ -164,9 +225,15 @@ func (r *resolver) VisitExprCall(ctx context.Context, exprCall *parser.ExprCall)
 	return nil, nil
 }
 
+// VisitExprGet implements parser.ExprVisitor.
+func (r *resolver) VisitExprGet(ctx context.Context, exprGet *parser.ExprGet) (any, error) {
+	r.resolveExpr(ctx, exprGet.Instance)
+	return nil, nil
+}
+
 // VisitExprFunction implements parser.ExprVisitor.
 func (r *resolver) VisitExprFunction(ctx context.Context, exprFunction *parser.ExprFunction) (any, error) {
-	r.resolveFunction(ctx, exprFunction)
+	r.resolveFunction(ctx, exprFunction, FNTYPE_EXPR)
 	return nil, nil
 }
 
@@ -188,6 +255,22 @@ func (r *resolver) VisitExprLogical(ctx context.Context, exprLogical *parser.Exp
 	return nil, nil
 }
 
+// VisitExprSet implements parser.ExprVisitor.
+func (r *resolver) VisitExprSet(ctx context.Context, exprSet *parser.ExprSet) (any, error) {
+	r.resolveExpr(ctx, exprSet.Value)
+	r.resolveExpr(ctx, exprSet.Instance)
+	return nil, nil
+}
+
+// VisitExprThis implements parser.ExprVisitor.
+func (r *resolver) VisitExprThis(ctx context.Context, exprThis *parser.ExprThis) (any, error) {
+	if r.currentClass == CTYPE_NONE {
+		r.reportError(exprThis.Keyword, loxerrors.ErrParseThisOutsideClass)
+	}
+	r.resolveLocal(ctx, exprThis, exprThis.Keyword, true)
+	return nil, nil
+}
+
 // VisitExprUnary implements parser.ExprVisitor.
 func (r *resolver) VisitExprUnary(ctx context.Context, exprUnary *parser.ExprUnary) (any, error) {
 	r.resolveExpr(ctx, exprUnary.Right)
@@ -197,7 +280,7 @@ func (r *resolver) VisitExprUnary(ctx context.Context, exprUnary *parser.ExprUna
 // VisitExprVariable implements parser.ExprVisitor.
 func (r *resolver) VisitExprVariable(ctx context.Context, exprVariable *parser.ExprVariable) (any, error) {
 	var err error
-	if state, ok := r.peekScopeVar(ctx, exprVariable.Name.Lexeme); ok && state.State == DECLARED {
+	if state, ok := r.peekScopeVar(ctx, exprVariable.Name.Lexeme); ok && state.State == VARSTATE_DECLARED {
 		r.reportError(exprVariable.Name, loxerrors.ErrParseCantInitVarSelfReference)
 	}
 	r.resolveLocal(ctx, exprVariable, exprVariable.Name, true)
@@ -205,13 +288,13 @@ func (r *resolver) VisitExprVariable(ctx context.Context, exprVariable *parser.E
 }
 
 func (r *resolver) beginScope(_ context.Context) {
-	r.scopes.PushBack(map[string]*ResolveVariable{})
+	r.scopes.PushBack(map[string]*ResolverVariable{})
 }
 
 func (r *resolver) endScope(ctx context.Context) {
 	if scope, ok := r.peekScope(ctx); ok {
 		for _, name := range scope {
-			if name.State == DEFINED {
+			if name.State == VARSTATE_DEFINED {
 				r.reportError(name.Name, loxerrors.ErrParseLocalVariableNotUsed)
 			}
 		}
@@ -234,8 +317,12 @@ func (r *resolver) resolveExpr(ctx context.Context, expr parser.Expr) {
 	_, _ = expr.Accept(ctx, r)
 }
 
-func (r *resolver) resolveFunction(ctx context.Context, function *parser.ExprFunction) {
+func (r *resolver) resolveFunction(ctx context.Context, function *parser.ExprFunction, declaration FunctionType) {
+	enclosingFunction := r.currentFunction
 	r.beginScope(ctx)
+	r.currentFunction = declaration
+
+	defer func() { r.currentFunction = enclosingFunction }()
 	defer r.endScope(ctx)
 
 	for _, param := range function.Parameters {
@@ -255,7 +342,7 @@ func (r *resolver) resolveLocal(ctx context.Context, expr parser.Expr, tok *toke
 			r.interpreter.resolve(ctx, expr, i)
 
 			if isRead {
-				scope[tok.Lexeme].State = READ
+				scope[tok.Lexeme].State = VARSTATE_READ
 			}
 			return
 		}
@@ -268,24 +355,30 @@ func (r *resolver) declare(ctx context.Context, tok *token.Token) {
 		if _, ok := scope[tok.Lexeme]; ok {
 			r.reportError(tok, loxerrors.ErrParseCantDuplicateVariableDefinition)
 		}
-		scope[tok.Lexeme] = &ResolveVariable{Name: tok, State: DECLARED}
+		scope[tok.Lexeme] = &ResolverVariable{Name: tok, State: VARSTATE_DECLARED}
 	}
 }
 
 func (r *resolver) define(ctx context.Context, tok *token.Token) {
 	if scope, ok := r.peekScope(ctx); ok {
-		scope[tok.Lexeme].State = DEFINED
+		scope[tok.Lexeme].State = VARSTATE_DEFINED
 	}
 }
 
-func (r *resolver) peekScope(_ context.Context) (map[string]*ResolveVariable, bool) {
+func (r *resolver) defineInternal(ctx context.Context, name string) {
+	if scope, ok := r.peekScope(ctx); ok {
+		scope[name] = &ResolverVariable{Name: nil, State: VARSTATE_READ}
+	}
+}
+
+func (r *resolver) peekScope(_ context.Context) (map[string]*ResolverVariable, bool) {
 	if r.scopes.Len() == 0 {
 		return nil, false
 	}
 	return r.scopeFromListElem(r.scopes.Back()), true
 }
 
-func (r *resolver) peekScopeVar(ctx context.Context, name string) (*ResolveVariable, bool) {
+func (r *resolver) peekScopeVar(ctx context.Context, name string) (*ResolverVariable, bool) {
 	if scope, ok := r.peekScope(ctx); ok {
 		if value, ok := scope[name]; ok {
 			return value, true
@@ -294,8 +387,8 @@ func (r *resolver) peekScopeVar(ctx context.Context, name string) (*ResolveVaria
 	return nil, false
 }
 
-func (r *resolver) scopeFromListElem(el *list.Element) map[string]*ResolveVariable {
-	return el.Value.(map[string]*ResolveVariable)
+func (r *resolver) scopeFromListElem(el *list.Element) map[string]*ResolverVariable {
+	return el.Value.(map[string]*ResolverVariable)
 }
 
 func (r *resolver) reportError(tok *token.Token, err error) {
@@ -309,7 +402,7 @@ func (r *resolver) String() string {
 	delimiter := ""
 	element := r.scopes.Front()
 	for element != nil {
-		_, _ = fmt.Fprintf(w, "%s%d{%v}", delimiter, index, element.Value.(map[string]*ResolveVariable))
+		_, _ = fmt.Fprintf(w, "%s%d{%v}", delimiter, index, element.Value.(map[string]*ResolverVariable))
 		index++
 		element = element.Next()
 		delimiter = " ->"

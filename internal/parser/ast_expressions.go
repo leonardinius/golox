@@ -11,9 +11,12 @@ type ExprVisitor interface {
 	VisitExprBinary(ctx context.Context, exprBinary *ExprBinary) (any, error)
 	VisitExprCall(ctx context.Context, exprCall *ExprCall) (any, error)
 	VisitExprFunction(ctx context.Context, exprFunction *ExprFunction) (any, error)
+	VisitExprGet(ctx context.Context, exprGet *ExprGet) (any, error)
 	VisitExprGrouping(ctx context.Context, exprGrouping *ExprGrouping) (any, error)
 	VisitExprLiteral(ctx context.Context, exprLiteral *ExprLiteral) (any, error)
 	VisitExprLogical(ctx context.Context, exprLogical *ExprLogical) (any, error)
+	VisitExprSet(ctx context.Context, exprSet *ExprSet) (any, error)
+	VisitExprThis(ctx context.Context, exprThis *ExprThis) (any, error)
 	VisitExprUnary(ctx context.Context, exprUnary *ExprUnary) (any, error)
 	VisitExprVariable(ctx context.Context, exprVariable *ExprVariable) (any, error)
 }
@@ -68,6 +71,17 @@ func (e *ExprFunction) Accept(ctx context.Context, v ExprVisitor) (any, error) {
 	return v.VisitExprFunction(ctx, e)
 }
 
+type ExprGet struct {
+	Instance Expr
+	Name     *token.Token
+}
+
+var _ Expr = (*ExprGet)(nil)
+
+func (e *ExprGet) Accept(ctx context.Context, v ExprVisitor) (any, error) {
+	return v.VisitExprGet(ctx, e)
+}
+
 type ExprGrouping struct {
 	Expression Expr
 }
@@ -98,6 +112,28 @@ var _ Expr = (*ExprLogical)(nil)
 
 func (e *ExprLogical) Accept(ctx context.Context, v ExprVisitor) (any, error) {
 	return v.VisitExprLogical(ctx, e)
+}
+
+type ExprSet struct {
+	Instance Expr
+	Name     *token.Token
+	Value    Expr
+}
+
+var _ Expr = (*ExprSet)(nil)
+
+func (e *ExprSet) Accept(ctx context.Context, v ExprVisitor) (any, error) {
+	return v.VisitExprSet(ctx, e)
+}
+
+type ExprThis struct {
+	Keyword *token.Token
+}
+
+var _ Expr = (*ExprThis)(nil)
+
+func (e *ExprThis) Accept(ctx context.Context, v ExprVisitor) (any, error) {
+	return v.VisitExprThis(ctx, e)
 }
 
 type ExprUnary struct {
