@@ -110,7 +110,34 @@ func TestInterpret(t *testing.T) {
 		a.method = fun(){ return theprint(a); };
 		a.method();`,
 			eval: `nil`, out: "1\n2\n"},
-		{name: `oop metaclass`, in: `class Math { class square(n) { this.b = 1; return n * n; } } print Math.square(3); print Math.b; Math.c=2; print Math.c;`, eval: `nil`, out: "9\n1\n2\n"},
+		{name: `oop metaclass`, in: `
+		class Math {
+			class square(n) {
+				this.b = 1; return n * n;
+				}
+			}
+			print Math.square(3);
+			print Math.b;
+			Math.c=2;
+			print Math.c;`,
+			eval: `nil`, out: "9\n1\n2\n"},
+		{name: `inheritance with super`, in: `
+		class A {
+			method() {
+			  return "A method";
+			}
+		  }
+		  class B < A {
+			method() {
+			  return "B method";
+			}
+			test() {
+			  return super.method();
+			}
+		  }
+		  class C < B {}
+		  C().test();`,
+			eval: `"A method"`},
 	}
 
 	for _, tc := range testcases {

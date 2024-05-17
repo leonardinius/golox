@@ -31,6 +31,7 @@ const (
 	FNTYPE_EXPR
 	FNTYPE_FUNCTION
 	FNTYPE_METHOD
+	FNTYPE_CLASSMETHOD
 	FNTYPE_INITIALIZER
 )
 
@@ -39,6 +40,7 @@ type ClassType int
 const (
 	CTYPE_NONE ClassType = iota
 	CTYPE_CLASS
+	CTYPE_SUBCLASS
 )
 
 type ResolverVariable struct {
@@ -101,7 +103,12 @@ func (r *resolver) VisitStmtClass(ctx context.Context, stmtClass *parser.StmtCla
 		r.reportError(stmtClass.SuperClass.Name, loxerrors.ErrParseClassCantInheritFromItself)
 	}
 	if stmtClass.SuperClass != nil {
+		r.currentClass = CTYPE_SUBCLASS
 		r.resolveExpr(ctx, stmtClass.SuperClass)
+
+		r.beginScope(ctx)
+		defer r.endScope(ctx)
+		r.defineInternal(ctx, "super")
 	}
 
 	r.beginScope(ctx)
@@ -110,7 +117,7 @@ func (r *resolver) VisitStmtClass(ctx context.Context, stmtClass *parser.StmtCla
 	r.defineInternal(ctx, "this")
 
 	for _, method := range stmtClass.ClassMethods {
-		r.resolveFunction(ctx, method.Fn, FNTYPE_METHOD)
+		r.resolveFunction(ctx, method.Fn, FNTYPE_CLASSMETHOD)
 	}
 
 	for _, method := range stmtClass.Methods {
@@ -266,6 +273,26 @@ func (r *resolver) VisitExprLogical(ctx context.Context, exprLogical *parser.Exp
 func (r *resolver) VisitExprSet(ctx context.Context, exprSet *parser.ExprSet) (any, error) {
 	r.resolveExpr(ctx, exprSet.Value)
 	r.resolveExpr(ctx, exprSet.Instance)
+	return nil, nil
+}
+
+// VisitExprSuper implements parser.ExprVisitor.
+func (r *resolver) VisitExprSuper(ctx context.Context, exprSuper *parser.ExprSuper) (any, error) {
+	switch r.currentClass {
+	case CTYPE_SUBCLASS:
+		break
+	case CTYPE_NONE:
+		r.reportError(exprSuper.Keyword, loxerrors.ErrParseCantUseSuperOutsideClass)
+	default:
+		r.reportError(exprSuper.Keyword, loxerrors.ErrParseCantUseSuperInClassWithNoSuperclass)
+	}
+
+	switch r.currentFunction {
+	case FNTYPE_CLASSMETHOD:
+		r.reportError(exprSuper.Keyword, loxerrors.ErrParseCantUseSuperInClassMethod)
+	}
+
+	r.resolveLocal(ctx, exprSuper, exprSuper.Keyword, true)
 	return nil, nil
 }
 

@@ -16,6 +16,7 @@ type ExprVisitor interface {
 	VisitExprLiteral(ctx context.Context, exprLiteral *ExprLiteral) (any, error)
 	VisitExprLogical(ctx context.Context, exprLogical *ExprLogical) (any, error)
 	VisitExprSet(ctx context.Context, exprSet *ExprSet) (any, error)
+	VisitExprSuper(ctx context.Context, exprSuper *ExprSuper) (any, error)
 	VisitExprThis(ctx context.Context, exprThis *ExprThis) (any, error)
 	VisitExprUnary(ctx context.Context, exprUnary *ExprUnary) (any, error)
 	VisitExprVariable(ctx context.Context, exprVariable *ExprVariable) (any, error)
@@ -124,6 +125,17 @@ var _ Expr = (*ExprSet)(nil)
 
 func (e *ExprSet) Accept(ctx context.Context, v ExprVisitor) (any, error) {
 	return v.VisitExprSet(ctx, e)
+}
+
+type ExprSuper struct {
+	Keyword *token.Token
+	Method  *token.Token
+}
+
+var _ Expr = (*ExprSuper)(nil)
+
+func (e *ExprSuper) Accept(ctx context.Context, v ExprVisitor) (any, error) {
+	return v.VisitExprSuper(ctx, e)
 }
 
 type ExprThis struct {

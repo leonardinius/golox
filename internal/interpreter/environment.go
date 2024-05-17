@@ -81,6 +81,10 @@ func (e *environment) Nest() *environment {
 	return env
 }
 
+func (e *environment) Enclosing() *environment {
+	return e.enclosing
+}
+
 func (e *environment) AsContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, envCtxKey{}, e)
 }

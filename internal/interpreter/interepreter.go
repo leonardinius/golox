@@ -263,6 +263,11 @@ func (i *interpreter) VisitStmtClass(ctx context.Context, stmtClass *parser.Stmt
 	}
 	env.Define(stmtClass.Name.Lexeme, nil)
 
+	if superClass != nil {
+		env = env.Nest()
+		env.Define("super", superClass)
+	}
+
 	classMethods := make(map[string]*LoxFunction)
 	methods := make(map[string]*LoxFunction)
 	for _, method := range stmtClass.ClassMethods {
@@ -275,6 +280,9 @@ func (i *interpreter) VisitStmtClass(ctx context.Context, stmtClass *parser.Stmt
 	}
 
 	class := NewLoxClass(stmtClass.Name.Lexeme, superClass, methods, classMethods)
+	if superClass != nil {
+		env = env.Enclosing()
+	}
 	return nil, env.Assign(stmtClass.Name, class)
 }
 
@@ -456,6 +464,41 @@ func (i *interpreter) VisitExprSet(ctx context.Context, exprSet *parser.ExprSet)
 	}
 
 	return instance.(LoxInstance).Set(ctx, exprSet.Name, value)
+}
+
+// VisitExprSuper implements parser.ExprVisitor.
+func (i *interpreter) VisitExprSuper(ctx context.Context, exprSuper *parser.ExprSuper) (any, error) {
+	var distance int
+	if depth, ok := i.Locals[exprSuper]; !ok {
+		return i.unreachable()
+	} else {
+		distance = depth
+	}
+
+	env := EnvFromContext(ctx)
+	var superClass *LoxClass
+	if _superClass, err := env.GetAt(distance, "super"); err != nil {
+		return nil, err
+	} else if _superClass, ok := _superClass.(*LoxClass); !ok {
+		return i.unreachable()
+	} else {
+		superClass = _superClass
+	}
+
+	var instance LoxInstance
+	if _instance, err := env.GetAt(distance-1, "this"); err != nil {
+		return nil, err
+	} else if _instance, ok := _instance.(LoxInstance); !ok {
+		return i.unreachable()
+	} else {
+		instance = _instance
+	}
+
+	method := superClass.FindMethod(ctx, exprSuper.Method.Lexeme)
+	if method == nil {
+		return i.returnRuntimeError(exprSuper.Method, loxerrors.ErrRuntimeUndefinedProperty(exprSuper.Method.Lexeme))
+	}
+	return method.Bind(instance), nil
 }
 
 // VisitExprThis implements parser.ExprVisitor.

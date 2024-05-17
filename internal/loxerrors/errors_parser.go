@@ -44,6 +44,11 @@ var (
 	ErrParseExpectedPropertyNameAfterDot          = errors.New("expect property name after '.'.")
 	ErrParseThisOutsideClass                      = errors.New("can't use 'this' outside of a class.")
 	ErrParseCantReturnValueFromInitializer        = errors.New("can't return a value from an initializer.")
+	ErrParseExpectedDotAfterSuper                 = errors.New("expect '.' after 'super'.")
+	ErrParseExpectedSuperClassMethodName          = errors.New("expect superclass method name.")
+	ErrParseCantUseSuperOutsideClass              = errors.New("can't use 'super' outside of a class.")
+	ErrParseCantUseSuperInClassWithNoSuperclass   = errors.New("can't use 'super' in a class with no superclass.")
+	ErrParseCantUseSuperInClassMethod             = errors.New("can't use 'super' in a static class method.")
 )
 
 func ErrParseExpectedIdentifierKindError(kind string) error {

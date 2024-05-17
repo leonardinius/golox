@@ -31,6 +31,7 @@ func Main(args []string) int {
 		"ExprLiteral  : Value any",
 		"ExprLogical  : Left Expr, Operator *token.Token, Right Expr",
 		"ExprSet      : Instance Expr, Name *token.Token, Value Expr",
+		"ExprSuper    : Keyword *token.Token, Method *token.Token",
 		"ExprThis     : Keyword *token.Token",
 		"ExprUnary    : Operator *token.Token, Right Expr",
 		"ExprVariable : Name *token.Token",

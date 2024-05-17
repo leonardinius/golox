@@ -560,6 +560,20 @@ func (p *parser) primary() Expr {
 		return &ExprLiteral{Value: tok.Literal}
 	}
 
+	if p.match(token.SUPER) {
+		tok := p.previous()
+		if !p.match(token.DOT) {
+			return p.reportFatalErrorExpr(loxerrors.ErrParseExpectedDotAfterSuper)
+		}
+
+		if !p.match(token.IDENTIFIER) {
+			return p.reportFatalErrorExpr(loxerrors.ErrParseExpectedSuperClassMethodName)
+		}
+		method := p.previous()
+
+		return &ExprSuper{Keyword: tok, Method: method}
+	}
+
 	if p.match(token.THIS) {
 		tok := p.previous()
 		return &ExprThis{Keyword: tok}
