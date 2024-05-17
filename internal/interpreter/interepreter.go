@@ -44,6 +44,7 @@ type interpreter struct {
 func NewInterpreter(options ...InterpreterOption) *interpreter {
 	opts := newInterpreterOpts(options...)
 	globals := opts.globals
+	globals.Define("Array", NativeFunction1(StdFnCreateArray))
 	globals.Define("clock", NativeFunction0(StdFnTime))
 	globals.Define("pprint", NativeFunctionVarArgs(StdFnPPrint))
 

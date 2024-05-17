@@ -15,6 +15,10 @@ var (
 	ErrRuntimeCalleeMustBeCallable         = errors.New("can only call functions and classes.")
 	ErrRuntimeOnlyInstancesHaveProperties  = errors.New("only instances have properties.")
 	ErrRuntimeSuperClassMustBeClass        = errors.New("superclass must be a class.")
+	ErrRuntimeArraysCantSetProperties      = errors.New("can't set properties on arrays.")
+	ErrRuntimeArrayIndexOutOfRange         = errors.New("array index out of range.")
+	ErrRuntimeArrayInvalidArrayIndex       = errors.New("invalid array index, must be number.")
+	ErrRuntimeArrayInvalidArraySize        = errors.New("invalid array size, must be number.")
 )
 
 func ErrRuntimeCalleeArityError(expectedArity int, actualArity int) error {

@@ -138,6 +138,16 @@ func TestInterpret(t *testing.T) {
 		  class C < B {}
 		  C().test();`,
 			eval: `"A method"`},
+		{name: `inheritance with super`, in: `
+		var array = Array(3);
+		print array;
+		// "length" returns the number of elements.
+		print array.length; // "3".
+		// "set" sets the element at the given index to the given value.
+		array.set(1, "new");
+		// "get" returns the element at a given index.
+		print array.get(1); // "new".`,
+			eval: `nil`, out: "[<nil> <nil> <nil>]\n3\nnew\n"},
 	}
 
 	for _, tc := range testcases {
