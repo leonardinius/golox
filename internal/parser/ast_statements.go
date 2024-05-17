@@ -36,8 +36,9 @@ func (e *StmtBlock) Accept(ctx context.Context, v StmtVisitor) (any, error) {
 }
 
 type StmtClass struct {
-	Name    *token.Token
-	Methods []*StmtFunction
+	Name         *token.Token
+	Methods      []*StmtFunction
+	ClassMethods []*StmtFunction
 }
 
 var _ Stmt = (*StmtClass)(nil)

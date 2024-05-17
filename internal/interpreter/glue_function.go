@@ -54,7 +54,7 @@ func (l *LoxFunction) Call(ctx context.Context, interpreter *interpreter, argume
 	return value, nil
 }
 
-func (l *LoxFunction) Bind(instance *LoxInstance) *LoxFunction {
+func (l *LoxFunction) Bind(instance LoxInstance) *LoxFunction {
 	env := l.Env.Nest()
 	env.Define("this", instance)
 	return NewLoxFunction(l.Name, l.Fn, env, l.IsIntialize)

@@ -250,13 +250,18 @@ func (i *interpreter) VisitStmtClass(ctx context.Context, stmtClass *parser.Stmt
 	env := EnvFromContext(ctx)
 	env.Define(stmtClass.Name.Lexeme, nil)
 
+	classMethods := make(map[string]*LoxFunction)
 	methods := make(map[string]*LoxFunction)
+	for _, method := range stmtClass.ClassMethods {
+		function := NewLoxFunction(method.Name, method.Fn, env, false)
+		classMethods[method.Name.Lexeme] = function
+	}
 	for _, method := range stmtClass.Methods {
 		function := NewLoxFunction(method.Name, method.Fn, env, method.Name.Lexeme == "init")
 		methods[method.Name.Lexeme] = function
 	}
 
-	class := NewLoxClass(stmtClass.Name.Lexeme, methods)
+	class := NewLoxClass(stmtClass.Name.Lexeme, methods, classMethods)
 	return nil, env.Assign(stmtClass.Name, class)
 }
 
@@ -265,7 +270,7 @@ func (i *interpreter) VisitExprGet(ctx context.Context, exprGet *parser.ExprGet)
 	var instance any
 	var err error
 	if instance, err = i.evaluate(ctx, exprGet.Instance); err == nil {
-		if _, ok := instance.(*LoxInstance); !ok {
+		if _, ok := instance.(LoxInstance); !ok {
 			err = i.runtimeError(exprGet.Name, loxerrors.ErrRuntimeOnlyInstancesHaveProperties)
 		}
 	}
@@ -273,7 +278,7 @@ func (i *interpreter) VisitExprGet(ctx context.Context, exprGet *parser.ExprGet)
 		return nil, err
 	}
 
-	return instance.(*LoxInstance).Get(ctx, exprGet.Name)
+	return instance.(LoxInstance).Get(ctx, exprGet.Name)
 
 }
 
@@ -424,7 +429,7 @@ func (i *interpreter) VisitExprSet(ctx context.Context, exprSet *parser.ExprSet)
 	var instance any
 	var err error
 	if instance, err = i.evaluate(ctx, exprSet.Instance); err == nil {
-		if _, ok := instance.(*LoxInstance); !ok {
+		if _, ok := instance.(LoxInstance); !ok {
 			err = i.runtimeError(exprSet.Name, loxerrors.ErrRuntimeOnlyInstancesHaveProperties)
 		}
 	}
@@ -437,7 +442,7 @@ func (i *interpreter) VisitExprSet(ctx context.Context, exprSet *parser.ExprSet)
 		return nil, err
 	}
 
-	return instance.(*LoxInstance).Set(ctx, exprSet.Name, value)
+	return instance.(LoxInstance).Set(ctx, exprSet.Name, value)
 }
 
 // VisitExprThis implements parser.ExprVisitor.

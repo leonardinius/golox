@@ -96,7 +96,7 @@ func TestInterpret(t *testing.T) {
 		{name: `oop class fields decl`, in: `class A{} var a = A();a.a = 1; a.a;`, eval: `1`},
 		{name: `oop class method call`, in: `class Bacon{eat(){print "bacon";return 1;}} Bacon().eat();`, eval: `1`, out: "bacon\n"},
 		{name: `oop class this bind`, in: `class Thing { getCallback() { this.a = 1; fun localFunction() { return this.a + 2; } return localFunction; } } var callback = Thing().getCallback(); callback();`, eval: `3`},
-		{name: `oop constructor`, in: `
+		{name: `oop constructor multi test`, in: `
 		class A {
 			init (a,b){
 				this.a= a;
@@ -110,6 +110,7 @@ func TestInterpret(t *testing.T) {
 		a.method = fun(){ return theprint(a); };
 		a.method();`,
 			eval: `nil`, out: "1\n2\n"},
+		{name: `oop metaclass`, in: `class Math { class square(n) { this.b = 1; return n * n; } } print Math.square(3); print Math.b; Math.c=2; print Math.c;`, eval: `nil`, out: "9\n1\n2\n"},
 	}
 
 	for _, tc := range testcases {

@@ -102,6 +102,10 @@ func (r *resolver) VisitStmtClass(ctx context.Context, stmtClass *parser.StmtCla
 
 	r.defineInternal(ctx, "this")
 
+	for _, method := range stmtClass.ClassMethods {
+		r.resolveFunction(ctx, method.Fn, FNTYPE_METHOD)
+	}
+
 	for _, method := range stmtClass.Methods {
 		functionType := FNTYPE_METHOD
 		if method.Name.Lexeme == "init" {

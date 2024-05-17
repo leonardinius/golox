@@ -105,33 +105,35 @@ func (p *parser) classDeclaration() Stmt {
 		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectLeftCurlyBeforeClassBody)
 	}
 
-	var methodsStmts []Stmt
+	var methods []*StmtFunction
+	var classMethods []*StmtFunction
 	for !p.check(token.RIGHT_BRACE) && !p.isDone() {
-		methodsStmts = append(methodsStmts, p.funDeclaration("method"))
+		if p.match(token.CLASS) {
+			classMethods = append(classMethods, p.funDeclaration("method"))
+		} else {
+			methods = append(methods, p.funDeclaration("method"))
+		}
 	}
 
 	if !p.match(token.RIGHT_BRACE) {
 		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectRightCurlyAfterClassBody)
 	}
 
-	var methods []*StmtFunction = make([]*StmtFunction, len(methodsStmts))
-	for i, stmt := range methodsStmts {
-		methods[i] = stmt.(*StmtFunction)
-	}
-	return &StmtClass{Name: name, Methods: methods}
+	return &StmtClass{Name: name, Methods: methods, ClassMethods: classMethods}
 }
 
-func (p *parser) funDeclaration(kind string) Stmt {
+func (p *parser) funDeclaration(kind string) *StmtFunction {
 	// function name
 	if !p.match(token.IDENTIFIER) {
-		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedIdentifierKindError(kind))
+		p.reportFatalErrorStmt(loxerrors.ErrParseExpectedIdentifierKindError(kind))
+		return nil
 	}
 	name := p.previous()
 	if fn, ok := p.functionBody(kind).(*ExprFunction); ok {
 		return &StmtFunction{Name: name, Fn: fn}
 	}
 
-	return nilStmt
+	return nil
 }
 
 func (p *parser) functionBody(kind string) Expr {
@@ -368,7 +370,7 @@ func (p *parser) blockStatement() []Stmt {
 	}
 
 	if !p.match(token.RIGHT_BRACE) {
-		return p.reportFatalErrorStmtlist(loxerrors.ErrParseExpectedRightCurlyBlockToken)
+		return p.reportFatalErrorStmtList(loxerrors.ErrParseExpectedRightCurlyBlockToken)
 	}
 
 	return stmts
@@ -647,7 +649,7 @@ func (p *parser) reportFatalErrorStmtToken(tok *token.Token, err error) Stmt {
 	return nilStmt
 }
 
-func (p *parser) reportFatalErrorStmtlist(err error) []Stmt {
+func (p *parser) reportFatalErrorStmtList(err error) []Stmt {
 	// do not overwrite present error.
 	// preserves the original error and bubbles up to return in Parse() with .err
 	if p.panic == nil {
