@@ -30,6 +30,7 @@ const (
 	FN_NONE FunctionType = iota
 	FN_EXPR
 	FN_FUNCTION
+	FN_INITIALIZER
 	FN_METHOD
 )
 
@@ -38,7 +39,6 @@ type ClassType int
 const (
 	CT_NONE ClassType = iota
 	CT_CLASS
-	CT_SUBCLASS
 )
 
 type ResolverVariable struct {
@@ -103,7 +103,11 @@ func (r *resolver) VisitStmtClass(ctx context.Context, stmtClass *parser.StmtCla
 	r.defineInternal(ctx, "this")
 
 	for _, method := range stmtClass.Methods {
-		r.resolveFunction(ctx, method.Fn, FN_METHOD)
+		functionType := FN_METHOD
+		if method.Name.Lexeme == "init" {
+			functionType = FN_INITIALIZER
+		}
+		r.resolveFunction(ctx, method.Fn, functionType)
 	}
 
 	return nil, nil
@@ -168,6 +172,10 @@ func (r *resolver) VisitStmtPrint(ctx context.Context, stmtPrint *parser.StmtPri
 // VisitStmtReturn implements parser.StmtVisitor.
 func (r *resolver) VisitStmtReturn(ctx context.Context, stmtReturn *parser.StmtReturn) (any, error) {
 	if stmtReturn.Value != nil {
+		if r.currentFunction == FN_INITIALIZER {
+			r.reportError(stmtReturn.Keyword, loxerrors.ErrParseCantReturnValueFromInitializer)
+			return nil, nil
+		}
 		r.resolveExpr(ctx, stmtReturn.Value)
 	}
 	return nil, nil

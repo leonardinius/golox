@@ -18,13 +18,14 @@ func (r *ReturnValue) Error() string {
 }
 
 type LoxFunction struct {
-	Name *token.Token
-	Fn   *parser.ExprFunction
-	Env  *environment
+	Name        *token.Token
+	Fn          *parser.ExprFunction
+	Env         *environment
+	IsIntialize bool
 }
 
-func NewLoxFunction(name *token.Token, fn *parser.ExprFunction, env *environment) *LoxFunction {
-	return &LoxFunction{Name: name, Fn: fn, Env: env}
+func NewLoxFunction(name *token.Token, fn *parser.ExprFunction, env *environment, isInitialize bool) *LoxFunction {
+	return &LoxFunction{Name: name, Fn: fn, Env: env, IsIntialize: isInitialize}
 }
 
 // Arity implements Callable.
@@ -42,7 +43,13 @@ func (l *LoxFunction) Call(ctx context.Context, interpreter *interpreter, argume
 
 	value, err := interpreter.executeBlock(env.AsContext(ctx), l.Fn.Body)
 	if err != nil {
-		return l.returnValue(err)
+		value, err = l.returnValue(err)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if l.IsIntialize {
+		return l.Env.GetAt(0, "this")
 	}
 	return value, nil
 }
@@ -50,7 +57,7 @@ func (l *LoxFunction) Call(ctx context.Context, interpreter *interpreter, argume
 func (l *LoxFunction) Bind(instance *LoxInstance) *LoxFunction {
 	env := l.Env.Nest()
 	env.Define("this", instance)
-	return NewLoxFunction(l.Name, l.Fn, env)
+	return NewLoxFunction(l.Name, l.Fn, env, l.IsIntialize)
 }
 
 func (l *LoxFunction) returnValue(err error) (any, error) {

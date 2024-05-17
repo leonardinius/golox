@@ -103,7 +103,7 @@ func (i *interpreter) VisitStmtExpression(ctx context.Context, expr *parser.Stmt
 // VisitStmtFunction implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtFunction(ctx context.Context, stmtFunction *parser.StmtFunction) (any, error) {
 	env := EnvFromContext(ctx)
-	function := NewLoxFunction(stmtFunction.Name, stmtFunction.Fn, env)
+	function := NewLoxFunction(stmtFunction.Name, stmtFunction.Fn, env, false)
 	env.Define(stmtFunction.Name.Lexeme, function)
 	return nil, nil
 }
@@ -252,7 +252,7 @@ func (i *interpreter) VisitStmtClass(ctx context.Context, stmtClass *parser.Stmt
 
 	methods := make(map[string]*LoxFunction)
 	for _, method := range stmtClass.Methods {
-		function := NewLoxFunction(method.Name, method.Fn, env)
+		function := NewLoxFunction(method.Name, method.Fn, env, method.Name.Lexeme == "init")
 		methods[method.Name.Lexeme] = function
 	}
 
@@ -363,7 +363,7 @@ func (i *interpreter) VisitExprBinary(ctx context.Context, expr *parser.ExprBina
 // VisitExprFunction implements parser.ExprVisitor.
 func (i *interpreter) VisitExprFunction(ctx context.Context, exprFunction *parser.ExprFunction) (any, error) {
 	env := EnvFromContext(ctx)
-	fn := NewLoxFunction(nil, exprFunction, env)
+	fn := NewLoxFunction(nil, exprFunction, env, false)
 	return fn, nil
 }
 

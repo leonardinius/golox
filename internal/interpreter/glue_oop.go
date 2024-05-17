@@ -12,20 +12,31 @@ import (
 type LoxClass struct {
 	Name    string
 	Methods map[string]*LoxFunction
+	Init    *LoxFunction
 }
 
 func NewLoxClass(name string, methods map[string]*LoxFunction) *LoxClass {
+	if init, ok := methods["init"]; ok {
+		return &LoxClass{Name: name, Methods: methods, Init: init}
+	}
 	return &LoxClass{Name: name, Methods: methods}
 }
 
 // Arity implements Callable.
 func (l *LoxClass) Arity() Arity {
+	if l.Init != nil {
+		return l.Init.Arity()
+	}
 	return Arity(0)
 }
 
 // Call implements Callable.
 func (l *LoxClass) Call(ctx context.Context, interpreter *interpreter, arguments []any) (any, error) {
-	return &LoxInstance{Class: l, Fields: make(map[string]any)}, nil
+	instance := &LoxInstance{Class: l, Fields: make(map[string]any)}
+	if l.Init != nil {
+		return l.Init.Bind(instance).Call(ctx, interpreter, arguments)
+	}
+	return instance, nil
 }
 
 func (l *LoxClass) FindMethod(_ context.Context, name string) *LoxFunction {

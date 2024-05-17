@@ -41,6 +41,7 @@ var (
 	ErrParseExpectRightCurlyAfterClassBody        = errors.New("expect '}' after class body.")
 	ErrParseExpectedPropertyNameAfterDot          = errors.New("expect property name after '.'.")
 	ErrParseThisOutsideClass                      = errors.New("can't use 'this' outside of a class.")
+	ErrParseCantReturnValueFromInitializer        = errors.New("can't return a value from an initializer.")
 )
 
 func ErrParseExpectedIdentifierKindError(kind string) error {
