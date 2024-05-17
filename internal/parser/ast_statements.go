@@ -37,6 +37,7 @@ func (e *StmtBlock) Accept(ctx context.Context, v StmtVisitor) (any, error) {
 
 type StmtClass struct {
 	Name         *token.Token
+	SuperClass   *ExprVariable
 	Methods      []*StmtFunction
 	ClassMethods []*StmtFunction
 }

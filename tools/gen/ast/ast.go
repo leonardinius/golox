@@ -41,7 +41,7 @@ func Main(args []string) int {
 
 	if err := defineAst(statementsOutFile, packageName, "Stmt",
 		"StmtBlock      : Statements []Stmt",
-		"StmtClass      : Name *token.Token, Methods []*StmtFunction, ClassMethods []*StmtFunction",
+		"StmtClass      : Name *token.Token, SuperClass *ExprVariable, Methods []*StmtFunction, ClassMethods []*StmtFunction",
 		"StmtExpression : Expression Expr",
 		"StmtFunction   : Name *token.Token, Fn *ExprFunction",
 		"StmtIf         : Condition Expr, ThenBranch Stmt, ElseBranch Stmt",

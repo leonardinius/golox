@@ -101,6 +101,15 @@ func (p *parser) classDeclaration() Stmt {
 		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectClassName)
 	}
 	name := p.previous()
+
+	var superClass *ExprVariable
+	if p.match(token.LESS) {
+		if !p.match(token.IDENTIFIER) {
+			return p.reportFatalErrorStmt(loxerrors.ErrParseExpectSuperClassName)
+		}
+		superClass = &ExprVariable{Name: p.previous()}
+	}
+
 	if !p.match(token.LEFT_BRACE) {
 		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectLeftCurlyBeforeClassBody)
 	}
@@ -119,7 +128,7 @@ func (p *parser) classDeclaration() Stmt {
 		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectRightCurlyAfterClassBody)
 	}
 
-	return &StmtClass{Name: name, Methods: methods, ClassMethods: classMethods}
+	return &StmtClass{Name: name, SuperClass: superClass, Methods: methods, ClassMethods: classMethods}
 }
 
 func (p *parser) funDeclaration(kind string) *StmtFunction {

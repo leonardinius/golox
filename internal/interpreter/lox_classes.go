@@ -17,20 +17,21 @@ type LoxInstance interface {
 type LoxClass struct {
 	MetaClass       *LoxClass
 	MetaClassFields map[string]any
+	SuperClass      *LoxClass
 
 	Name    string
 	Methods map[string]*LoxFunction
 	Init    *LoxFunction
 }
 
-func NewLoxClass(name string, methods map[string]*LoxFunction, classMethods map[string]*LoxFunction) *LoxClass {
+func NewLoxClass(name string, superClass *LoxClass, methods map[string]*LoxFunction, classMethods map[string]*LoxFunction) *LoxClass {
 	metaClass := &LoxClass{Name: name + " metaclass", Methods: classMethods}
 
 	if init, ok := methods["init"]; ok {
 		return &LoxClass{Name: name, Methods: methods, Init: init}
 	}
 
-	return &LoxClass{Name: name, Methods: methods, MetaClass: metaClass}
+	return &LoxClass{Name: name, SuperClass: superClass, Methods: methods, MetaClass: metaClass}
 }
 
 // Arity implements Callable.
@@ -58,6 +59,13 @@ func (l *LoxClass) Get(ctx context.Context, name *token.Token) (any, error) {
 	if method := l.MetaClass.FindMethod(ctx, name.Lexeme); method != nil {
 		boundMethod := method.Bind(l)
 		return boundMethod, nil
+	}
+
+	if l.SuperClass != nil {
+		if method := l.SuperClass.MetaClass.FindMethod(ctx, name.Lexeme); method != nil {
+			boundMethod := method.Bind(l)
+			return boundMethod, nil
+		}
 	}
 
 	return nil, loxerrors.NewRuntimeError(name, loxerrors.ErrRuntimeUndefinedProperty(name.Lexeme))
@@ -117,6 +125,13 @@ func (l *objectInstance) Get(ctx context.Context, name *token.Token) (any, error
 	if method := l.Class.FindMethod(ctx, name.Lexeme); method != nil {
 		boundMethod := method.Bind(l)
 		return boundMethod, nil
+	}
+
+	if l.Class.SuperClass != nil {
+		if method := l.Class.SuperClass.FindMethod(ctx, name.Lexeme); method != nil {
+			boundMethod := method.Bind(l)
+			return boundMethod, nil
+		}
 	}
 
 	return nil, loxerrors.NewRuntimeError(name, loxerrors.ErrRuntimeUndefinedProperty(name.Lexeme))

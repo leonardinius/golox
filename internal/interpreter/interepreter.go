@@ -248,6 +248,19 @@ func (i *interpreter) VisitStmtBlock(ctx context.Context, block *parser.StmtBloc
 // VisitStmtClass implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtClass(ctx context.Context, stmtClass *parser.StmtClass) (any, error) {
 	env := EnvFromContext(ctx)
+	var superClass *LoxClass
+	if stmtClass.SuperClass != nil {
+		if superClassValue, err := i.evaluate(ctx, stmtClass.SuperClass); err != nil {
+			return nil, err
+		} else {
+			if cast, ok := superClassValue.(*LoxClass); ok {
+				superClass = cast
+			}
+		}
+		if superClass == nil {
+			return i.returnRuntimeError(stmtClass.SuperClass.Name, loxerrors.ErrRuntimeSuperClassMustBeClass)
+		}
+	}
 	env.Define(stmtClass.Name.Lexeme, nil)
 
 	classMethods := make(map[string]*LoxFunction)
@@ -261,7 +274,7 @@ func (i *interpreter) VisitStmtClass(ctx context.Context, stmtClass *parser.Stmt
 		methods[method.Name.Lexeme] = function
 	}
 
-	class := NewLoxClass(stmtClass.Name.Lexeme, methods, classMethods)
+	class := NewLoxClass(stmtClass.Name.Lexeme, superClass, methods, classMethods)
 	return nil, env.Assign(stmtClass.Name, class)
 }
 

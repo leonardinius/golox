@@ -14,6 +14,7 @@ var (
 	ErrRuntimeUndefinedVariable            = errors.New("undefined variable")
 	ErrRuntimeCalleeMustBeCallable         = errors.New("can only call functions and classes.")
 	ErrRuntimeOnlyInstancesHaveProperties  = errors.New("only instances have properties.")
+	ErrRuntimeSuperClassMustBeClass        = errors.New("superclass must be a class.")
 )
 
 func ErrRuntimeCalleeArityError(expectedArity int, actualArity int) error {

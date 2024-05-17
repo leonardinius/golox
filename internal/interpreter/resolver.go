@@ -97,6 +97,13 @@ func (r *resolver) VisitStmtClass(ctx context.Context, stmtClass *parser.StmtCla
 	r.declare(ctx, stmtClass.Name)
 	r.define(ctx, stmtClass.Name)
 
+	if stmtClass.SuperClass != nil && stmtClass.Name.Lexeme == stmtClass.SuperClass.Name.Lexeme {
+		r.reportError(stmtClass.SuperClass.Name, loxerrors.ErrParseClassCantInheritFromItself)
+	}
+	if stmtClass.SuperClass != nil {
+		r.resolveExpr(ctx, stmtClass.SuperClass)
+	}
+
 	r.beginScope(ctx)
 	defer r.endScope(ctx)
 
