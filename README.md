@@ -16,6 +16,7 @@ DONE:
 ## Features
 
 - [x] TODO fix synchronize
+- [ ] TODO add original crafting gh repo tests as go tests
 - [ ] TODO Makefile
 - [ ] TODO Linters
 - [ ] TODO GH actions
