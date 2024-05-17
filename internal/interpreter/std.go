@@ -45,7 +45,7 @@ func NewStdArray(values []any) *StdArray {
 func (s *StdArray) Get(ctx context.Context, name *token.Token) (any, error) {
 	switch name.Lexeme {
 	case "length":
-		return len(s.values), nil
+		return float64(len(s.values)), nil
 	case "get":
 		return NativeFunction1(func(ctx context.Context, interpeter *interpreter, arg1 any) (any, error) {
 			return s.getAt(name, arg1)
@@ -107,7 +107,7 @@ func (s *StdArray) String() string {
 }
 
 func (s *StdArray) GoString() string {
-	return fmt.Sprintf("%#v", s.values)
+	return s.String()
 }
 
 var _ LoxInstance = (*StdArray)(nil)
