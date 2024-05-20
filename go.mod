@@ -1,10 +1,11 @@
 module github.com/leonardinius/golox
 
-go 1.22.2
+go 1.22.3
 
 require (
 	github.com/chzyer/readline v1.5.1
 	github.com/stretchr/testify v1.9.0
+	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
 )
 
 require (
