@@ -16,7 +16,8 @@ DONE:
 ## Features
 
 - [x] TODO fix synchronize
-- [ ] TODO add original crafting gh repo tests as go tests
+- [x] TODO add original crafting gh repo tests as go tests
+- [ ] TODO - add test README, lionk to original repo copied from, describe key differences.
 - [ ] TODO Makefile
 - [ ] TODO Linters
 - [ ] TODO GH actions
