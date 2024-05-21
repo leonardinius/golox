@@ -14,12 +14,12 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-var testDir = "/Users/leo/src/craftinginterpreters/test/"
-var binDir = "/Users/leo/src/craftinginterpreters/"
+var testDir = "../test/"
+var projectDir = "/Users/leo/src/golox"
 
 var expectedOutputPattern = regexp.MustCompile(`// expect: ?(.*)`)
 var expectedErrorPattern = regexp.MustCompile(`// (Error.*)`)
-var errorLinePattern = regexp.MustCompile(`// \[((java|c) )?line (\d+)\] (Error.*)`)
+var errorLinePattern = regexp.MustCompile(`// \[((java|c|go) )?line (\d+)\] (Error.*)`)
 var expectedRuntimeErrorPattern = regexp.MustCompile(`// expect runtime error: (.+)`)
 var syntaxErrorPattern = regexp.MustCompile(`\[.*line (\d+)\] (Error.+)`)
 var stackTracePattern = regexp.MustCompile(`\[line (\d+)\]`)
@@ -34,23 +34,14 @@ type Suite struct {
 }
 
 var allSuites = map[string]*Suite{}
-var cSuites = []string{}
-var javaSuites = []string{}
 
-func init() {
-	defineTestSuites()
-}
+// var cSuites = []string{}
+var goSuites = []string{}
 
 func TestAll(t *testing.T) {
+	defineTestSuites(t)
+
 	runSuites(t, maps.Keys(allSuites))
-}
-
-func TestJavaSuites(t *testing.T) {
-	runSuites(t, javaSuites)
-}
-
-func TestCSuites(t *testing.T) {
-	runSuites(t, cSuites)
 }
 
 func runSuites(t *testing.T, names []string) {
@@ -99,7 +90,7 @@ func runTest(t *testing.T, suite *Suite, path string) {
 		if !test.parse() {
 			return
 		}
-		failures := test.run(suite.executable, suite.args)
+		failures := test.run()
 		if len(failures) > 0 {
 			t.Fatalf("Test failed:\n%s", strings.Join(failures, "\n"))
 		}
@@ -198,17 +189,13 @@ func (t *Test) parse() bool {
 	return true
 }
 
-func (t *Test) run(customInterpreter string, customArguments []string) []string {
+func (t *Test) run() []string {
 	args := []string{}
-	if customInterpreter != "" {
-		args = append(args, customArguments...)
-	} else {
-		args = append(args, t.suite.args...)
-	}
+	args = append(args, t.suite.args...)
 	args = append(args, t.path)
 
-	cmd := exec.Command(customInterpreter, args...)
-	cmd.Dir = binDir
+	cmd := exec.Command(t.suite.executable, args...)
+	cmd.Dir = projectDir
 	stdout := new(strings.Builder)
 	stderr := new(strings.Builder)
 	cmd.Stdout = stdout
@@ -242,7 +229,7 @@ func (t *Test) validateRuntimeError(errorLines []string) {
 	}
 
 	if errorLines[0] != t.expectedRuntimeError {
-		t.Errorf("Expected runtime error '%s' and got: %s", errorLines[0], t.expectedRuntimeError)
+		t.Errorf("Expected runtime error '%s' and got: %s", t.expectedRuntimeError, errorLines[0])
 		return
 	}
 
@@ -307,7 +294,7 @@ func (t *Test) validateExitCode(exitCode int, errorLines []string) {
 		errorLines = append(errorLines, "(truncated...)")
 	}
 
-	t.Errorf("Expected return code %d and got %d. Stderr: %v", t.expectedExitCode, exitCode, errorLines)
+	t.Errorf("Expected return code %d and got %d. Stderr: %s", t.expectedExitCode, exitCode, strings.Join(errorLines, "\n"))
 }
 
 func (t *Test) validateOutput(outputLines []string) {
@@ -339,34 +326,28 @@ func (t *Test) Errorf(format string, args ...interface{}) {
 	t.t.Errorf(format, args...)
 }
 
-func defineTestSuites() {
-	c := func(name string, tests ...map[string]string) {
-		executable := "build/" + name
-		if name == "clox" {
-			executable = "build/cloxd"
+func defineTestSuites(t *testing.T) {
+	func() {
+		// Build go lox
+		cmd := exec.Command("go", "build", "-o", projectDir+"/bin/golox", projectDir+"/main.go")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("go build failed %v: %#v\n", err, out)
 		}
+	}()
 
+	golox := func(name string, tests ...map[string]string) {
 		suiteTests := map[string]string{}
 		for _, test := range tests {
 			maps.Copy(suiteTests, test)
 		}
-
-		allSuites[name] = &Suite{name: name, language: "c", executable: executable, args: nil, tests: suiteTests}
-		cSuites = append(cSuites, name)
-	}
-
-	java := func(name string, tests ...map[string]string) {
-		dir := "build/gen/" + name
-		if name == "jlox" {
-			dir = "build/java"
+		allSuites[name] = &Suite{
+			name:       name,
+			language:   "go",
+			executable: projectDir + "/bin/golox",
+			tests:      suiteTests,
+			args:       []string{"-profile=nonstrict"},
 		}
-
-		suiteTests := map[string]string{}
-		for _, test := range tests {
-			maps.Copy(suiteTests, test)
-		}
-		allSuites[name] = &Suite{name: name, language: "java", executable: "java", args: []string{"-cp", dir, "com.craftinginterpreters.lox.Lox"}, tests: suiteTests}
-		javaSuites = append(javaSuites, name)
+		goSuites = append(goSuites, name)
 	}
 
 	// These are just for earlier chapters.
@@ -375,377 +356,36 @@ func defineTestSuites() {
 		"test/expressions": "skip",
 	}
 
-	// JVM doesn't correctly implement IEEE equality on boxed doubles.
-	var javaNaNEquality = map[string]string{
-		"test/number/nan_equality.lox": "skip",
+	// Go doesn't correctly implement IEEE equality on boxed doubles.
+	var goNaNEquality = map[string]string{
+		// "test/number/nan_equality.lox": "skip",
 	}
 
-	// No hardcoded limits in jlox.
-	var noJavaLimits = map[string]string{
+	// No hardcoded limits.
+	var noGoLimits = map[string]string{
 		"test/limit/loop_too_large.lox":     "skip",
 		"test/limit/no_reuse_constants.lox": "skip",
 		"test/limit/too_many_constants.lox": "skip",
 		"test/limit/too_many_locals.lox":    "skip",
 		"test/limit/too_many_upvalues.lox":  "skip",
 
-		// Rely on JVM for stack overflow checking.
+		// Rely on Go for stack overflow checking.
 		"test/limit/stack_overflow.lox": "skip",
 	}
 
-	// No classes in Java yet.
-	var noJavaClasses = map[string]string{
-		"test/assignment/to_this.lox":                  "skip",
-		"test/call/object.lox":                         "skip",
-		"test/class":                                   "skip",
-		"test/closure/close_over_method_parameter.lox": "skip",
-		"test/constructor":                             "skip",
-		"test/field":                                   "skip",
-		"test/inheritance":                             "skip",
-		"test/method":                                  "skip",
-		"test/number/decimal_point_at_eof.lox":         "skip",
-		"test/number/trailing_dot.lox":                 "skip",
-		"test/operator/equals_class.lox":               "skip",
-		"test/operator/equals_method.lox":              "skip",
-		"test/operator/not_class.lox":                  "skip",
-		"test/regression/394.lox":                      "skip",
-		"test/super":                                   "skip",
-		"test/this":                                    "skip",
-		"test/return/in_method.lox":                    "skip",
-		"test/variable/local_from_method.lox":          "skip",
+	var goloxChallengeChanges = map[string]string{
+		"test/field/get_on_class.lox":                 "skip",
+		"test/field/set_on_class.lox":                 "skip",
+		"test/variable/redeclare_global.lox":          "skip",
+		"test/variable/redefine_global.lox":           "skip",
+		"test/variable/use_global_in_initializer.lox": "skip",
 	}
 
-	// No functions in Java yet.
-	var noJavaFunctions = map[string]string{
-		"test/call":                      "skip",
-		"test/closure":                   "skip",
-		"test/for/closure_in_body.lox":   "skip",
-		"test/for/return_closure.lox":    "skip",
-		"test/for/return_inside.lox":     "skip",
-		"test/for/syntax.lox":            "skip",
-		"test/function":                  "skip",
-		"test/operator/not.lox":          "skip",
-		"test/regression/40.lox":         "skip",
-		"test/return":                    "skip",
-		"test/unexpected_character.lox":  "skip",
-		"test/while/closure_in_body.lox": "skip",
-		"test/while/return_closure.lox":  "skip",
-		"test/while/return_inside.lox":   "skip",
-	}
-
-	// No resolution in Java yet.
-	var noJavaResolution = map[string]string{
-		"test/closure/assign_to_shadowed_later.lox": "skip",
-		"test/function/local_mutual_recursion.lox":  "skip",
-		"test/variable/collide_with_parameter.lox":  "skip",
-		"test/variable/duplicate_local.lox":         "skip",
-		"test/variable/duplicate_parameter.lox":     "skip",
-		"test/variable/early_bound.lox":             "skip",
-
-		// Broken because we haven"t fixed it yet by detecting the error.
-		"test/return/at_top_level.lox":               "skip",
-		"test/variable/use_local_in_initializer.lox": "skip",
-	}
-
-	// No control flow in C yet.
-	var noCControlFlow = map[string]string{
-		"test/block/empty.lox":                  "skip",
-		"test/for":                              "skip",
-		"test/if":                               "skip",
-		"test/limit/loop_too_large.lox":         "skip",
-		"test/logical_operator":                 "skip",
-		"test/variable/unreached_undefined.lox": "skip",
-		"test/while":                            "skip",
-	}
-
-	// No functions in C yet.
-	var noCFunctions = map[string]string{
-		"test/call":                                "skip",
-		"test/closure":                             "skip",
-		"test/for/closure_in_body.lox":             "skip",
-		"test/for/return_closure.lox":              "skip",
-		"test/for/return_inside.lox":               "skip",
-		"test/for/syntax.lox":                      "skip",
-		"test/function":                            "skip",
-		"test/limit/no_reuse_constants.lox":        "skip",
-		"test/limit/stack_overflow.lox":            "skip",
-		"test/limit/too_many_constants.lox":        "skip",
-		"test/limit/too_many_locals.lox":           "skip",
-		"test/limit/too_many_upvalues.lox":         "skip",
-		"test/regression/40.lox":                   "skip",
-		"test/return":                              "skip",
-		"test/unexpected_character.lox":            "skip",
-		"test/variable/collide_with_parameter.lox": "skip",
-		"test/variable/duplicate_parameter.lox":    "skip",
-		"test/variable/early_bound.lox":            "skip",
-		"test/while/closure_in_body.lox":           "skip",
-		"test/while/return_closure.lox":            "skip",
-		"test/while/return_inside.lox":             "skip",
-	}
-
-	// No classes in C yet.
-	var noCClasses = map[string]string{
-		"test/assignment/to_this.lox":                  "skip",
-		"test/call/object.lox":                         "skip",
-		"test/class":                                   "skip",
-		"test/closure/close_over_method_parameter.lox": "skip",
-		"test/constructor":                             "skip",
-		"test/field":                                   "skip",
-		"test/inheritance":                             "skip",
-		"test/method":                                  "skip",
-		"test/number/decimal_point_at_eof.lox":         "skip",
-		"test/number/trailing_dot.lox":                 "skip",
-		"test/operator/equals_class.lox":               "skip",
-		"test/operator/equals_method.lox":              "skip",
-		"test/operator/not.lox":                        "skip",
-		"test/operator/not_class.lox":                  "skip",
-		"test/regression/394.lox":                      "skip",
-		"test/return/in_method.lox":                    "skip",
-		"test/super":                                   "skip",
-		"test/this":                                    "skip",
-		"test/variable/local_from_method.lox":          "skip",
-	}
-
-	// No inheritance in C yet.
-	var noCInheritance = map[string]string{
-		"test/class/local_inherit_other.lox": "skip",
-		"test/class/local_inherit_self.lox":  "skip",
-		"test/class/inherit_self.lox":        "skip",
-		"test/class/inherited_method.lox":    "skip",
-		"test/inheritance":                   "skip",
-		"test/regression/394.lox":            "skip",
-		"test/super":                         "skip",
-	}
-
-	java("jlox",
+	golox("golox",
 		map[string]string{"test": "pass"},
 		earlyChapters,
-		javaNaNEquality,
-		noJavaLimits,
+		goNaNEquality,
+		noGoLimits,
+		goloxChallengeChanges,
 	)
-
-	java("chap04_scanning", map[string]string{
-		// No interpreter yet.
-		"test":          "skip",
-		"test/scanning": "pass",
-	})
-
-	// No test for chapter 5. It just has a hardcoded main() in AstPrinter.
-
-	java("chap06_parsing", map[string]string{
-		// No real interpreter yet.
-		"test":                       "skip",
-		"test/expressions/parse.lox": "pass",
-	})
-
-	java("chap07_evaluating", map[string]string{
-		// No real interpreter yet.
-		"test":                          "skip",
-		"test/expressions/evaluate.lox": "pass",
-	})
-
-	java("chap08_statements",
-		map[string]string{"test": "pass"},
-		earlyChapters,
-		javaNaNEquality,
-		noJavaLimits,
-		noJavaFunctions,
-		noJavaResolution,
-		noJavaClasses,
-		map[string]string{
-			// No control flow.
-			"test/block/empty.lox":                  "skip",
-			"test/for":                              "skip",
-			"test/if":                               "skip",
-			"test/logical_operator":                 "skip",
-			"test/while":                            "skip",
-			"test/variable/unreached_undefined.lox": "skip",
-		})
-
-	java("chap09_control",
-		map[string]string{"test": "pass"},
-		earlyChapters,
-		javaNaNEquality,
-		noJavaLimits,
-		noJavaFunctions,
-		noJavaResolution,
-		noJavaClasses,
-	)
-
-	java("chap10_functions",
-		map[string]string{"test": "pass"},
-		earlyChapters,
-		javaNaNEquality,
-		noJavaLimits,
-		noJavaResolution,
-		noJavaClasses,
-	)
-
-	java("chap11_resolving",
-		map[string]string{"test": "pass"},
-		earlyChapters,
-		javaNaNEquality,
-		noJavaLimits,
-		noJavaClasses,
-	)
-
-	java("chap12_classes",
-		map[string]string{"test": "pass"},
-		earlyChapters,
-		noJavaLimits,
-		javaNaNEquality,
-
-		map[string]string{
-			// No inheritance.
-			"test/class/local_inherit_other.lox": "skip",
-			"test/class/local_inherit_self.lox":  "skip",
-			"test/class/inherit_self.lox":        "skip",
-			"test/class/inherited_method.lox":    "skip",
-			"test/inheritance":                   "skip",
-			"test/regression/394.lox":            "skip",
-			"test/super":                         "skip",
-		})
-
-	java("chap13_inheritance",
-		map[string]string{"test": "pass"},
-		earlyChapters,
-		javaNaNEquality,
-		noJavaLimits,
-	)
-
-	c("clox",
-		map[string]string{"test": "pass"},
-		earlyChapters,
-	)
-
-	c("chap17_compiling", map[string]string{
-		// No real interpreter yet.
-		"test":                          "skip",
-		"test/expressions/evaluate.lox": "pass",
-	})
-
-	c("chap18_types", map[string]string{
-		// No real interpreter yet.
-		"test":                          "skip",
-		"test/expressions/evaluate.lox": "pass",
-	})
-
-	c("chap19_strings", map[string]string{
-		// No real interpreter yet.
-		"test":                          "skip",
-		"test/expressions/evaluate.lox": "pass",
-	})
-
-	c("chap20_hash", map[string]string{
-		// No real interpreter yet.
-		"test":                          "skip",
-		"test/expressions/evaluate.lox": "pass",
-	})
-
-	c("chap21_global",
-		map[string]string{"test": "pass"},
-		earlyChapters,
-		noCControlFlow,
-		noCFunctions,
-		noCClasses,
-
-		map[string]string{
-			// No blocks.
-			"test/assignment/local.lox":                         "skip",
-			"test/variable/in_middle_of_block.lox":              "skip",
-			"test/variable/in_nested_block.lox":                 "skip",
-			"test/variable/scope_reuse_in_different_blocks.lox": "skip",
-			"test/variable/shadow_and_local.lox":                "skip",
-			"test/variable/undefined_local.lox":                 "skip",
-
-			// No local variables.
-			"test/block/scope.lox":                       "skip",
-			"test/variable/duplicate_local.lox":          "skip",
-			"test/variable/shadow_global.lox":            "skip",
-			"test/variable/shadow_local.lox":             "skip",
-			"test/variable/use_local_in_initializer.lox": "skip",
-		})
-
-	c("chap22_local",
-		map[string]string{"test": "pass"},
-		earlyChapters,
-		noCControlFlow,
-		noCFunctions,
-		noCClasses,
-	)
-
-	c("chap23_jumping",
-		map[string]string{"test": "pass"},
-		earlyChapters,
-		noCFunctions,
-		noCClasses,
-	)
-
-	c("chap24_calls",
-		map[string]string{"test": "pass"},
-		earlyChapters,
-		noCClasses,
-
-		map[string]string{
-			// No closures.
-			"test/closure":                      "skip",
-			"test/for/closure_in_body.lox":      "skip",
-			"test/for/return_closure.lox":       "skip",
-			"test/function/local_recursion.lox": "skip",
-			"test/limit/too_many_upvalues.lox":  "skip",
-			"test/regression/40.lox":            "skip",
-			"test/while/closure_in_body.lox":    "skip",
-			"test/while/return_closure.lox":     "skip",
-		})
-
-	c("chap25_closures",
-		map[string]string{"test": "pass"},
-		earlyChapters,
-		noCClasses,
-	)
-
-	c("chap26_garbage",
-		map[string]string{"test": "pass"},
-		earlyChapters,
-		noCClasses,
-	)
-
-	c("chap27_classes",
-		map[string]string{"test": "pass"},
-		earlyChapters,
-		noCInheritance,
-
-		map[string]string{
-			// No methods.
-			"test/assignment/to_this.lox":                  "skip",
-			"test/class/local_reference_self.lox":          "skip",
-			"test/class/reference_self.lox":                "skip",
-			"test/closure/close_over_method_parameter.lox": "skip",
-			"test/constructor":                             "skip",
-			"test/field/get_and_set_method.lox":            "skip",
-			"test/field/method.lox":                        "skip",
-			"test/field/method_binds_this.lox":             "skip",
-			"test/method":                                  "skip",
-			"test/operator/equals_class.lox":               "skip",
-			"test/operator/equals_method.lox":              "skip",
-			"test/return/in_method.lox":                    "skip",
-			"test/this":                                    "skip",
-			"test/variable/local_from_method.lox":          "skip",
-		})
-
-	c("chap28_methods",
-		map[string]string{"test": "pass"},
-		earlyChapters,
-		noCInheritance,
-	)
-
-	c("chap29_superclasses",
-		map[string]string{"test": "pass"},
-		earlyChapters,
-	)
-
-	c("chap30_optimization",
-		map[string]string{"test": "pass"},
-		earlyChapters,
-	)
-
 }
