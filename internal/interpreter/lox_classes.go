@@ -75,7 +75,7 @@ func (l *LoxClass) Set(_ context.Context, name *token.Token, value any) (any, er
 		l.MetaClassFields = make(map[string]any)
 	}
 	l.MetaClassFields[name.Lexeme] = value
-	return nil, nil
+	return value, nil
 }
 
 func (l *LoxClass) FindMethod(_ context.Context, name string) *LoxFunction {
@@ -145,7 +145,7 @@ func (l *objectInstance) Get(ctx context.Context, name *token.Token) (any, error
 
 func (l *objectInstance) Set(_ context.Context, name *token.Token, value any) (any, error) {
 	l.Fields[name.Lexeme] = value
-	return nil, nil
+	return value, nil
 }
 
 var _ Callable = (*LoxClass)(nil)
