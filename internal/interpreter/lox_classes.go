@@ -35,11 +35,8 @@ func NewLoxClass(name string, superClass *LoxClass, methods map[string]*LoxFunct
 
 // Arity implements Callable.
 func (l *LoxClass) Arity() Arity {
-	if l.Init != nil {
-		return l.Init.Arity()
-	}
-	if l.SuperClass != nil && l.SuperClass.Init != nil {
-		return l.SuperClass.Init.Arity()
+	if init := l.FindInit(); init != nil {
+		return init.Arity()
 	}
 	return Arity(0)
 }
@@ -47,11 +44,8 @@ func (l *LoxClass) Arity() Arity {
 // Call implements Callable.
 func (l *LoxClass) Call(ctx context.Context, interpreter *interpreter, arguments []any) (any, error) {
 	newInstance := &objectInstance{Class: l, Fields: make(map[string]any)}
-	if l.Init != nil {
-		return l.Init.Bind(newInstance).Call(ctx, interpreter, arguments)
-	}
-	if l.SuperClass != nil && l.SuperClass.Init != nil {
-		return l.SuperClass.Init.Bind(newInstance).Call(ctx, interpreter, arguments)
+	if init := l.FindInit(); init != nil {
+		return init.Bind(newInstance).Call(ctx, interpreter, arguments)
 	}
 	return newInstance, nil
 }
@@ -85,10 +79,25 @@ func (l *LoxClass) Set(_ context.Context, name *token.Token, value any) (any, er
 }
 
 func (l *LoxClass) FindMethod(_ context.Context, name string) *LoxFunction {
-	if method, ok := l.Methods[name]; ok {
-		return method
+	cl := l
+	for cl != nil {
+		if method, ok := cl.Methods[name]; ok {
+			return method
+		}
+		cl = cl.SuperClass
 	}
 
+	return nil
+}
+
+func (l *LoxClass) FindInit() *LoxFunction {
+	cl := l
+	for cl != nil {
+		if cl.Init != nil {
+			return cl.Init
+		}
+		cl = cl.SuperClass
+	}
 	return nil
 }
 
@@ -129,13 +138,6 @@ func (l *objectInstance) Get(ctx context.Context, name *token.Token) (any, error
 	if method := l.Class.FindMethod(ctx, name.Lexeme); method != nil {
 		boundMethod := method.Bind(l)
 		return boundMethod, nil
-	}
-
-	if l.Class.SuperClass != nil {
-		if method := l.Class.SuperClass.FindMethod(ctx, name.Lexeme); method != nil {
-			boundMethod := method.Bind(l)
-			return boundMethod, nil
-		}
 	}
 
 	return nil, loxerrors.NewRuntimeError(name, loxerrors.ErrRuntimeUndefinedProperty(name.Lexeme))

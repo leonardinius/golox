@@ -92,7 +92,7 @@ func runTest(t *testing.T, suite *Suite, path string) {
 		}
 		failures := test.run()
 		if len(failures) > 0 {
-			t.Fatalf("Test failed:\n%s", strings.Join(failures, "\n"))
+			t.Fatalf("Test failed: %s\n%s", path, strings.Join(failures, "\n"))
 		}
 	})
 }
