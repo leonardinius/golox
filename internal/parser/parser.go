@@ -152,14 +152,17 @@ func (p *parser) functionBody(kind string) Expr {
 		return p.reportFatalErrorExpr(loxerrors.ErrParseExpectedLeftParenError(kind))
 	}
 
-	// function parameters declaration:
-	// parametersbloc: "(" PARAMETERS? ")" ;
-	// parameters: IDENTIFIER ( "," IDENTIFIER )* ;
 	var params []*token.Token
 	if !p.check(token.RIGHT_PAREN) {
 		for {
-			if len(params) > maxArguments {
-				p.reportErrorExpr(loxerrors.ErrParseTooManyArguments)
+			if len(params) >= maxArguments {
+				switch kind {
+				case "method":
+					p.reportErrorExpr(loxerrors.ErrParseTooManyParameters)
+				default:
+					p.reportErrorExpr(loxerrors.ErrParseTooManyArguments)
+				}
+
 			}
 
 			if !p.match(token.IDENTIFIER) {
@@ -523,7 +526,7 @@ func (p *parser) finishCall(callee Expr) Expr {
 	var args []Expr
 	if !p.check(token.RIGHT_PAREN) {
 		for {
-			if len(args) > maxArguments {
+			if len(args) >= maxArguments {
 				p.reportErrorExpr(loxerrors.ErrParseTooManyArguments)
 			}
 			args = append(args, p.expression())

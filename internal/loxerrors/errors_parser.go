@@ -35,6 +35,7 @@ var (
 	ErrParseBreakOutsideLoop                      = errors.New("Must be inside a loop to use 'break'.")
 	ErrParseContinueOutsideLoop                   = errors.New("Must be inside a loop to use 'continue'.")
 	ErrParseTooManyArguments                      = errors.New("Can't have more than 255 arguments.")
+	ErrParseTooManyParameters                     = errors.New("Can't have more than 255 parameters.")
 	ErrParseLocalVariableNotUsed                  = errors.New("Local variable is not used.")
 	ErrParseExpectClassName                       = errors.New("Expect class name.")
 	ErrParseExpectSuperClassName                  = errors.New("Expect super class name.")
