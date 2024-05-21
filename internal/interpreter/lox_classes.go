@@ -38,6 +38,9 @@ func (l *LoxClass) Arity() Arity {
 	if l.Init != nil {
 		return l.Init.Arity()
 	}
+	if l.SuperClass != nil && l.SuperClass.Init != nil {
+		return l.SuperClass.Init.Arity()
+	}
 	return Arity(0)
 }
 
@@ -46,6 +49,9 @@ func (l *LoxClass) Call(ctx context.Context, interpreter *interpreter, arguments
 	newInstance := &objectInstance{Class: l, Fields: make(map[string]any)}
 	if l.Init != nil {
 		return l.Init.Bind(newInstance).Call(ctx, interpreter, arguments)
+	}
+	if l.SuperClass != nil && l.SuperClass.Init != nil {
+		return l.SuperClass.Init.Bind(newInstance).Call(ctx, interpreter, arguments)
 	}
 	return newInstance, nil
 }
