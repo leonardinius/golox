@@ -420,7 +420,7 @@ func (p *parser) logicOr() Expr {
 	for p.match(token.OR) {
 		operator := p.previous()
 		right := p.logicAnd()
-		return &ExprLogical{Left: expr, Operator: operator, Right: right}
+		expr = &ExprLogical{Left: expr, Operator: operator, Right: right}
 	}
 
 	return expr
@@ -432,7 +432,7 @@ func (p *parser) logicAnd() Expr {
 	for p.match(token.AND) {
 		operator := p.previous()
 		right := p.equality()
-		return &ExprLogical{Left: expr, Operator: operator, Right: right}
+		expr = &ExprLogical{Left: expr, Operator: operator, Right: right}
 	}
 
 	return expr
