@@ -3,7 +3,6 @@ package interpreter
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/token"
@@ -89,7 +88,7 @@ func (l *LoxClass) FindMethod(_ context.Context, name string) *LoxFunction {
 
 // String implements fmt.Stringer.
 func (l *LoxClass) String() string {
-	return fmt.Sprintf("<class:%s/%s>", l.Name, l.Arity())
+	return l.Name
 }
 
 // GoString implements fmt.GoStringer.
@@ -108,8 +107,7 @@ func NewObjectInstance(class *LoxClass) *objectInstance {
 
 // String implements fmt.Stringer.
 func (l *objectInstance) String() string {
-	ptr := reflect.ValueOf(l).Pointer()
-	return fmt.Sprintf("<instance:%s#%d>", l.Class.Name, ptr)
+	return fmt.Sprintf("%s instance", l.Class.Name)
 }
 
 // GoString implements fmt.GoStringer.

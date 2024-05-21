@@ -71,9 +71,9 @@ func (l *LoxFunction) returnValue(err error) (any, error) {
 // String implements fmt.Stringer.
 func (l *LoxFunction) String() string {
 	if l.Name == nil {
-		return fmt.Sprintf("<fn:#anon/%s>", l.Arity())
+		return "<fn #anon>"
 	}
-	return fmt.Sprintf("<fn:%s/%s>", l.Name.Lexeme, l.Arity())
+	return fmt.Sprintf("<fn %s>", l.Name.Lexeme)
 }
 
 // GoString implements fmt.GoStringer.

@@ -97,7 +97,7 @@ func (s *scanner) scanToken() {
 		} else if s.isAlpha(c) {
 			s.reservedOrIdentifier()
 		} else {
-			s.reportUnexpectedCharater(c)
+			s.reportError(loxerrors.ErrScanUnexpectedCharacter)
 		}
 	}
 }
@@ -249,12 +249,8 @@ func (s *scanner) isAlphaNumeric(c rune) bool {
 	return s.isAlpha(c) || s.isDigit(c)
 }
 
-func (s *scanner) reportUnexpectedCharater(c rune) {
-	s.report(loxerrors.NewScanError(s.line, loxerrors.ErrScanUnexpectedCharacter, strconv.QuoteRune(c)))
-}
-
 func (s *scanner) reportError(err error) {
-	s.report(loxerrors.NewScanError(s.line, err, ""))
+	s.report(loxerrors.NewScanError(s.line, err))
 }
 
 func (s *scanner) report(err error) {

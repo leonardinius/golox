@@ -54,6 +54,33 @@ type resolver struct {
 	err             []error
 	currentFunction FunctionType
 	currentClass    ClassType
+	profile         string
+}
+
+var profiles map[string][]error = map[string][]error{
+	"default": {},
+	"strict":  {},
+	"nonstrict": {
+		loxerrors.ErrParseLocalVariableNotUsed,
+	},
+}
+
+func NewResolver(interpreterInstance Interpreter, profile string) Resolver {
+	interpreterPtr, ok := interpreterInstance.(*interpreter)
+	if !ok {
+		panic(fmt.Errorf("failed to cast interpreter to struct *interpreter"))
+	}
+
+	newResolver := &resolver{
+		interpreter:     interpreterPtr,
+		scopes:          list.New(),
+		err:             nil,
+		currentFunction: FNTYPE_NONE,
+		currentClass:    CTYPE_NONE,
+		profile:         profile,
+	}
+
+	return newResolver
 }
 
 // Resolve implements Resolver.
@@ -63,23 +90,6 @@ func (r *resolver) Resolve(ctx context.Context, statements []parser.Stmt) error 
 	defer r.endScope(ctx)
 	r.resolveStmts(ctx, statements)
 	return errors.Join(r.err...)
-}
-
-func NewResolver(interpreterInstance Interpreter) Resolver {
-	interpreterStructPtr, ok := interpreterInstance.(*interpreter)
-	if !ok {
-		panic(fmt.Errorf("failed to cast interpreter to struct *interpreter"))
-	}
-
-	newResolver := &resolver{
-		interpreter:     interpreterStructPtr,
-		scopes:          list.New(),
-		err:             nil,
-		currentFunction: FNTYPE_NONE,
-		currentClass:    CTYPE_NONE,
-	}
-
-	return newResolver
 }
 
 // VisitStmtBlock implements parser.StmtVisitor.
@@ -426,6 +436,14 @@ func (r *resolver) scopeFromListElem(el *list.Element) map[string]*ResolverVaria
 }
 
 func (r *resolver) reportError(tok *token.Token, err error) {
+	if ignoredErrors, ok := profiles[r.profile]; ok {
+		for _, ignoredError := range ignoredErrors {
+			if err == ignoredError {
+				return
+			}
+		}
+	}
+
 	r.err = append(r.err, loxerrors.NewParseError(tok, err))
 }
 
