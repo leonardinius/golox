@@ -156,13 +156,7 @@ func (p *parser) functionBody(kind string) Expr {
 	if !p.check(token.RIGHT_PAREN) {
 		for {
 			if len(params) >= maxArguments {
-				switch kind {
-				case "method":
-					p.reportErrorExpr(loxerrors.ErrParseTooManyParameters)
-				default:
-					p.reportErrorExpr(loxerrors.ErrParseTooManyArguments)
-				}
-
+				p.reportErrorExpr(loxerrors.ErrParseTooManyParameters)
 			}
 
 			if !p.match(token.IDENTIFIER) {

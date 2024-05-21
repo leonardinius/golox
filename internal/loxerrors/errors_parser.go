@@ -38,7 +38,7 @@ var (
 	ErrParseTooManyParameters                     = errors.New("Can't have more than 255 parameters.")
 	ErrParseLocalVariableNotUsed                  = errors.New("Local variable is not used.")
 	ErrParseExpectClassName                       = errors.New("Expect class name.")
-	ErrParseExpectSuperClassName                  = errors.New("Expect super class name.")
+	ErrParseExpectSuperClassName                  = errors.New("Expect superclass name.")
 	ErrParseExpectLeftCurlyBeforeClassBody        = errors.New("Expect '{' before class body.")
 	ErrParseExpectRightCurlyAfterClassBody        = errors.New("Expect '}' after class body.")
 	ErrParseExpectedPropertyNameAfterDot          = errors.New("Expect property name after '.'.")
@@ -52,15 +52,15 @@ var (
 )
 
 func ErrParseExpectedIdentifierKindError(kind string) error {
-	return fmt.Errorf("expect %s name.", kind)
+	return fmt.Errorf("Expect %s name.", kind)
 }
 
 func ErrParseExpectedLeftParenError(kind string) error {
-	return fmt.Errorf("expect '(' after %s name.", kind)
+	return fmt.Errorf("Expect '(' after %s name.", kind)
 }
 
 func ErrParseExpectedLeftBraceFunToken(kind string) error {
-	return fmt.Errorf("expect '{' before %s body.", kind)
+	return fmt.Errorf("Expect '{' before %s body.", kind)
 }
 
 func NewParseError(tok *token.Token, cause error) error {
