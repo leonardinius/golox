@@ -17,7 +17,9 @@ DONE:
 
 - [x] TODO fix synchronize
 - [x] TODO add original crafting gh repo tests as go tests
-- [ ] TODO - add test README, lionk to original repo copied from, describe key differences.
+- [ ] TODO synchronize hadnling from within declaration
+- [ ] TODO - profile and workarounds - review, remove as much as possible
+- [ ] TODO - add test README, link to original repo copied from, describe key differences, challenges added on top.
 - [ ] TODO Makefile
 - [ ] TODO Linters
 - [ ] TODO GH actions
