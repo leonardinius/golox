@@ -3,7 +3,6 @@ package interpreter
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/token"
@@ -36,8 +35,8 @@ func NewLoxClass(name string, superClass *LoxClass, methods map[string]*LoxFunct
 
 // Arity implements Callable.
 func (l *LoxClass) Arity() Arity {
-	if l.Init != nil {
-		return l.Init.Arity()
+	if init := l.FindInit(); init != nil {
+		return init.Arity()
 	}
 	return Arity(0)
 }
@@ -45,8 +44,8 @@ func (l *LoxClass) Arity() Arity {
 // Call implements Callable.
 func (l *LoxClass) Call(ctx context.Context, interpreter *interpreter, arguments []any) (any, error) {
 	newInstance := &objectInstance{Class: l, Fields: make(map[string]any)}
-	if l.Init != nil {
-		return l.Init.Bind(newInstance).Call(ctx, interpreter, arguments)
+	if init := l.FindInit(); init != nil {
+		return init.Bind(newInstance).Call(ctx, interpreter, arguments)
 	}
 	return newInstance, nil
 }
@@ -76,20 +75,35 @@ func (l *LoxClass) Set(_ context.Context, name *token.Token, value any) (any, er
 		l.MetaClassFields = make(map[string]any)
 	}
 	l.MetaClassFields[name.Lexeme] = value
-	return nil, nil
+	return value, nil
 }
 
 func (l *LoxClass) FindMethod(_ context.Context, name string) *LoxFunction {
-	if method, ok := l.Methods[name]; ok {
-		return method
+	cl := l
+	for cl != nil {
+		if method, ok := cl.Methods[name]; ok {
+			return method
+		}
+		cl = cl.SuperClass
 	}
 
 	return nil
 }
 
+func (l *LoxClass) FindInit() *LoxFunction {
+	cl := l
+	for cl != nil {
+		if cl.Init != nil {
+			return cl.Init
+		}
+		cl = cl.SuperClass
+	}
+	return nil
+}
+
 // String implements fmt.Stringer.
 func (l *LoxClass) String() string {
-	return fmt.Sprintf("<class:%s/%s>", l.Name, l.Arity())
+	return l.Name
 }
 
 // GoString implements fmt.GoStringer.
@@ -108,8 +122,7 @@ func NewObjectInstance(class *LoxClass) *objectInstance {
 
 // String implements fmt.Stringer.
 func (l *objectInstance) String() string {
-	ptr := reflect.ValueOf(l).Pointer()
-	return fmt.Sprintf("<instance:%s#%d>", l.Class.Name, ptr)
+	return fmt.Sprintf("%s instance", l.Class.Name)
 }
 
 // GoString implements fmt.GoStringer.
@@ -127,19 +140,12 @@ func (l *objectInstance) Get(ctx context.Context, name *token.Token) (any, error
 		return boundMethod, nil
 	}
 
-	if l.Class.SuperClass != nil {
-		if method := l.Class.SuperClass.FindMethod(ctx, name.Lexeme); method != nil {
-			boundMethod := method.Bind(l)
-			return boundMethod, nil
-		}
-	}
-
 	return nil, loxerrors.NewRuntimeError(name, loxerrors.ErrRuntimeUndefinedProperty(name.Lexeme))
 }
 
 func (l *objectInstance) Set(_ context.Context, name *token.Token, value any) (any, error) {
 	l.Fields[name.Lexeme] = value
-	return nil, nil
+	return value, nil
 }
 
 var _ Callable = (*LoxClass)(nil)

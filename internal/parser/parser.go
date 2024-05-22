@@ -22,10 +22,10 @@ type parser struct {
 	tokens    []token.Token
 	current   int
 	reporter  loxerrors.ErrReporter
-	panic     error
-	err       error
 	loopDepth int
 	funcDepth int
+	panic     error
+	err       error
 }
 
 func NewParser(tokens []token.Token, reporter loxerrors.ErrReporter) Parser {
@@ -57,29 +57,31 @@ func (p *parser) String() string {
 func (p *parser) Parse() (statements []Stmt, err error) {
 	var stmt Stmt
 	for !p.isDone() {
-		stmt, err = p.declaration(), p.panic
-		if err != nil {
-			break
+		stmt = p.declaration()
+		if stmt == nilStmt {
+			continue
 		}
 		statements = append(statements, stmt)
 	}
 
-	if err == nil && p.err == nil {
+	if p.panic == nil && p.err == nil {
 		return statements, nil
-	}
-
-	// if we are at error state, we do not return invalid ast tree
-	// return nil, err instead
-	for !p.isAtEnd() {
-		p.synchronize()
-		p.panic = nil
-		_ = p.declaration()
 	}
 
 	return nilStatements, loxerrors.ErrParseError
 }
 
 func (p *parser) declaration() Stmt {
+	stmt := p.tryDeclaration()
+	if p.panic != nil && !p.isAtEnd() {
+		// attempt to recover
+		p.synchronize()
+		p.panic = nil
+	}
+	return stmt
+}
+
+func (p *parser) tryDeclaration() Stmt {
 	if p.match(token.CLASS) {
 		return p.classDeclaration()
 	}
@@ -150,14 +152,11 @@ func (p *parser) functionBody(kind string) Expr {
 		return p.reportFatalErrorExpr(loxerrors.ErrParseExpectedLeftParenError(kind))
 	}
 
-	// function parameters declaration:
-	// parametersbloc: "(" PARAMETERS? ")" ;
-	// parameters: IDENTIFIER ( "," IDENTIFIER )* ;
 	var params []*token.Token
 	if !p.check(token.RIGHT_PAREN) {
 		for {
-			if len(params) > maxArguments {
-				p.reportErrorExpr(loxerrors.ErrParseTooManyArguments)
+			if len(params) >= maxArguments {
+				p.reportErrorExpr(loxerrors.ErrParseTooManyParameters)
 			}
 
 			if !p.match(token.IDENTIFIER) {
@@ -206,25 +205,12 @@ func (p *parser) varDeclaration() Stmt {
 }
 
 func (p *parser) statement() Stmt {
-
-	if p.match(token.IF) {
-		return p.ifStatement()
-	}
-
 	if p.match(token.FOR) {
 		return p.forStatement()
 	}
 
-	if p.match(token.WHILE) {
-		return p.whileStatement()
-	}
-
-	if p.match(token.BREAK) {
-		return p.breakStatement()
-	}
-
-	if p.match(token.CONTINUE) {
-		return p.continueStatement()
+	if p.match(token.IF) {
+		return p.ifStatement()
 	}
 
 	if p.match(token.PRINT) {
@@ -235,9 +221,21 @@ func (p *parser) statement() Stmt {
 		return p.returnStatement()
 	}
 
+	if p.match(token.WHILE) {
+		return p.whileStatement()
+	}
+
+	if p.match(token.BREAK) {
+		return p.breakStatement()
+	}
+
 	if p.match(token.LEFT_BRACE) {
 		block := p.blockStatement()
 		return &StmtBlock{Statements: block}
+	}
+
+	if p.match(token.CONTINUE) {
+		return p.continueStatement()
 	}
 
 	return p.expressionStatement()
@@ -388,7 +386,7 @@ func (p *parser) blockStatement() []Stmt {
 func (p *parser) expressionStatement() Stmt {
 	expr := p.expression()
 	if !p.match(token.SEMICOLON) {
-		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedSemicolonTokenAfterExpr)
+		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedSemicolonToken)
 	}
 	return &StmtExpression{Expression: expr}
 }
@@ -422,7 +420,7 @@ func (p *parser) logicOr() Expr {
 	for p.match(token.OR) {
 		operator := p.previous()
 		right := p.logicAnd()
-		return &ExprLogical{Left: expr, Operator: operator, Right: right}
+		expr = &ExprLogical{Left: expr, Operator: operator, Right: right}
 	}
 
 	return expr
@@ -434,7 +432,7 @@ func (p *parser) logicAnd() Expr {
 	for p.match(token.AND) {
 		operator := p.previous()
 		right := p.equality()
-		return &ExprLogical{Left: expr, Operator: operator, Right: right}
+		expr = &ExprLogical{Left: expr, Operator: operator, Right: right}
 	}
 
 	return expr
@@ -522,7 +520,7 @@ func (p *parser) finishCall(callee Expr) Expr {
 	var args []Expr
 	if !p.check(token.RIGHT_PAREN) {
 		for {
-			if len(args) > maxArguments {
+			if len(args) >= maxArguments {
 				p.reportErrorExpr(loxerrors.ErrParseTooManyArguments)
 			}
 			args = append(args, p.expression())
@@ -551,7 +549,8 @@ func (p *parser) primary() Expr {
 	if p.match(token.NIL) {
 		return &ExprLiteral{Value: nil}
 	}
-	if p.match(token.FUN) {
+	if p.check(token.FUN) && !p.checkNext(token.IDENTIFIER) {
+		p.advance()
 		return p.functionBody("function")
 	}
 
@@ -666,8 +665,7 @@ func (p *parser) reportFatalErrorStmtToken(tok *token.Token, err error) Stmt {
 	// do not overwrite present error.
 	// preserves the original error and bubbles up to return in Parse() with .err
 	if p.panic == nil {
-		p.panic = loxerrors.NewParseError(tok, err)
-		p.fatal(p.panic)
+		p.fatal(loxerrors.NewParseError(tok, err))
 	}
 	return nilStmt
 }
@@ -676,8 +674,7 @@ func (p *parser) reportFatalErrorStmtList(err error) []Stmt {
 	// do not overwrite present error.
 	// preserves the original error and bubbles up to return in Parse() with .err
 	if p.panic == nil {
-		p.panic = loxerrors.NewParseError(p.peek(), err)
-		p.fatal(p.panic)
+		p.fatal(loxerrors.NewParseError(p.peek(), err))
 	}
 	return nilStatements
 }
@@ -690,8 +687,7 @@ func (p *parser) reportFatalErrorExprToken(tok *token.Token, err error) Expr {
 	// do not overwrite present error.
 	// preserves the original error and bubbles up to return in Parse() with .err
 	if p.panic == nil {
-		p.panic = loxerrors.NewParseError(tok, err)
-		p.fatal(p.panic)
+		p.fatal(loxerrors.NewParseError(tok, err))
 	}
 	return nilExpr
 }
@@ -705,6 +701,8 @@ func (p *parser) reportErrorExprToken(tok *token.Token, err error) {
 }
 
 func (p *parser) fatal(err error) {
+	p.panic = err
+	p.err = err
 	p.reporter.ReportPanic(err)
 }
 

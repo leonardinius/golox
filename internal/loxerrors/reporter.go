@@ -30,12 +30,12 @@ func (e *errReporter) ReportError(err error) {
 
 // DefaultReportPanic is the default implementation of ErrReporter.ReportPanic.
 func DefaultReportPanic(w io.Writer, err error) {
-	fmt.Fprintf(w, "FATAL %v\n", err)
+	fmt.Fprintf(w, "%v\n", err)
 }
 
 // DefaultReportError is the default implementation of ErrReporter.ReportError.
 func DefaultReportError(w io.Writer, err error) {
-	fmt.Fprintf(w, "ERROR %v\n", err)
+	fmt.Fprintf(w, "%v\n", err)
 }
 
 var _ ErrReporter = (*errReporter)(nil)

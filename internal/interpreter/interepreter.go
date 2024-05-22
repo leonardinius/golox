@@ -452,7 +452,7 @@ func (i *interpreter) VisitExprSet(ctx context.Context, exprSet *parser.ExprSet)
 	var err error
 	if instance, err = i.evaluate(ctx, exprSet.Instance); err == nil {
 		if _, ok := instance.(LoxInstance); !ok {
-			err = i.runtimeError(exprSet.Name, loxerrors.ErrRuntimeOnlyInstancesHaveProperties)
+			err = i.runtimeError(exprSet.Name, loxerrors.ErrRuntimeOnlyInstancesHaveFields)
 		}
 	}
 	if err != nil {

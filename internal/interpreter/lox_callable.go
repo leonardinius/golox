@@ -52,7 +52,7 @@ func (n NativeFunctionVarArgs) Call(ctx context.Context, interpreter *interprete
 
 // String implements fmt.Stringer.
 func (n NativeFunctionVarArgs) String() string {
-	return nativeName(n.Arity())
+	return nativeName()
 }
 
 // GoString implements fmt.GoStringer.
@@ -72,7 +72,7 @@ func (n NativeFunction0) Call(ctx context.Context, interpreter *interpreter, arg
 
 // String implements fmt.Stringer.
 func (n NativeFunction0) String() string {
-	return nativeName(n.Arity())
+	return nativeName()
 }
 
 // GoString implements fmt.GoStringer.
@@ -92,7 +92,7 @@ func (n NativeFunction1) Call(ctx context.Context, interpreter *interpreter, arg
 
 // String implements fmt.Stringer.
 func (n NativeFunction1) String() string {
-	return nativeName(n.Arity())
+	return nativeName()
 }
 
 // GoString implements fmt.GoStringer.
@@ -112,7 +112,7 @@ func (n NativeFunction2) Call(ctx context.Context, interpreter *interpreter, arg
 
 // String implements fmt.Stringer.
 func (n NativeFunction2) String() string {
-	return nativeName(n.Arity())
+	return nativeName()
 }
 
 // GoString implements fmt.GoStringer.
@@ -132,7 +132,7 @@ func (n NativeFunction3) Call(ctx context.Context, interpreter *interpreter, arg
 
 // String implements fmt.Stringer.
 func (n NativeFunction3) String() string {
-	return nativeName(n.Arity())
+	return nativeName()
 }
 
 // GoString implements fmt.GoStringer.
@@ -152,7 +152,7 @@ func (n NativeFunction4) Call(ctx context.Context, interpreter *interpreter, arg
 
 // String implements fmt.Stringer.
 func (n NativeFunction4) String() string {
-	return nativeName(n.Arity())
+	return nativeName()
 }
 
 // GoString implements fmt.GoStringer.
@@ -172,7 +172,7 @@ func (n NativeFunction5) Call(ctx context.Context, interpreter *interpreter, arg
 
 // String implements fmt.Stringer.
 func (n NativeFunction5) String() string {
-	return nativeName(n.Arity())
+	return nativeName()
 }
 
 // GoString implements fmt.GoStringer.
@@ -192,7 +192,7 @@ func (n *nativeFunctionN) Call(ctx context.Context, interpreter *interpreter, ar
 
 // String implements fmt.Stringer.
 func (n *nativeFunctionN) String() string {
-	return nativeName(n.Arity())
+	return nativeName()
 }
 
 // GoString implements fmt.GoStringer.
@@ -225,6 +225,6 @@ var _ Callable = (*nativeFunctionN)(nil)
 var _ fmt.Stringer = (*nativeFunctionN)(nil)
 var _ fmt.GoStringer = (*nativeFunctionN)(nil)
 
-func nativeName(arity Arity) string {
-	return "<native fn/" + arity.String() + ">"
+func nativeName() string {
+	return "<native fn>"
 }

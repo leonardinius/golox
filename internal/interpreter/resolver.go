@@ -54,32 +54,40 @@ type resolver struct {
 	err             []error
 	currentFunction FunctionType
 	currentClass    ClassType
+	profile         string
 }
 
-// Resolve implements Resolver.
-func (r *resolver) Resolve(ctx context.Context, statements []parser.Stmt) error {
-	r.err = nil
-	r.beginScope(ctx)
-	defer r.endScope(ctx)
-	r.resolveStmts(ctx, statements)
-	return errors.Join(r.err...)
+var profiles map[string][]error = map[string][]error{
+	"default": {},
+	"strict":  {},
+	"non-strict": {
+		loxerrors.ErrParseLocalVariableNotUsed,
+	},
 }
 
-func NewResolver(interpreterInstance Interpreter) Resolver {
-	interpreterStructPtr, ok := interpreterInstance.(*interpreter)
+func NewResolver(interpreterInstance Interpreter, profile string) Resolver {
+	interpreterPtr, ok := interpreterInstance.(*interpreter)
 	if !ok {
 		panic(fmt.Errorf("failed to cast interpreter to struct *interpreter"))
 	}
 
 	newResolver := &resolver{
-		interpreter:     interpreterStructPtr,
+		interpreter:     interpreterPtr,
 		scopes:          list.New(),
 		err:             nil,
 		currentFunction: FNTYPE_NONE,
 		currentClass:    CTYPE_NONE,
+		profile:         profile,
 	}
 
 	return newResolver
+}
+
+// Resolve implements Resolver.
+func (r *resolver) Resolve(ctx context.Context, statements []parser.Stmt) error {
+	r.err = nil
+	r.resolveStmts(ctx, statements)
+	return errors.Join(r.err...)
 }
 
 // VisitStmtBlock implements parser.StmtVisitor.
@@ -150,6 +158,8 @@ func (r *resolver) VisitStmtExpression(ctx context.Context, stmtExpression *pars
 // VisitStmtFor implements parser.StmtVisitor.
 func (r *resolver) VisitStmtFor(ctx context.Context, stmtFor *parser.StmtFor) (any, error) {
 	if stmtFor.Initializer != nil {
+		r.beginScope(ctx)
+		defer r.endScope(ctx)
 		r.resolveStmt(ctx, stmtFor.Initializer)
 	}
 	if stmtFor.Condition != nil {
@@ -158,6 +168,7 @@ func (r *resolver) VisitStmtFor(ctx context.Context, stmtFor *parser.StmtFor) (a
 	if stmtFor.Increment != nil {
 		r.resolveExpr(ctx, stmtFor.Increment)
 	}
+
 	r.resolveStmt(ctx, stmtFor.Body)
 	return nil, nil
 }
@@ -426,6 +437,14 @@ func (r *resolver) scopeFromListElem(el *list.Element) map[string]*ResolverVaria
 }
 
 func (r *resolver) reportError(tok *token.Token, err error) {
+	if ignoredErrors, ok := profiles[r.profile]; ok {
+		for _, ignoredError := range ignoredErrors {
+			if err == ignoredError {
+				return
+			}
+		}
+	}
+
 	r.err = append(r.err, loxerrors.NewParseError(tok, err))
 }
 

@@ -13,22 +13,17 @@ var (
 )
 
 type ScannerError struct {
-	line    int
-	cause   error
-	details string
+	line  int
+	cause error
 }
 
-func NewScanError(line int, cause error, details string) error {
-	return &ScannerError{line, cause, details}
+func NewScanError(line int, cause error) error {
+	return &ScannerError{line, cause}
 }
 
 // Error implements error.
 func (s *ScannerError) Error() string {
-	details := s.details
-	if details != "" {
-		details = " " + details
-	}
-	return fmt.Sprintf("[line %d] syntax error: %v%s", s.line, s.cause, details)
+	return fmt.Sprintf("[line %d] Error: %v", s.line, s.cause)
 }
 
 func (s *ScannerError) Unwrap() error {
