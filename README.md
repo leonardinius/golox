@@ -8,17 +8,17 @@ Current status: Feature Complete as passing original test suite
 > runner_test.go:69: Suite golox: Tests=254, Passed=238, Failed=0, Skipped=16, Expectactions: 557
 > ```
 
-Excluded tests:
+Excluded tests (re [eXtra Features](#extra-features)):
 
-- `test/field/get_on_class.lox` - see [eXtra Features](#extra-features)
-- `test/field/set_on_class.lox` - see [eXtra Features](#extra-features)
+- `test/field/get_on_class.lox`.
+- `test/field/set_on_class.lox`.
 
 ---
 
 ## eXtra Features
 
 - REPL expression output; readline support.
-- `continue`, `break` statement.
+- `continue`, `break` statements.
 - closures and anynymous functions.
 - native functions: `Array`, `pprint(...)` varargs function.
 - profiles: `-profile=non-strict` (test compliance) and `-profile=strict` **[default]** to report unused variables.
