@@ -79,9 +79,9 @@ go/lint: $(BIN)/golangci-lint ### Lints the codebase using golangci-lint
 	$(BIN)/golangci-lint run --modules-download-mode=readonly --config .golangci.yml
 
 .PHONY: go/test
-go/test: ### Runs all tests
+go/test: $(BIN)/gotestsum ### Runs all tests
 	@echo -e "$(CYAN)--- go test ...$(CLEAR)"
-	go test -shuffle=on -race -cover -timeout=60s -count 1 -parallel 3 -v ./...
+	@$(BIN)/gotestsum --debug --format-hide-empty-pkg --format=testdox -- -shuffle=on -race -timeout=60s -count 1 -parallel 3 -v ./...
 
 .PHONY: go/gen
 go/gen: ### Generate go code from API spec
@@ -96,3 +96,7 @@ $(BIN)/golangci-lint: Makefile
 $(BIN)/gofumpt: Makefile
 	@mkdir -p $(@D)
 	go install mvdan.cc/gofumpt@v0.6.0
+
+$(BIN)/gotestsum: Makefile
+	@mkdir -p $(@D)
+	go install gotest.tools/gotestsum@v1.11.0
