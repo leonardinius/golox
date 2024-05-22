@@ -91,7 +91,7 @@ func (e *environment) AsContext(ctx context.Context) context.Context {
 
 func (e *environment) ancestor(distance int) *environment {
 	self := e
-	for self.enclosing != nil && distance > 0 {
+	for distance > 0 {
 		self = self.enclosing
 		distance--
 	}
