@@ -112,7 +112,7 @@ func (app *LoxApp) run(ctx context.Context, profile, input string) (any, error) 
 		return nil, err
 	}
 
-	p := parser.NewParser(tokens, profile, app)
+	p := parser.NewParser(tokens, app)
 	stmts, err := p.Parse()
 	if err != nil {
 		return nil, err

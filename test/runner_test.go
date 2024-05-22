@@ -92,7 +92,7 @@ func runTest(t *testing.T, suite *Suite, path string) {
 		}
 		failures := test.run()
 		if len(failures) > 0 {
-			t.Fatalf("Test failed: %s\n%s", path, strings.Join(failures, "\n"))
+			t.Fatalf("%s\n%s", path, strings.Join(failures, "\n"))
 		}
 	})
 }
@@ -156,7 +156,7 @@ func (t *Test) parse() bool {
 
 		match = expectedErrorPattern.FindStringSubmatch(line)
 		if match != nil {
-			msg := fmt.Sprintf("[%d] %s", lineNum, match[1])
+			msg := fmt.Sprintf("[line %d] %s", lineNum, match[1])
 			t.expectedErrors[msg] = msg
 			t.expectedExitCode = 65
 			continue
@@ -166,7 +166,7 @@ func (t *Test) parse() bool {
 		if match != nil {
 			language := match[2]
 			if language == "" || language == t.suite.language {
-				msg := fmt.Sprintf("[%s] %s", match[3], match[4])
+				msg := fmt.Sprintf("[line %s] %s", match[3], match[4])
 				t.expectedErrors[msg] = msg
 				t.expectedExitCode = 65
 			}
@@ -256,7 +256,7 @@ func (t *Test) validateCompileErrors(errorLines []string) {
 	for _, line := range errorLines {
 		match := syntaxErrorPattern.FindStringSubmatch(line)
 		if match != nil {
-			errorMsg := fmt.Sprintf("[%s] %s", match[1], match[2])
+			errorMsg := fmt.Sprintf("[line %s] %s", match[1], match[2])
 			if _, ok := t.expectedErrors[errorMsg]; ok {
 				foundErrors[errorMsg] = true
 			} else {
@@ -323,7 +323,7 @@ func (t *Test) validateOutput(outputLines []string) {
 func (t *Test) Errorf(format string, args ...interface{}) {
 	t.t.Helper()
 	t.failures = append(t.failures, fmt.Sprintf(format, args...))
-	t.t.Errorf(format, args...)
+	// t.t.Errorf(format, args...)
 }
 
 func defineTestSuites(t *testing.T) {
@@ -368,17 +368,13 @@ func defineTestSuites(t *testing.T) {
 		"test/limit/too_many_constants.lox": "skip",
 		"test/limit/too_many_locals.lox":    "skip",
 		"test/limit/too_many_upvalues.lox":  "skip",
-
 		// Rely on Go for stack overflow checking.
 		"test/limit/stack_overflow.lox": "skip",
 	}
 
-	var goloxChallengeChanges = map[string]string{
-		"test/field/get_on_class.lox":                 "skip",
-		"test/field/set_on_class.lox":                 "skip",
-		"test/variable/redeclare_global.lox":          "skip",
-		"test/variable/redefine_global.lox":           "skip",
-		"test/variable/use_global_in_initializer.lox": "skip",
+	var goloxClassAttributesAccessErrors = map[string]string{
+		"test/field/get_on_class.lox": "skip",
+		"test/field/set_on_class.lox": "skip",
 	}
 
 	golox("golox",
@@ -386,6 +382,6 @@ func defineTestSuites(t *testing.T) {
 		earlyChapters,
 		goNaNEquality,
 		noGoLimits,
-		goloxChallengeChanges,
+		goloxClassAttributesAccessErrors,
 	)
 }

@@ -86,8 +86,6 @@ func NewResolver(interpreterInstance Interpreter, profile string) Resolver {
 // Resolve implements Resolver.
 func (r *resolver) Resolve(ctx context.Context, statements []parser.Stmt) error {
 	r.err = nil
-	r.beginScope(ctx)
-	defer r.endScope(ctx)
 	r.resolveStmts(ctx, statements)
 	return errors.Join(r.err...)
 }
@@ -160,6 +158,8 @@ func (r *resolver) VisitStmtExpression(ctx context.Context, stmtExpression *pars
 // VisitStmtFor implements parser.StmtVisitor.
 func (r *resolver) VisitStmtFor(ctx context.Context, stmtFor *parser.StmtFor) (any, error) {
 	if stmtFor.Initializer != nil {
+		r.beginScope(ctx)
+		defer r.endScope(ctx)
 		r.resolveStmt(ctx, stmtFor.Initializer)
 	}
 	if stmtFor.Condition != nil {
@@ -168,6 +168,7 @@ func (r *resolver) VisitStmtFor(ctx context.Context, stmtFor *parser.StmtFor) (a
 	if stmtFor.Increment != nil {
 		r.resolveExpr(ctx, stmtFor.Increment)
 	}
+
 	r.resolveStmt(ctx, stmtFor.Body)
 	return nil, nil
 }
