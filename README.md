@@ -8,14 +8,10 @@ Current status: Feature Complete as passing original test suite
 > runner_test.go:69: Suite golox: Tests=254, Passed=238, Failed=0, Skipped=16, Expectactions: 557
 > ```
 
-The tests excluded: [GH](https://github.com/leonardinius/golox/blob/dbff2b805a05c01eb33589c503703f5ade571eb0/test/runner_test.go#L412-L415)
+Excluded tests:
 
-> ```go
-> var goloxClassAttributesAccessErrors = map[string]string{
->   "test/field/get_on_class.lox": "skip",
->   "test/field/set_on_class.lox": "skip",
-> }
-> ```
+- `test/field/get_on_class.lox` - see [eXtra Features](#extra-features)
+- `test/field/set_on_class.lox` - see [eXtra Features](#extra-features)
 
 ---
 
