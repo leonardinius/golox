@@ -60,7 +60,7 @@ type Suite struct {
 	expectactions int
 }
 
-func TestAll(t *testing.T) {
+func TestSuite(t *testing.T) {
 	t.Parallel()
 	r := NewRunner(t)
 	r.InitSuites()
