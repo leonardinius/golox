@@ -25,38 +25,55 @@ var syntaxErrorPattern = regexp.MustCompile(`\[.*line (\d+)\] (Error.+)`)
 var stackTracePattern = regexp.MustCompile(`\[line (\d+)\]`)
 var nonTestPattern = regexp.MustCompile(`// nontest`)
 
-type Suite struct {
-	name       string
-	language   string
-	executable string
-	args       []string
-	tests      map[string]string
+type Runner struct {
+	t         *testing.T
+	allSuites map[string]*Suite
+	goSuites  []string
 }
 
-var allSuites = map[string]*Suite{}
+func NewRunner(t *testing.T) *Runner {
+	return &Runner{t: t, allSuites: map[string]*Suite{}, goSuites: nil}
+}
 
-// var cSuites = []string{}
-var goSuites = []string{}
+type Suite struct {
+	name          string
+	language      string
+	executable    string
+	args          []string
+	testsGroups   map[string]string
+	tests         int
+	passed        int
+	failed        int
+	skipped       int
+	expectactions int
+}
 
 func TestAll(t *testing.T) {
-	defineTestSuites(t)
-
-	runSuites(t, maps.Keys(allSuites))
+	r := NewRunner(t)
+	r.InitSuites()
+	r.RunAllSuites()
 }
 
-func runSuites(t *testing.T, names []string) {
-	t.Helper()
-	t.Parallel()
+func (r *Runner) RunAllSuites() {
+	r.t.Helper()
+	r.runSuites(maps.Keys(r.allSuites)...)
+}
+
+func (r *Runner) runSuites(names ...string) {
+	r.t.Helper()
+	r.t.Parallel()
 	for _, name := range names {
-		t.Run(name, func(t *testing.T) {
-			runSuite(t, allSuites[name])
+		r.t.Run(name, func(t *testing.T) {
+			suite := r.allSuites[name]
+			r.runSuite(suite)
+			r.t.Logf("Suite %s: Tests=%d, Passed=%d, Failed=%d, Skipped=%d, Expectactions: %d", name, suite.tests, suite.passed, suite.failed, suite.skipped, suite.expectactions)
 		})
 	}
 }
 
-func runSuite(t *testing.T, suite *Suite) {
-	t.Helper()
-	require.DirExists(t, testDir)
+func (r *Runner) runSuite(suite *Suite) {
+	r.t.Helper()
+	require.DirExists(r.t, testDir)
 
 	var files []string
 	err := filepath.Walk(testDir, func(path string, f os.FileInfo, _ error) error {
@@ -71,28 +88,34 @@ func runSuite(t *testing.T, suite *Suite) {
 
 		return err
 	})
-	require.NoError(t, err)
+	require.NoError(r.t, err)
 
 	for _, file := range files {
-		runTest(t, suite, file)
+		r.runTest(suite, file)
 	}
 }
 
-func runTest(t *testing.T, suite *Suite, path string) {
+func (r *Runner) runTest(suite *Suite, path string) {
 	if strings.Contains(path, "benchmark") {
 		return
 	}
 
 	test := &Test{path: path, suite: suite, expectedErrors: make(map[string]string)}
 
-	t.Run(path, func(t *testing.T) {
+	r.t.Run(path, func(t *testing.T) {
 		test.t = t
+		suite.tests++
 		if !test.parse() {
+			suite.skipped++
 			return
 		}
+		suite.expectactions += test.Expectactions()
 		failures := test.run()
 		if len(failures) > 0 {
+			suite.failed++
 			t.Fatalf("%s\n%s", path, strings.Join(failures, "\n"))
+		} else {
+			suite.passed++
 		}
 	})
 }
@@ -128,7 +151,7 @@ func (t *Test) parse() bool {
 		}
 		subpath += part
 
-		if val, ok := t.suite.tests[subpath]; ok {
+		if val, ok := t.suite.testsGroups[subpath]; ok {
 			state = val
 		}
 	}
@@ -326,12 +349,26 @@ func (t *Test) Errorf(format string, args ...interface{}) {
 	// t.t.Errorf(format, args...)
 }
 
-func defineTestSuites(t *testing.T) {
+func (t *Test) Expectactions() int {
+	t.t.Helper()
+	expectactions := 0
+
+	if t.expectedRuntimeError != "" {
+		expectactions++
+	}
+
+	expectactions += len(t.expectedErrors)
+	expectactions += len(t.expectedOutput)
+
+	return expectactions
+}
+
+func (r *Runner) InitSuites() {
 	func() {
 		// Build go lox
 		cmd := exec.Command("go", "build", "-o", projectDir+"/bin/golox", projectDir+"/main.go")
 		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatalf("go build failed %v: %#v\n", err, out)
+			r.t.Fatalf("go build failed %v: %#v\n", err, out)
 		}
 	}()
 
@@ -340,14 +377,14 @@ func defineTestSuites(t *testing.T) {
 		for _, test := range tests {
 			maps.Copy(suiteTests, test)
 		}
-		allSuites[name] = &Suite{
-			name:       name,
-			language:   "go",
-			executable: projectDir + "/bin/golox",
-			tests:      suiteTests,
-			args:       []string{"-profile=non-strict"},
+		r.allSuites[name] = &Suite{
+			name:        name,
+			language:    "go",
+			executable:  projectDir + "/bin/golox",
+			testsGroups: suiteTests,
+			args:        []string{"-profile=non-strict"},
 		}
-		goSuites = append(goSuites, name)
+		r.goSuites = append(r.goSuites, name)
 	}
 
 	// These are just for earlier chapters.

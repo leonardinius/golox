@@ -19,8 +19,8 @@ DONE:
 - [x] TODO add original crafting gh repo tests as go tests
 - [x] TODO synchronize handling from within declaration
 - [x] TODO line
-- [ ] TODO - print summary on assertions, expectactions,..
-- [ ] TODO - profile and workarounds - review, remove as much as possible
+- [x] TODO - print summary on assertions, expectactions,..
+- [x] TODO - profile and workarounds - review, remove as much as possible
 - [ ] TODO - add test README, link to original repo copied from, describe key differences, challenges added on top.
 - [ ] TODO Makefile
 - [ ] TODO Linters
