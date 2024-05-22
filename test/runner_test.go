@@ -345,7 +345,7 @@ func defineTestSuites(t *testing.T) {
 			language:   "go",
 			executable: projectDir + "/bin/golox",
 			tests:      suiteTests,
-			args:       []string{"-profile=nonstrict"},
+			args:       []string{"-profile=non-strict"},
 		}
 		goSuites = append(goSuites, name)
 	}

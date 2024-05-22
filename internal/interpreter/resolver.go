@@ -60,7 +60,7 @@ type resolver struct {
 var profiles map[string][]error = map[string][]error{
 	"default": {},
 	"strict":  {},
-	"nonstrict": {
+	"non-strict": {
 		loxerrors.ErrParseLocalVariableNotUsed,
 	},
 }

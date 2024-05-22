@@ -19,6 +19,7 @@ type Parser interface {
 }
 
 type parser struct {
+	profile   string
 	tokens    []token.Token
 	current   int
 	reporter  loxerrors.ErrReporter
@@ -29,7 +30,7 @@ type parser struct {
 	recover   bool
 }
 
-func NewParser(tokens []token.Token, reporter loxerrors.ErrReporter) Parser {
+func NewParser(tokens []token.Token, profile string, reporter loxerrors.ErrReporter) Parser {
 	if len(tokens) == 0 {
 		panic("tokens cannot be empty")
 	}
@@ -38,6 +39,7 @@ func NewParser(tokens []token.Token, reporter loxerrors.ErrReporter) Parser {
 	}
 
 	return &parser{
+		profile:  profile,
 		tokens:   tokens,
 		current:  0,
 		reporter: reporter,
@@ -71,7 +73,7 @@ func (p *parser) Parse() (statements []Stmt, err error) {
 
 	// if we are at error state, we do not return invalid ast tree
 	// return nil, err instead
-	for !p.isAtEnd() {
+	for p.profile == "" && !p.isAtEnd() {
 		p.synchronize()
 		p.panic = nil
 		p.recover = true

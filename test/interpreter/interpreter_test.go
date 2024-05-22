@@ -211,7 +211,7 @@ func evaluate(script string) (string, string, error) {
 		return "", stdouterr.String(), err
 	}
 
-	p := parser.NewParser(tokens, reporter)
+	p := parser.NewParser(tokens, "", reporter)
 	stmts, err := p.Parse()
 	if err != nil {
 		return "", stdouterr.String(), err
