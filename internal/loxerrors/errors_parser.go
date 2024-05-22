@@ -86,5 +86,7 @@ func (p *ParserError) Unwrap() error {
 	return p.cause
 }
 
-var _ error = (*ParserError)(nil)
-var _ unwrapInterface = (*ParserError)(nil)
+var (
+	_ error           = (*ParserError)(nil)
+	_ unwrapInterface = (*ParserError)(nil)
+)

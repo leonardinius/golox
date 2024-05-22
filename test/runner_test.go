@@ -14,16 +14,20 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-var testDir = "../test/"
-var projectDir = "/Users/leo/src/golox"
+var (
+	testDir    = "../test/"
+	projectDir = "/Users/leo/src/golox"
+)
 
-var expectedOutputPattern = regexp.MustCompile(`// expect: ?(.*)`)
-var expectedErrorPattern = regexp.MustCompile(`// (Error.*)`)
-var errorLinePattern = regexp.MustCompile(`// \[((java|c|go) )?line (\d+)\] (Error.*)`)
-var expectedRuntimeErrorPattern = regexp.MustCompile(`// expect runtime error: (.+)`)
-var syntaxErrorPattern = regexp.MustCompile(`\[.*line (\d+)\] (Error.+)`)
-var stackTracePattern = regexp.MustCompile(`\[line (\d+)\]`)
-var nonTestPattern = regexp.MustCompile(`// nontest`)
+var (
+	expectedOutputPattern       = regexp.MustCompile(`// expect: ?(.*)`)
+	expectedErrorPattern        = regexp.MustCompile(`// (Error.*)`)
+	errorLinePattern            = regexp.MustCompile(`// \[((java|c|go) )?line (\d+)\] (Error.*)`)
+	expectedRuntimeErrorPattern = regexp.MustCompile(`// expect runtime error: (.+)`)
+	syntaxErrorPattern          = regexp.MustCompile(`\[.*line (\d+)\] (Error.+)`)
+	stackTracePattern           = regexp.MustCompile(`\[line (\d+)\]`)
+	nonTestPattern              = regexp.MustCompile(`// nontest`)
+)
 
 type Runner struct {
 	t         *testing.T
@@ -32,6 +36,7 @@ type Runner struct {
 }
 
 func NewRunner(t *testing.T) *Runner {
+	t.Helper()
 	return &Runner{t: t, allSuites: map[string]*Suite{}, goSuites: nil}
 }
 
@@ -49,6 +54,7 @@ type Suite struct {
 }
 
 func TestAll(t *testing.T) {
+	t.Parallel()
 	r := NewRunner(t)
 	r.InitSuites()
 	r.RunAllSuites()
@@ -61,7 +67,6 @@ func (r *Runner) RunAllSuites() {
 
 func (r *Runner) runSuites(names ...string) {
 	r.t.Helper()
-	r.t.Parallel()
 	for _, name := range names {
 		r.t.Run(name, func(t *testing.T) {
 			suite := r.allSuites[name]
@@ -245,7 +250,6 @@ func (t *Test) run() []string {
 }
 
 func (t *Test) validateRuntimeError(errorLines []string) {
-
 	if len(errorLines) < 2 {
 		t.Errorf("Expected runtime error '%s' and got none.", t.expectedRuntimeError)
 		return
@@ -346,7 +350,6 @@ func (t *Test) validateOutput(outputLines []string) {
 func (t *Test) Errorf(format string, args ...interface{}) {
 	t.t.Helper()
 	t.failures = append(t.failures, fmt.Sprintf(format, args...))
-	// t.t.Errorf(format, args...)
 }
 
 func (t *Test) Expectactions() int {
@@ -388,18 +391,18 @@ func (r *Runner) InitSuites() {
 	}
 
 	// These are just for earlier chapters.
-	var earlyChapters = map[string]string{
+	earlyChapters := map[string]string{
 		"test/scanning":    "skip",
 		"test/expressions": "skip",
 	}
 
 	// Go doesn't correctly implement IEEE equality on boxed doubles.
-	var goNaNEquality = map[string]string{
+	goNaNEquality := map[string]string{
 		// "test/number/nan_equality.lox": "skip",
 	}
 
 	// No hardcoded limits.
-	var noGoLimits = map[string]string{
+	noGoLimits := map[string]string{
 		"test/limit/loop_too_large.lox":     "skip",
 		"test/limit/no_reuse_constants.lox": "skip",
 		"test/limit/too_many_constants.lox": "skip",
@@ -409,7 +412,7 @@ func (r *Runner) InitSuites() {
 		"test/limit/stack_overflow.lox": "skip",
 	}
 
-	var goloxClassAttributesAccessErrors = map[string]string{
+	goloxClassAttributesAccessErrors := map[string]string{
 		"test/field/get_on_class.lox": "skip",
 		"test/field/set_on_class.lox": "skip",
 	}

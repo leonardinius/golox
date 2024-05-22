@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/chzyer/readline"
-
 	"github.com/leonardinius/golox/internal/interpreter"
 	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/parser"
@@ -53,7 +52,7 @@ func (app *LoxApp) Main(args []string) int {
 	case 0:
 		err = app.runPrompt(ctx, profile)
 	default:
-		err = fmt.Errorf("Usage: golox [script]")
+		err = errors.New("Usage: golox [script]")
 	}
 
 	if app.err == nil && err != nil {
@@ -72,7 +71,7 @@ func (app *LoxApp) runPrompt(ctx context.Context, profile string) error {
 	if err != nil {
 		return err
 	}
-	defer rl.Close()
+	defer func() { _ = rl.Close() }()
 
 	for {
 		var value any
@@ -95,7 +94,7 @@ func (app *LoxApp) runPrompt(ctx context.Context, profile string) error {
 }
 
 func (app *LoxApp) runFile(ctx context.Context, profile, scriptPath string) error {
-	bytes, err := os.ReadFile(scriptPath)
+	bytes, err := os.ReadFile(scriptPath) //nolint:gosec // exppected here
 	if err != nil {
 		return err
 	}
@@ -118,7 +117,7 @@ func (app *LoxApp) run(ctx context.Context, profile, input string) (any, error) 
 		return nil, err
 	}
 
-	if err = app.resolve(ctx, profile, stmts); err != nil {
+	if err := app.resolve(ctx, profile, stmts); err != nil {
 		return nil, err
 	}
 
@@ -135,14 +134,13 @@ func (app *LoxApp) interpret(ctx context.Context, stmts []parser.Stmt) (any, err
 }
 
 func (app *LoxApp) exitcode(err error) int {
-
 	if match, code := app._exitcode(err); match {
 		return code
 	}
 
 	if iface, ok := err.(interface{ Unwrap() []error }); ok {
-		errors := iface.Unwrap()
-		for _, err := range errors {
+		errs := iface.Unwrap()
+		for _, err := range errs {
 			if match, code := app._exitcode(err); match {
 				return code
 			}
@@ -158,7 +156,7 @@ func (app *LoxApp) _exitcode(err error) (bool, int) {
 		return false, 0
 	}
 
-	switch err.(type) {
+	switch err.(type) { //nolint:errorlint // exppected here
 	case *loxerrors.ParserError, *loxerrors.ScannerError:
 		return true, 65
 	case *loxerrors.RuntimeError:

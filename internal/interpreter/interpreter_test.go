@@ -10,9 +10,11 @@ import (
 	"github.com/leonardinius/golox/internal/parser"
 	"github.com/leonardinius/golox/internal/scanner"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestInterpret(t *testing.T) {
+	t.Parallel()
 	testcases := []struct {
 		name string
 		in   string // Input
@@ -31,7 +33,7 @@ func TestInterpret(t *testing.T) {
 		{name: `boolean t`, in: `true;`, eval: `true`},
 		{name: `boolean f`, in: `false;`, eval: `false`},
 		{name: `bang`, in: `!false;`, eval: `true`},
-		{name: `bang bang`, in: `!!false;`, eval: `false`},
+		{name: `bang bang1`, in: `!!false;`, eval: `false`},
 		{name: `eqeq number`, in: `1 == 1;`, eval: `true`},
 		{name: `eqeq number`, in: `1 == 2;`, eval: `false`},
 		{name: `eqeq string`, in: `"a" == "a";`, eval: `true`},
@@ -96,7 +98,8 @@ func TestInterpret(t *testing.T) {
 		{name: `oop class fields decl`, in: `class A{} var a = A();a.a = 1; a.a;`, eval: `1`},
 		{name: `oop class method call`, in: `class Bacon{eat(){print "bacon";return 1;}} Bacon().eat();`, eval: `1`, out: "bacon\n"},
 		{name: `oop class this bind`, in: `class Thing { getCallback() { this.a = 1; fun localFunction() { return this.a + 2; } return localFunction; } } var callback = Thing().getCallback(); callback();`, eval: `3`},
-		{name: `oop constructor multi test`, in: `
+		{
+			name: `oop constructor multi test`, in: `
 		class A {
 			init (a,b){
 				this.a= a;
@@ -109,8 +112,10 @@ func TestInterpret(t *testing.T) {
 		var a = A(1,2);
 		a.method = fun(){ return theprint(a); };
 		a.method();`,
-			eval: `nil`, out: "1\n2\n"},
-		{name: `oop metaclass`, in: `
+			eval: `nil`, out: "1\n2\n",
+		},
+		{
+			name: `oop metaclass`, in: `
 		class Math {
 			class square(n) {
 				this.b = 1; return n * n;
@@ -120,8 +125,10 @@ func TestInterpret(t *testing.T) {
 			print Math.b;
 			Math.c=2;
 			print Math.c;`,
-			eval: `nil`, out: "9\n1\n2\n"},
-		{name: `inheritance with super`, in: `
+			eval: `nil`, out: "9\n1\n2\n",
+		},
+		{
+			name: `inheritance with super`, in: `
 		class A {
 			method() {
 			  return "A method";
@@ -137,8 +144,10 @@ func TestInterpret(t *testing.T) {
 		  }
 		  class C < B {}
 		  C().test();`,
-			eval: `"A method"`},
-		{name: `inheritance with super`, in: `
+			eval: `"A method"`,
+		},
+		{
+			name: `inheritance with super`, in: `
 		var array = Array(3);
 		print array;
 		// "length" returns the number of elements.
@@ -147,24 +156,27 @@ func TestInterpret(t *testing.T) {
 		array.set(1, "new");
 		// "get" returns the element at a given index.
 		print array.get(1); // "new".`,
-			eval: `nil`, out: "[<nil> <nil> <nil>]\n3\nnew\n"},
+			eval: `nil`, out: "[<nil> <nil> <nil>]\n3\nnew\n",
+		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			evalout, stdout, err := evaluate(tc.in)
 			if tc.err != "" {
-				assert.ErrorContains(t, err, tc.err)
+				require.ErrorContains(t, err, tc.err)
 			} else {
-				assert.NoError(t, err)
 				assert.Equal(t, tc.eval, evalout)
 				assert.Equal(t, tc.out, stdout)
+				require.NoError(t, err)
 			}
 		})
 	}
 }
 
 func TestInterpretReplMultiline(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		name string
 		in   []string // Input
@@ -172,27 +184,29 @@ func TestInterpretReplMultiline(t *testing.T) {
 		out  string   // Expected output
 		err  string   // Expected error
 	}{
-		{name: `var repl`,
+		{
+			name: `var repl`,
 			in:   []string{`var dd;print dd;dd;`, `print dd;dd;`, `dd=5;`, `dd;`},
 			eval: []string{`nil`, `nil`, `5`, `5`},
-			out:  "nil\nnil\n"},
+			out:  "nil\nnil\n",
+		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			output, stdout, err := replLineByLine(tc.in...)
 			if tc.err != "" {
-				assert.ErrorContains(t, err, tc.err)
+				require.ErrorContains(t, err, tc.err)
 			} else {
-				assert.NoError(t, err)
 				assert.Equal(t, tc.eval, output)
 				assert.Equal(t, tc.out, stdout)
+				require.NoError(t, err)
 			}
 		})
 	}
 }
 
-func evaluate(script string) (string, string, error) {
+func evaluate(script string) (_evalout, _stdout string, _err error) {
 	stdin := strings.NewReader("")
 	stdouterr := strings.Builder{}
 	reporter := loxerrors.NewErrReporter(&stdouterr)
@@ -219,7 +233,7 @@ func evaluate(script string) (string, string, error) {
 
 	ctx := context.TODO()
 	resolver := interpreter.NewResolver(eval, "default")
-	if err = resolver.Resolve(ctx, stmts); err != nil {
+	if err := resolver.Resolve(ctx, stmts); err != nil {
 		return "", stdouterr.String(), err
 	}
 
@@ -227,7 +241,7 @@ func evaluate(script string) (string, string, error) {
 	return svalue, stdouterr.String(), err
 }
 
-func replLineByLine(script ...string) ([]string, string, error) {
+func replLineByLine(script ...string) (_evalout []string, _out string, _err error) {
 	stdin := strings.NewReader("")
 	stdouterr := strings.Builder{}
 	reporter := loxerrors.NewErrReporter(&stdouterr)
@@ -241,8 +255,8 @@ func replLineByLine(script ...string) ([]string, string, error) {
 	)
 	resolver := interpreter.NewResolver(eval, "default")
 
-	var results []string
-	for _, s := range script {
+	results := make([]string, len(script))
+	for index, s := range script {
 		scan := scanner.NewScanner(s, reporter)
 
 		tokens, err := scan.Scan()
@@ -256,7 +270,7 @@ func replLineByLine(script ...string) ([]string, string, error) {
 			return nil, stdouterr.String(), err
 		}
 
-		if err = resolver.Resolve(ctx, stmts); err != nil {
+		if err := resolver.Resolve(ctx, stmts); err != nil {
 			return nil, stdouterr.String(), err
 		}
 
@@ -264,7 +278,7 @@ func replLineByLine(script ...string) ([]string, string, error) {
 		if err != nil {
 			return nil, stdouterr.String(), err
 		}
-		results = append(results, svalue)
+		results[index] = svalue
 	}
 
 	return results, stdouterr.String(), nil

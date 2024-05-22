@@ -61,7 +61,7 @@ func Main(args []string) int {
 	return 0
 }
 
-func defineAst(outFile, packageName string, baseClass string, types ...string) error {
+func defineAst(outFile, packageName, baseClass string, types ...string) error {
 	f, err := os.Create(outFile)
 	defer func() { _ = f.Close() }()
 
@@ -108,7 +108,7 @@ func defineAst(outFile, packageName string, baseClass string, types ...string) e
 	return err
 }
 
-func defineType(fprintf func(message string, args ...any), baseClass string, exprClassName string, fields []string) {
+func defineType(fprintf func(message string, args ...any), baseClass, exprClassName string, fields []string) {
 	fprintf("type %s struct {", exprClassName)
 	for _, field := range fields {
 		fprintf("\t%s", field)

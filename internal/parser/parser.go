@@ -186,13 +186,12 @@ func (p *parser) functionBody(kind string) Expr {
 }
 
 func (p *parser) varDeclaration() Stmt {
-
 	if !p.match(token.IDENTIFIER) {
 		return p.reportFatalErrorStmt(loxerrors.ErrParseUnexpectedVariableName)
 	}
 	name := p.previous()
 
-	var initializer Expr = nilExpr
+	initializer := nilExpr
 	if p.match(token.EQUAL) {
 		initializer = p.expression()
 	}
@@ -242,7 +241,6 @@ func (p *parser) statement() Stmt {
 }
 
 func (p *parser) ifStatement() Stmt {
-
 	if !p.match(token.LEFT_PAREN) {
 		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedLeftParentIfToken)
 	}
@@ -263,7 +261,6 @@ func (p *parser) ifStatement() Stmt {
 }
 
 func (p *parser) printStatement() Stmt {
-
 	expr := p.expression()
 
 	if !p.match(token.SEMICOLON) {
@@ -280,7 +277,7 @@ func (p *parser) returnStatement() Stmt {
 		return p.reportFatalErrorStmtToken(tok, loxerrors.ErrParseReturnOutsideFunction)
 	}
 
-	var value Expr = nilExpr
+	value := nilExpr
 	if !p.check(token.SEMICOLON) {
 		value = p.expression()
 	}
@@ -293,7 +290,6 @@ func (p *parser) returnStatement() Stmt {
 }
 
 func (p *parser) whileStatement() Stmt {
-
 	if !p.match(token.LEFT_PAREN) {
 		return p.reportFatalErrorStmt(loxerrors.ErrParseExpectedLeftParentWhileToken)
 	}
@@ -315,11 +311,12 @@ func (p *parser) forStatement() Stmt {
 	}
 
 	var initializer Stmt
-	if p.match(token.SEMICOLON) {
+	switch {
+	case p.match(token.SEMICOLON):
 		initializer = nilStmt
-	} else if p.match(token.VAR) {
+	case p.match(token.VAR):
 		initializer = p.varDeclaration()
-	} else {
+	default:
 		initializer = p.expressionStatement()
 	}
 
@@ -402,10 +399,13 @@ func (p *parser) assignment() Expr {
 		equals := p.previous()
 		value := p.assignment()
 
-		if v, ok := expr.(*ExprVariable); ok {
+		switch v := expr.(type) {
+		case *ExprVariable:
 			return &ExprAssign{Name: v.Name, Value: value}
-		} else if v, ok := expr.(*ExprGet); ok {
+		case *ExprGet:
 			return &ExprSet{Instance: v.Instance, Name: v.Name, Value: value}
+		default:
+			p.reportErrorExprToken(equals, loxerrors.ErrParseInvalidAssignmentTarget)
 		}
 
 		p.reportErrorExprToken(equals, loxerrors.ErrParseInvalidAssignmentTarget)
@@ -499,17 +499,19 @@ func (p *parser) unary() Expr {
 func (p *parser) call() Expr {
 	expr := p.primary()
 
+forloop:
 	for {
-		if p.match(token.LEFT_PAREN) {
+		switch {
+		case p.match(token.LEFT_PAREN):
 			expr = p.finishCall(expr)
-		} else if p.match(token.DOT) {
+		case p.match(token.DOT):
 			if !p.match(token.IDENTIFIER) {
 				return p.reportFatalErrorExpr(loxerrors.ErrParseExpectedPropertyNameAfterDot)
 			}
 			name := p.previous()
 			expr = &ExprGet{Instance: expr, Name: name}
-		} else {
-			break
+		default:
+			break forloop
 		}
 	}
 
@@ -536,10 +538,9 @@ func (p *parser) finishCall(callee Expr) Expr {
 	paren := p.previous()
 
 	return &ExprCall{Callee: callee, CloseParen: paren, Arguments: args}
-
 }
 
-func (p *parser) primary() Expr {
+func (p *parser) primary() Expr { //nolint:cyclop // it's expected
 	if p.match(token.FALSE) {
 		return &ExprLiteral{Value: false}
 	}
@@ -638,14 +639,13 @@ func (p *parser) previous() *token.Token {
 	return &p.tokens[p.current-1]
 }
 
-func (p *parser) advance() *token.Token {
+func (p *parser) advance() {
 	if !p.isAtEnd() {
 		p.current++
 	}
-	return p.previous()
 }
 
-// Be carefull with isAtEnd, it does not check for parse errors.
+// Be careful with isAtEnd, it does not check for parse errors.
 // Use isDone instead.
 // isAtEnd is used from top level Parse, synchronize and advance ony.
 func (p *parser) isAtEnd() bool {
@@ -719,7 +719,7 @@ func (p *parser) synchronize() {
 			return
 		}
 
-		switch p.peek().Type {
+		switch p.peek().Type { //nolint:exhaustive // handful of hancrafted tokens
 		case token.CLASS,
 			token.FUN,
 			token.VAR,
@@ -735,6 +735,8 @@ func (p *parser) synchronize() {
 	}
 }
 
-var _ Parser = (*parser)(nil)
-var _ fmt.Stringer = (*parser)(nil)
-var _ fmt.GoStringer = (*parser)(nil)
+var (
+	_ Parser         = (*parser)(nil)
+	_ fmt.Stringer   = (*parser)(nil)
+	_ fmt.GoStringer = (*parser)(nil)
+)

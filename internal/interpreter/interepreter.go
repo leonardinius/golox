@@ -103,10 +103,11 @@ func (i *interpreter) VisitStmtExpression(ctx context.Context, expr *parser.Stmt
 
 // VisitStmtFunction implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtFunction(ctx context.Context, stmtFunction *parser.StmtFunction) (any, error) {
-	env := EnvFromContext(ctx)
+	env := MustEnvFromContext(ctx)
 	function := NewLoxFunction(stmtFunction.Name, stmtFunction.Fn, env, false)
 	env.Define(stmtFunction.Name.Lexeme, function)
-	return nil, nil
+
+	return nil, errNilnil
 }
 
 // VisitStmtIf implements parser.StmtVisitor.
@@ -122,7 +123,7 @@ func (i *interpreter) VisitStmtIf(ctx context.Context, stmtIf *parser.StmtIf) (a
 		return i.execute(ctx, stmtIf.ElseBranch)
 	}
 
-	return nil, nil
+	return nil, errNilnil
 }
 
 // VisitPrint implements parser.StmtVisitor.
@@ -142,7 +143,7 @@ func (i *interpreter) VisitStmtReturn(ctx context.Context, stmtReturn *parser.St
 		}
 	}
 
-	return nil, &ReturnValue{Value: value}
+	return nil, &ReturnValueError{Value: value}
 }
 
 // VisitVar implements parser.StmtVisitor.
@@ -155,10 +156,10 @@ func (i *interpreter) VisitStmtVar(ctx context.Context, stmt *parser.StmtVar) (a
 		}
 	}
 
-	env := EnvFromContext(ctx)
+	env := MustEnvFromContext(ctx)
 	env.Define(stmt.Name.Lexeme, value)
 
-	return nil, nil
+	return nil, errNilnil
 }
 
 // VisitStmtWhile implements parser.StmtVisitor.
@@ -178,10 +179,10 @@ func (i *interpreter) VisitStmtWhile(ctx context.Context, stmtWhile *parser.Stmt
 
 		if value, err = i.execute(ctx, stmtWhile.Body); err != nil {
 			switch {
-			case err == errBreak:
-				// return immediatelly
-				return nil, nil
-			case err == errContinue:
+			case errors.Is(err, errBreak):
+				// returns immediately
+				return nil, errNilnil
+			case errors.Is(err, errContinue):
 				// continue to next iteration
 				err = nil
 			}
@@ -212,10 +213,10 @@ func (i *interpreter) VisitStmtFor(ctx context.Context, stmtFor *parser.StmtFor)
 
 		if value, err = i.execute(ctx, stmtFor.Body); err != nil {
 			switch {
-			case err == errBreak:
-				// return immediatelly
-				return nil, nil
-			case err == errContinue:
+			case errors.Is(err, errBreak):
+				// returns immediately
+				return nil, errNilnil
+			case errors.Is(err, errContinue):
 				// continue to next iteration
 				err = nil
 			}
@@ -241,14 +242,14 @@ func (*interpreter) VisitStmtContinue(ctx context.Context, stmtContinue *parser.
 
 // VisitStmtBlock implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtBlock(ctx context.Context, block *parser.StmtBlock) (any, error) {
-	env := EnvFromContext(ctx)
+	env := MustEnvFromContext(ctx)
 	newCtx := env.Nest().AsContext(ctx)
 	return i.executeBlock(newCtx, block.Statements)
 }
 
 // VisitStmtClass implements parser.StmtVisitor.
 func (i *interpreter) VisitStmtClass(ctx context.Context, stmtClass *parser.StmtClass) (any, error) {
-	env := EnvFromContext(ctx)
+	env := MustEnvFromContext(ctx)
 	var superClass *LoxClass
 	if stmtClass.SuperClass != nil {
 		if superClassValue, err := i.evaluate(ctx, stmtClass.SuperClass); err != nil {
@@ -301,7 +302,6 @@ func (i *interpreter) VisitExprGet(ctx context.Context, exprGet *parser.ExprGet)
 	}
 
 	return instance.(LoxInstance).Get(ctx, exprGet.Name)
-
 }
 
 // VisitVariable implements parser.ExprVisitor.
@@ -332,22 +332,22 @@ func (i *interpreter) VisitExprBinary(ctx context.Context, expr *parser.ExprBina
 
 	switch expr.Operator.Type {
 	case token.GREATER:
-		if err = i.checkNumberOperands(expr.Operator, left, right); err != nil {
+		if err := i.checkNumberOperands(expr.Operator, left, right); err != nil {
 			return nil, err
 		}
 		return left.(float64) > right.(float64), nil
 	case token.GREATER_EQUAL:
-		if err = i.checkNumberOperands(expr.Operator, left, right); err != nil {
+		if err := i.checkNumberOperands(expr.Operator, left, right); err != nil {
 			return nil, err
 		}
 		return left.(float64) >= right.(float64), nil
 	case token.LESS:
-		if err = i.checkNumberOperands(expr.Operator, left, right); err != nil {
+		if err := i.checkNumberOperands(expr.Operator, left, right); err != nil {
 			return nil, err
 		}
 		return left.(float64) < right.(float64), nil
 	case token.LESS_EQUAL:
-		if err = i.checkNumberOperands(expr.Operator, left, right); err != nil {
+		if err := i.checkNumberOperands(expr.Operator, left, right); err != nil {
 			return nil, err
 		}
 		return left.(float64) <= right.(float64), nil
@@ -356,7 +356,7 @@ func (i *interpreter) VisitExprBinary(ctx context.Context, expr *parser.ExprBina
 	case token.EQUAL_EQUAL:
 		return i.isEqual(left, right), nil
 	case token.MINUS:
-		if err = i.checkNumberOperands(expr.Operator, left, right); err != nil {
+		if err := i.checkNumberOperands(expr.Operator, left, right); err != nil {
 			return nil, err
 		}
 		return left.(float64) - right.(float64), nil
@@ -373,12 +373,12 @@ func (i *interpreter) VisitExprBinary(ctx context.Context, expr *parser.ExprBina
 		}
 		return i.returnRuntimeError(expr.Operator, loxerrors.ErrRuntimeOperandsMustNumbersOrStrings)
 	case token.SLASH:
-		if err = i.checkNumberOperands(expr.Operator, left, right); err != nil {
+		if err := i.checkNumberOperands(expr.Operator, left, right); err != nil {
 			return nil, err
 		}
 		return left.(float64) / right.(float64), nil
 	case token.STAR:
-		if err = i.checkNumberOperands(expr.Operator, left, right); err != nil {
+		if err := i.checkNumberOperands(expr.Operator, left, right); err != nil {
 			return nil, err
 		}
 		return left.(float64) * right.(float64), nil
@@ -389,7 +389,7 @@ func (i *interpreter) VisitExprBinary(ctx context.Context, expr *parser.ExprBina
 
 // VisitExprFunction implements parser.ExprVisitor.
 func (i *interpreter) VisitExprFunction(ctx context.Context, exprFunction *parser.ExprFunction) (any, error) {
-	env := EnvFromContext(ctx)
+	env := MustEnvFromContext(ctx)
 	fn := NewLoxFunction(nil, exprFunction, env, false)
 	return fn, nil
 }
@@ -405,13 +405,13 @@ func (i *interpreter) VisitExprCall(ctx context.Context, exprCall *parser.ExprCa
 		return i.returnRuntimeError(exprCall.CloseParen, loxerrors.ErrRuntimeCalleeMustBeCallable)
 	}
 
-	var args []any
-	for _, arg := range exprCall.Arguments {
+	args := make([]any, len(exprCall.Arguments))
+	for index, arg := range exprCall.Arguments {
 		argValue, err := i.evaluate(ctx, arg)
 		if err != nil {
 			return nil, err
 		}
-		args = append(args, argValue)
+		args[index] = argValue
 	}
 
 	if !callable.Arity().IsVarArgs() && len(args) != int(callable.Arity()) {
@@ -476,7 +476,7 @@ func (i *interpreter) VisitExprSuper(ctx context.Context, exprSuper *parser.Expr
 		distance = depth
 	}
 
-	env := EnvFromContext(ctx)
+	env := MustEnvFromContext(ctx)
 	var superClass *LoxClass
 	if _superClass, err := env.GetAt(distance, "super"); err != nil {
 		return nil, err
@@ -507,7 +507,7 @@ func (i *interpreter) VisitExprThis(ctx context.Context, exprThis *parser.ExprTh
 	return i.lookupVariable(ctx, exprThis.Keyword, exprThis)
 }
 
-func (i *interpreter) evalLogicalAnd(ctx context.Context, left parser.Expr, right parser.Expr) (any, error) {
+func (i *interpreter) evalLogicalAnd(ctx context.Context, left, right parser.Expr) (any, error) {
 	if leftValue, err := i.evaluate(ctx, left); err != nil || !i.isTruthy(leftValue) {
 		return leftValue, err
 	}
@@ -515,7 +515,7 @@ func (i *interpreter) evalLogicalAnd(ctx context.Context, left parser.Expr, righ
 	return i.evaluate(ctx, right)
 }
 
-func (i *interpreter) evalLogicalOr(ctx context.Context, left parser.Expr, right parser.Expr) (any, error) {
+func (i *interpreter) evalLogicalOr(ctx context.Context, left, right parser.Expr) (any, error) {
 	if leftValue, err := i.evaluate(ctx, left); err != nil || i.isTruthy(leftValue) {
 		return leftValue, err
 	}
@@ -532,7 +532,7 @@ func (i *interpreter) VisitExprUnary(ctx context.Context, expr *parser.ExprUnary
 
 	switch expr.Operator.Type {
 	case token.MINUS:
-		if err = i.checkNumberOperand(expr.Operator, right); err != nil {
+		if err := i.checkNumberOperand(expr.Operator, right); err != nil {
 			return nil, err
 		}
 		return -right.(float64), nil
@@ -549,14 +549,13 @@ func (i *interpreter) execute(ctx context.Context, stmt parser.Stmt) (any, error
 }
 
 func (i *interpreter) executeBlock(ctx context.Context, stmt []parser.Stmt) (value any, err error) {
-
 	for _, stmt := range stmt {
 		if _, err = i.execute(ctx, stmt); err != nil {
 			return nil, err
 		}
 	}
 
-	return nil, nil
+	return nil, errNilnil
 }
 
 func (i *interpreter) evaluate(ctx context.Context, expr parser.Expr) (any, error) {
@@ -611,7 +610,7 @@ func (i *interpreter) resolve(_ context.Context, expr parser.Expr, depth int) {
 }
 
 func (i *interpreter) lookupVariable(ctx context.Context, name *token.Token, expr parser.Expr) (any, error) {
-	env := EnvFromContext(ctx)
+	env := MustEnvFromContext(ctx)
 	if distance, ok := i.Locals[expr]; ok {
 		return env.GetAt(distance, name.Lexeme)
 	}
@@ -620,7 +619,7 @@ func (i *interpreter) lookupVariable(ctx context.Context, name *token.Token, exp
 }
 
 func (i *interpreter) assignVariable(ctx context.Context, expr *parser.ExprAssign, value any) (any, error) {
-	env := EnvFromContext(ctx)
+	env := MustEnvFromContext(ctx)
 	if distance, ok := i.Locals[expr]; ok {
 		return env.AssignAt(distance, expr.Name, value)
 	}
@@ -632,6 +631,8 @@ func (i *interpreter) unreachable() (any, error) {
 	panic("unreachable")
 }
 
-var _ parser.ExprVisitor = (*interpreter)(nil)
-var _ parser.StmtVisitor = (*interpreter)(nil)
-var _ Interpreter = (*interpreter)(nil)
+var (
+	_ parser.ExprVisitor = (*interpreter)(nil)
+	_ parser.StmtVisitor = (*interpreter)(nil)
+	_ Interpreter        = (*interpreter)(nil)
+)

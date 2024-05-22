@@ -36,5 +36,7 @@ func (t Token) GoString() string {
 	return fmt.Sprintf("{Type: %s, Lexeme: %q, Literal: %#v, Line: %d}", t.Type, t.Lexeme, t.Literal, t.Line)
 }
 
-var _ fmt.Stringer = (*Token)(nil)
-var _ fmt.GoStringer = (*Token)(nil)
+var (
+	_ fmt.Stringer   = (*Token)(nil)
+	_ fmt.GoStringer = (*Token)(nil)
+)

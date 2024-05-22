@@ -19,8 +19,12 @@ func NewEnvironment() *environment {
 	return &environment{}
 }
 
-func EnvFromContext(ctx context.Context) *environment {
-	return ctx.Value(envCtxKey{}).(*environment)
+func MustEnvFromContext(ctx context.Context) *environment {
+	env, ok := ctx.Value(envCtxKey{}).(*environment)
+	if !ok {
+		panic("unexpected from MustEnvFromContext")
+	}
+	return env
 }
 
 func (e *environment) Define(name string, value any) {

@@ -28,17 +28,19 @@ type Callable interface {
 
 // ========  ========  ========  ========  ========  ========  ========
 
-type NativeFunctionVarArgs func(ctx context.Context, interpeter *interpreter, args ...any) (any, error)
-type NativeFunction0 func(ctx context.Context, interpeter *interpreter) (any, error)
-type NativeFunction1 func(ctx context.Context, interpeter *interpreter, arg1 any) (any, error)
-type NativeFunction2 func(ctx context.Context, interpeter *interpreter, arg1, arg2 any) (any, error)
-type NativeFunction3 func(ctx context.Context, interpeter *interpreter, arg1, arg2, arg3 any) (any, error)
-type NativeFunction4 func(ctx context.Context, interpeter *interpreter, arg1, arg2, arg3, arg4 any) (any, error)
-type NativeFunction5 func(ctx context.Context, interpeter *interpreter, arg1, arg2, arg3, arg4, arg5 any) (any, error)
-type nativeFunctionN struct {
-	arity Arity
-	fn    func(ctx context.Context, interpeter *interpreter, args ...any) (any, error)
-}
+type (
+	NativeFunctionVarArgs func(ctx context.Context, interpeter *interpreter, args ...any) (any, error)
+	NativeFunction0       func(ctx context.Context, interpeter *interpreter) (any, error)
+	NativeFunction1       func(ctx context.Context, interpeter *interpreter, arg1 any) (any, error)
+	NativeFunction2       func(ctx context.Context, interpeter *interpreter, arg1, arg2 any) (any, error)
+	NativeFunction3       func(ctx context.Context, interpeter *interpreter, arg1, arg2, arg3 any) (any, error)
+	NativeFunction4       func(ctx context.Context, interpeter *interpreter, arg1, arg2, arg3, arg4 any) (any, error)
+	NativeFunction5       func(ctx context.Context, interpeter *interpreter, arg1, arg2, arg3, arg4, arg5 any) (any, error)
+	nativeFunctionN       struct {
+		arity Arity
+		fn    func(ctx context.Context, interpeter *interpreter, args ...any) (any, error)
+	}
+)
 
 // Arity implements Callable.
 func (n NativeFunctionVarArgs) Arity() Arity {
@@ -200,30 +202,32 @@ func (n *nativeFunctionN) GoString() string {
 	return n.String()
 }
 
-var _ Callable = (NativeFunctionVarArgs)(nil)
-var _ fmt.GoStringer = (NativeFunctionVarArgs)(nil)
-var _ fmt.Stringer = (NativeFunctionVarArgs)(nil)
-var _ Callable = (NativeFunction0)(nil)
-var _ fmt.Stringer = (NativeFunction0)(nil)
-var _ fmt.GoStringer = (NativeFunction0)(nil)
-var _ Callable = (NativeFunction1)(nil)
-var _ fmt.Stringer = (NativeFunction1)(nil)
-var _ fmt.GoStringer = (NativeFunction1)(nil)
-var _ Callable = (NativeFunction2)(nil)
-var _ fmt.Stringer = (NativeFunction2)(nil)
-var _ fmt.GoStringer = (NativeFunction2)(nil)
-var _ Callable = (NativeFunction3)(nil)
-var _ fmt.Stringer = (NativeFunction3)(nil)
-var _ fmt.GoStringer = (NativeFunction3)(nil)
-var _ Callable = (NativeFunction4)(nil)
-var _ fmt.Stringer = (NativeFunction4)(nil)
-var _ fmt.GoStringer = (NativeFunction4)(nil)
-var _ Callable = (NativeFunction5)(nil)
-var _ fmt.Stringer = (NativeFunction5)(nil)
-var _ fmt.GoStringer = (NativeFunction5)(nil)
-var _ Callable = (*nativeFunctionN)(nil)
-var _ fmt.Stringer = (*nativeFunctionN)(nil)
-var _ fmt.GoStringer = (*nativeFunctionN)(nil)
+var (
+	_ Callable       = NativeFunctionVarArgs(nil)
+	_ fmt.GoStringer = NativeFunctionVarArgs(nil)
+	_ fmt.Stringer   = NativeFunctionVarArgs(nil)
+	_ Callable       = NativeFunction0(nil)
+	_ fmt.Stringer   = NativeFunction0(nil)
+	_ fmt.GoStringer = NativeFunction0(nil)
+	_ Callable       = NativeFunction1(nil)
+	_ fmt.Stringer   = NativeFunction1(nil)
+	_ fmt.GoStringer = NativeFunction1(nil)
+	_ Callable       = NativeFunction2(nil)
+	_ fmt.Stringer   = NativeFunction2(nil)
+	_ fmt.GoStringer = NativeFunction2(nil)
+	_ Callable       = NativeFunction3(nil)
+	_ fmt.Stringer   = NativeFunction3(nil)
+	_ fmt.GoStringer = NativeFunction3(nil)
+	_ Callable       = NativeFunction4(nil)
+	_ fmt.Stringer   = NativeFunction4(nil)
+	_ fmt.GoStringer = NativeFunction4(nil)
+	_ Callable       = NativeFunction5(nil)
+	_ fmt.Stringer   = NativeFunction5(nil)
+	_ fmt.GoStringer = NativeFunction5(nil)
+	_ Callable       = (*nativeFunctionN)(nil)
+	_ fmt.Stringer   = (*nativeFunctionN)(nil)
+	_ fmt.GoStringer = (*nativeFunctionN)(nil)
+)
 
 func nativeName() string {
 	return "<native fn>"

@@ -30,5 +30,7 @@ func (s *ScannerError) Unwrap() error {
 	return s.cause
 }
 
-var _ error = (*ScannerError)(nil)
-var _ unwrapInterface = (*ScannerError)(nil)
+var (
+	_ error           = (*ScannerError)(nil)
+	_ unwrapInterface = (*ScannerError)(nil)
+)

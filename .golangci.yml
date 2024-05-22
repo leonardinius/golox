@@ -1,0 +1,107 @@
+run:
+  timeout: 5m
+
+linters-settings:
+  gci:
+    sections:
+      - standard # Standard section: captures all standard packages.
+      - default # Default section: contains all imports that could not be matched to another section type.
+      - prefix(github.com/leonardinius/go-service-template) # Custom section: groups all imports with the specified Prefix.
+      - blank # Blank section: contains all blank imports. This section is not present unless explicitly enabled.
+      - dot # Dot section: contains all dot imports. This section is not present unless explicitly enabled.
+      - alias # Alias section: contains all alias imports. This section is not present unless explicitly enabled.
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+  misspell:
+    locale: US
+  lll:
+    line-length: 140
+  gocritic:
+    enabled-tags:
+      - performance
+      - style
+      - experimental
+  revive:
+    ignore-generated-header: true
+    severity: warning
+    enable-all-rules: false
+linters:
+  disable:
+    - depguard
+    - exhaustruct
+    - forbidigo
+    - gochecknoglobals
+    - gochecknoinits
+    - goconst
+    - gomnd
+    - ireturn
+    - nlreturn
+    - nonamedreturns
+    - varnamelen
+    - wrapcheck
+    - wsl
+    - goerr113
+    - nestif
+    - forcetypeassert
+    - funlen
+    - cyclop
+    - exhaustive
+    - typecheck
+    - unparam
+    - paralleltest
+    - tparallel
+      # dead packages
+    - deadcode
+    - exhaustivestruct
+    - golint
+    - ifshort
+    - interfacer
+    - maligned
+    - nosnakecase
+    - scopelint
+    - structcheck
+    - varcheck
+  fast: false
+  enable-all: true
+
+issues:
+  exclude-dirs:
+    - vendor
+    - pkg/gen
+  exclude-rules:
+    - linters:
+        - stylecheck
+      text: "ST1003:"
+      path: internal/token/token_type\.go
+    - linters:
+        - stylecheck
+      text: "at least one file in a package should have a package comment"
+    - linters:
+        - gocritic
+      text: "ifElseChain:"
+    - linters:
+        - gocritic
+      text: "unnamedResult:"
+    - linters:
+        - stylecheck
+      text: "ST1005:"
+    - linters:
+        - golint
+        - revive
+      text: "should have a package comment"
+    - path: _test\.go
+      linters:
+        - gosec
+        - dupl
+        - wrapcheck
+        - lll
+        - dupword
+    - path: ^tools
+      linters:
+        - gosec
+        - dupl
+        - wrapcheck
+        - lll
+        - dupword
+  exclude-use-default: false

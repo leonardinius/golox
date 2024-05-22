@@ -12,6 +12,8 @@
 *.test
 # Build dir
 /bin/
+# Tools dir
+/.bin/
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out

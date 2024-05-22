@@ -9,13 +9,15 @@ import (
 	"github.com/leonardinius/golox/internal/token"
 )
 
+var errNilnil error = nil
+
 func StdFnTime(ctx context.Context, interpeter *interpreter) (any, error) {
 	return float64(time.Now().UnixMilli()), nil
 }
 
 func StdFnPPrint(ctx context.Context, interpeter *interpreter, args ...any) (any, error) {
 	interpeter.print(args...)
-	return nil, nil
+	return nil, errNilnil
 }
 
 func StdFnCreateArray(ctx context.Context, interpeter *interpreter, arg any) (any, error) {
@@ -88,7 +90,7 @@ func (s *StdArray) setAt(name *token.Token, index, value any) (any, error) {
 	}
 
 	s.values[i] = value
-	return nil, nil
+	return nil, errNilnil
 }
 
 func (s *StdArray) indexToInt(name *token.Token, index any) (int, error) {
@@ -110,6 +112,8 @@ func (s *StdArray) GoString() string {
 	return s.String()
 }
 
-var _ LoxInstance = (*StdArray)(nil)
-var _ fmt.Stringer = (*StdArray)(nil)
-var _ fmt.GoStringer = (*StdArray)(nil)
+var (
+	_ LoxInstance    = (*StdArray)(nil)
+	_ fmt.Stringer   = (*StdArray)(nil)
+	_ fmt.GoStringer = (*StdArray)(nil)
+)

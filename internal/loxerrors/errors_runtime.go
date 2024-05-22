@@ -22,7 +22,7 @@ var (
 	ErrRuntimeArrayInvalidArraySize        = errors.New("Invalid array size, must be number.")
 )
 
-func ErrRuntimeCalleeArityError(expectedArity int, actualArity int) error {
+func ErrRuntimeCalleeArityError(expectedArity, actualArity int) error {
 	return fmt.Errorf("Expected %d arguments but got %d.", expectedArity, actualArity)
 }
 
@@ -48,5 +48,7 @@ func (r *RuntimeError) Unwrap() error {
 	return r.cause
 }
 
-var _ error = (*RuntimeError)(nil)
-var _ unwrapInterface = (*RuntimeError)(nil)
+var (
+	_ error           = (*RuntimeError)(nil)
+	_ unwrapInterface = (*RuntimeError)(nil)
+)

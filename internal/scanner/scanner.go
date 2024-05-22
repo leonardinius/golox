@@ -7,7 +7,6 @@ import (
 	"github.com/leonardinius/golox/internal/token"
 )
 
-// Token represents a lexical to
 type Scanner interface {
 	Scan() ([]token.Token, error)
 }
@@ -27,7 +26,6 @@ func NewScanner(input string, reporter loxerrors.ErrReporter) Scanner {
 
 // Scan implements Scanner.
 func (s *scanner) Scan() ([]token.Token, error) {
-
 	for !s.isAtEnd() {
 		// We are at the beginning of the next lexeme.
 		s.start = s.current
@@ -48,7 +46,7 @@ func (s *scanner) isAtEnd() bool {
 }
 
 func (s *scanner) scanToken() {
-	var c = s.advance()
+	c := s.advance()
 
 	switch c {
 	case '(':
@@ -159,7 +157,6 @@ func (s *scanner) blockComment() {
 	depth := 1
 
 	for !s.isAtEnd() && depth > 0 {
-
 		if s.peek() == '*' && s.peekNext() == '/' {
 			depth--
 			s.advance()

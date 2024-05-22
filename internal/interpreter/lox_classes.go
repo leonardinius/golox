@@ -23,7 +23,7 @@ type LoxClass struct {
 	Init    *LoxFunction
 }
 
-func NewLoxClass(name string, superClass *LoxClass, methods map[string]*LoxFunction, classMethods map[string]*LoxFunction) *LoxClass {
+func NewLoxClass(name string, superClass *LoxClass, methods, classMethods map[string]*LoxFunction) *LoxClass {
 	metaClass := &LoxClass{Name: name + " metaclass", Methods: classMethods}
 
 	if init, ok := methods["init"]; ok {
@@ -122,7 +122,7 @@ func NewObjectInstance(class *LoxClass) *objectInstance {
 
 // String implements fmt.Stringer.
 func (l *objectInstance) String() string {
-	return fmt.Sprintf("%s instance", l.Class.Name)
+	return l.Class.Name + " instance"
 }
 
 // GoString implements fmt.GoStringer.
@@ -148,11 +148,15 @@ func (l *objectInstance) Set(_ context.Context, name *token.Token, value any) (a
 	return value, nil
 }
 
-var _ Callable = (*LoxClass)(nil)
-var _ LoxInstance = (*LoxClass)(nil)
-var _ fmt.Stringer = (*LoxClass)(nil)
-var _ fmt.GoStringer = (*LoxClass)(nil)
+var (
+	_ Callable       = (*LoxClass)(nil)
+	_ LoxInstance    = (*LoxClass)(nil)
+	_ fmt.Stringer   = (*LoxClass)(nil)
+	_ fmt.GoStringer = (*LoxClass)(nil)
+)
 
-var _ LoxInstance = (*objectInstance)(nil)
-var _ fmt.Stringer = (*objectInstance)(nil)
-var _ fmt.GoStringer = (*objectInstance)(nil)
+var (
+	_ LoxInstance    = (*objectInstance)(nil)
+	_ fmt.Stringer   = (*objectInstance)(nil)
+	_ fmt.GoStringer = (*objectInstance)(nil)
+)

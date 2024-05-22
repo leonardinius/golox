@@ -5,7 +5,7 @@ import "fmt"
 type TokenType byte
 
 const (
-	// EOF
+	// EOF.
 	EOF TokenType = iota
 
 	// Single-character tokens.
