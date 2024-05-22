@@ -1,3 +1,10 @@
+// THIS IS A PORT OF https://github.com/munificent/craftinginterpreters/blob/master/tool/bin/test.dart
+//
+// The original code is licensed under the Robert Nystrom License.
+// https://github.com/munificent/craftinginterpreters/blob/master/LICENSE
+//
+// This code is licensed under the MIT License.
+
 package runner_test
 
 import (
