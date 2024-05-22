@@ -42,8 +42,8 @@ help: ## Display this help
 all: clean go/gen go/tidy go/format lint test
 
 ##@: Build/Run
-.PHONY: clean ## Cleans the build artifacts
-clean: ## Format all go files
+.PHONY: clean
+clean: ## Clean-up build artifacts
 	@echo -e "$(CYAN)--- clean...$(CLEAR)"
 	@go clean
 	@rm -rf ${BUILDOUT}

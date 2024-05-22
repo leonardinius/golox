@@ -38,7 +38,7 @@ Usage: make <target>
  Default
         help                  Display this help
  Build/Run
-        clean                 Format all go files
+        clean                 Clean-up build artifacts
         gen                   Runs all codegen
         test                  Runs all tests
         lint                  Runs all linters
