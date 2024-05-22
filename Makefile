@@ -39,9 +39,10 @@ help: ## Display this help
 		/^##@/ { printf "$(BOLD)%s$(CLEAR)\n", substr($$0, 5); }' \
 		$(MAKEFILE_LIST)
 
-all: clean go/gen go/tidy go/format lint test
-
 ##@: Build/Run
+
+all: clean go/gen go/tidy go/format lint test ## ALL, builds the world.
+
 .PHONY: clean
 clean: ## Clean-up build artifacts
 	@echo -e "$(CYAN)--- clean...$(CLEAR)"

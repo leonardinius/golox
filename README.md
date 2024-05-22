@@ -38,6 +38,7 @@ Usage: make <target>
  Default
         help                  Display this help
  Build/Run
+        all                   ALL, builds the world.
         clean                 Clean-up build artifacts
         gen                   Runs all codegen
         test                  Runs all tests
