@@ -1,7 +1,6 @@
 package interpreter_test
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -232,13 +231,12 @@ func evaluate(script string) (_evalout, _stdout string, _err error) {
 		return "", stdouterr.String(), err
 	}
 
-	ctx := context.TODO()
 	resolver := interpreter.NewResolver(eval, "default")
-	if err := resolver.Resolve(ctx, stmts); err != nil {
+	if err := resolver.Resolve(stmts); err != nil {
 		return "", stdouterr.String(), err
 	}
 
-	svalue, err := eval.Interpret(ctx, stmts)
+	svalue, err := eval.Interpret(stmts)
 	return svalue, stdouterr.String(), err
 }
 
@@ -246,7 +244,6 @@ func replLineByLine(script ...string) (_evalout []string, _out string, _err erro
 	stdin := strings.NewReader("")
 	stdouterr := strings.Builder{}
 	reporter := loxerrors.NewErrReporter(&stdouterr)
-	ctx := context.TODO()
 
 	eval := interpreter.NewInterpreter(
 		interpreter.WithStdin(stdin),
@@ -271,11 +268,11 @@ func replLineByLine(script ...string) (_evalout []string, _out string, _err erro
 			return nil, stdouterr.String(), err
 		}
 
-		if err := resolver.Resolve(ctx, stmts); err != nil {
+		if err := resolver.Resolve(stmts); err != nil {
 			return nil, stdouterr.String(), err
 		}
 
-		svalue, err := eval.Interpret(ctx, stmts)
+		svalue, err := eval.Interpret(stmts)
 		if err != nil {
 			return nil, stdouterr.String(), err
 		}

@@ -4,7 +4,7 @@ This is an implementation of [The Lox Programming Language](https://www.crafting
 
 Current status:
 
-- Unoptimized, approx 2x time slower compared to original jlox (java) version.
+- Unoptimized, approx 1 second slower compared to original jlox (java) version on my laptop.
 - Feature Complete as passing original test suite.
 
 > ```raw

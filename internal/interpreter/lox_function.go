@@ -1,8 +1,6 @@
 package interpreter
 
 import (
-	"context"
-	"errors"
 	"fmt"
 
 	"github.com/leonardinius/golox/internal/parser"
@@ -34,14 +32,14 @@ func (l *LoxFunction) Arity() Arity {
 }
 
 // Call implements Callable.
-func (l *LoxFunction) Call(ctx context.Context, interpreter *interpreter, arguments []any) (any, error) {
+func (l *LoxFunction) Call(interpreter *interpreter, arguments []any) (any, error) {
 	env := l.Env.Nest()
 
 	for idx, e := range l.Fn.Parameters {
 		env.Define(e.Lexeme, arguments[idx])
 	}
 
-	value, err := interpreter.executeBlock(env.AsContext(ctx), l.Fn.Body)
+	value, err := interpreter.executeBlock(env, l.Fn.Body)
 	if err != nil {
 		value, err = l.returnValue(err)
 	}
@@ -61,8 +59,7 @@ func (l *LoxFunction) Bind(instance LoxInstance) *LoxFunction {
 }
 
 func (l *LoxFunction) returnValue(err error) (any, error) {
-	var ret *ReturnValueError
-	if errors.As(err, &ret) {
+	if ret, ok := err.(*ReturnValueError); ok {
 		return ret.Value, nil
 	}
 	return nil, err

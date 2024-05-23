@@ -1,7 +1,6 @@
 package interpreter
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -11,16 +10,16 @@ import (
 
 var errNilnil error = nil
 
-func StdFnTime(ctx context.Context, interpeter *interpreter) (any, error) {
+func StdFnTime(interpeter *interpreter) (any, error) {
 	return float64(time.Now().UnixMilli()) / 1000.0, nil
 }
 
-func StdFnPPrint(ctx context.Context, interpeter *interpreter, args ...any) (any, error) {
+func StdFnPPrint(interpeter *interpreter, args ...any) (any, error) {
 	interpeter.print(args...)
 	return nil, errNilnil
 }
 
-func StdFnCreateArray(ctx context.Context, interpeter *interpreter, arg any) (any, error) {
+func StdFnCreateArray(interpeter *interpreter, arg any) (any, error) {
 	var size int
 	switch arg := arg.(type) {
 	case int:
@@ -44,16 +43,16 @@ func NewStdArray(values []any) *StdArray {
 }
 
 // Get implements LoxInstance.
-func (s *StdArray) Get(ctx context.Context, name *token.Token) (any, error) {
+func (s *StdArray) Get(name *token.Token) (any, error) {
 	switch name.Lexeme {
 	case "length":
 		return float64(len(s.values)), nil
 	case "get":
-		return NativeFunction1(func(ctx context.Context, interpeter *interpreter, arg1 any) (any, error) {
+		return NativeFunction1(func(interpeter *interpreter, arg1 any) (any, error) {
 			return s.getAt(name, arg1)
 		}), nil
 	case "set":
-		return NativeFunction2(func(ctx context.Context, interpeter *interpreter, arg1, arg2 any) (any, error) {
+		return NativeFunction2(func(interpeter *interpreter, arg1, arg2 any) (any, error) {
 			return s.setAt(name, arg1, arg2)
 		}), nil
 	}
@@ -62,7 +61,7 @@ func (s *StdArray) Get(ctx context.Context, name *token.Token) (any, error) {
 }
 
 // Set implements LoxInstance.
-func (s *StdArray) Set(ctx context.Context, name *token.Token, value any) (any, error) {
+func (s *StdArray) Set(name *token.Token, value any) (any, error) {
 	return nil, loxerrors.NewRuntimeError(name, loxerrors.ErrRuntimeArraysCantSetProperties)
 }
 

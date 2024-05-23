@@ -42,6 +42,7 @@ linters:
     - wrapcheck
     - wsl
     - goerr113
+    - errorlint
     - nestif
     - forcetypeassert
     - funlen

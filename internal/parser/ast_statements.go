@@ -2,27 +2,26 @@
 
 package parser
 
-import "context"
 import "github.com/leonardinius/golox/internal/token"
 
 // StmtVisitor is the interface that wraps the Visit method.
 type StmtVisitor interface {
-	VisitStmtBlock(ctx context.Context, stmtBlock *StmtBlock) (any, error)
-	VisitStmtClass(ctx context.Context, stmtClass *StmtClass) (any, error)
-	VisitStmtExpression(ctx context.Context, stmtExpression *StmtExpression) (any, error)
-	VisitStmtFunction(ctx context.Context, stmtFunction *StmtFunction) (any, error)
-	VisitStmtIf(ctx context.Context, stmtIf *StmtIf) (any, error)
-	VisitStmtPrint(ctx context.Context, stmtPrint *StmtPrint) (any, error)
-	VisitStmtReturn(ctx context.Context, stmtReturn *StmtReturn) (any, error)
-	VisitStmtVar(ctx context.Context, stmtVar *StmtVar) (any, error)
-	VisitStmtWhile(ctx context.Context, stmtWhile *StmtWhile) (any, error)
-	VisitStmtFor(ctx context.Context, stmtFor *StmtFor) (any, error)
-	VisitStmtBreak(ctx context.Context, stmtBreak *StmtBreak) (any, error)
-	VisitStmtContinue(ctx context.Context, stmtContinue *StmtContinue) (any, error)
+	VisitStmtBlock(stmtBlock *StmtBlock) (any, error)
+	VisitStmtClass(stmtClass *StmtClass) (any, error)
+	VisitStmtExpression(stmtExpression *StmtExpression) (any, error)
+	VisitStmtFunction(stmtFunction *StmtFunction) (any, error)
+	VisitStmtIf(stmtIf *StmtIf) (any, error)
+	VisitStmtPrint(stmtPrint *StmtPrint) (any, error)
+	VisitStmtReturn(stmtReturn *StmtReturn) (any, error)
+	VisitStmtVar(stmtVar *StmtVar) (any, error)
+	VisitStmtWhile(stmtWhile *StmtWhile) (any, error)
+	VisitStmtFor(stmtFor *StmtFor) (any, error)
+	VisitStmtBreak(stmtBreak *StmtBreak) (any, error)
+	VisitStmtContinue(stmtContinue *StmtContinue) (any, error)
 }
 
 type Stmt interface {
-	Accept(ctx context.Context, v StmtVisitor) (any, error)
+	Accept(v StmtVisitor) (any, error)
 }
 
 type StmtBlock struct {
@@ -31,8 +30,8 @@ type StmtBlock struct {
 
 var _ Stmt = (*StmtBlock)(nil)
 
-func (e *StmtBlock) Accept(ctx context.Context, v StmtVisitor) (any, error) {
-	return v.VisitStmtBlock(ctx, e)
+func (e *StmtBlock) Accept(v StmtVisitor) (any, error) {
+	return v.VisitStmtBlock(e)
 }
 
 type StmtClass struct {
@@ -44,8 +43,8 @@ type StmtClass struct {
 
 var _ Stmt = (*StmtClass)(nil)
 
-func (e *StmtClass) Accept(ctx context.Context, v StmtVisitor) (any, error) {
-	return v.VisitStmtClass(ctx, e)
+func (e *StmtClass) Accept(v StmtVisitor) (any, error) {
+	return v.VisitStmtClass(e)
 }
 
 type StmtExpression struct {
@@ -54,8 +53,8 @@ type StmtExpression struct {
 
 var _ Stmt = (*StmtExpression)(nil)
 
-func (e *StmtExpression) Accept(ctx context.Context, v StmtVisitor) (any, error) {
-	return v.VisitStmtExpression(ctx, e)
+func (e *StmtExpression) Accept(v StmtVisitor) (any, error) {
+	return v.VisitStmtExpression(e)
 }
 
 type StmtFunction struct {
@@ -65,8 +64,8 @@ type StmtFunction struct {
 
 var _ Stmt = (*StmtFunction)(nil)
 
-func (e *StmtFunction) Accept(ctx context.Context, v StmtVisitor) (any, error) {
-	return v.VisitStmtFunction(ctx, e)
+func (e *StmtFunction) Accept(v StmtVisitor) (any, error) {
+	return v.VisitStmtFunction(e)
 }
 
 type StmtIf struct {
@@ -77,8 +76,8 @@ type StmtIf struct {
 
 var _ Stmt = (*StmtIf)(nil)
 
-func (e *StmtIf) Accept(ctx context.Context, v StmtVisitor) (any, error) {
-	return v.VisitStmtIf(ctx, e)
+func (e *StmtIf) Accept(v StmtVisitor) (any, error) {
+	return v.VisitStmtIf(e)
 }
 
 type StmtPrint struct {
@@ -87,8 +86,8 @@ type StmtPrint struct {
 
 var _ Stmt = (*StmtPrint)(nil)
 
-func (e *StmtPrint) Accept(ctx context.Context, v StmtVisitor) (any, error) {
-	return v.VisitStmtPrint(ctx, e)
+func (e *StmtPrint) Accept(v StmtVisitor) (any, error) {
+	return v.VisitStmtPrint(e)
 }
 
 type StmtReturn struct {
@@ -98,8 +97,8 @@ type StmtReturn struct {
 
 var _ Stmt = (*StmtReturn)(nil)
 
-func (e *StmtReturn) Accept(ctx context.Context, v StmtVisitor) (any, error) {
-	return v.VisitStmtReturn(ctx, e)
+func (e *StmtReturn) Accept(v StmtVisitor) (any, error) {
+	return v.VisitStmtReturn(e)
 }
 
 type StmtVar struct {
@@ -109,8 +108,8 @@ type StmtVar struct {
 
 var _ Stmt = (*StmtVar)(nil)
 
-func (e *StmtVar) Accept(ctx context.Context, v StmtVisitor) (any, error) {
-	return v.VisitStmtVar(ctx, e)
+func (e *StmtVar) Accept(v StmtVisitor) (any, error) {
+	return v.VisitStmtVar(e)
 }
 
 type StmtWhile struct {
@@ -120,8 +119,8 @@ type StmtWhile struct {
 
 var _ Stmt = (*StmtWhile)(nil)
 
-func (e *StmtWhile) Accept(ctx context.Context, v StmtVisitor) (any, error) {
-	return v.VisitStmtWhile(ctx, e)
+func (e *StmtWhile) Accept(v StmtVisitor) (any, error) {
+	return v.VisitStmtWhile(e)
 }
 
 type StmtFor struct {
@@ -133,8 +132,8 @@ type StmtFor struct {
 
 var _ Stmt = (*StmtFor)(nil)
 
-func (e *StmtFor) Accept(ctx context.Context, v StmtVisitor) (any, error) {
-	return v.VisitStmtFor(ctx, e)
+func (e *StmtFor) Accept(v StmtVisitor) (any, error) {
+	return v.VisitStmtFor(e)
 }
 
 type StmtBreak struct {
@@ -142,8 +141,8 @@ type StmtBreak struct {
 
 var _ Stmt = (*StmtBreak)(nil)
 
-func (e *StmtBreak) Accept(ctx context.Context, v StmtVisitor) (any, error) {
-	return v.VisitStmtBreak(ctx, e)
+func (e *StmtBreak) Accept(v StmtVisitor) (any, error) {
+	return v.VisitStmtBreak(e)
 }
 
 type StmtContinue struct {
@@ -151,6 +150,6 @@ type StmtContinue struct {
 
 var _ Stmt = (*StmtContinue)(nil)
 
-func (e *StmtContinue) Accept(ctx context.Context, v StmtVisitor) (any, error) {
-	return v.VisitStmtContinue(ctx, e)
+func (e *StmtContinue) Accept(v StmtVisitor) (any, error) {
+	return v.VisitStmtContinue(e)
 }

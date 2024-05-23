@@ -1,7 +1,6 @@
 package interpreter
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 )
@@ -23,22 +22,22 @@ func (a Arity) String() string {
 
 type Callable interface {
 	Arity() Arity
-	Call(ctx context.Context, interpreter *interpreter, arguments []any) (any, error)
+	Call(interpreter *interpreter, arguments []any) (any, error)
 }
 
 // ========  ========  ========  ========  ========  ========  ========
 
 type (
-	NativeFunctionVarArgs func(ctx context.Context, interpeter *interpreter, args ...any) (any, error)
-	NativeFunction0       func(ctx context.Context, interpeter *interpreter) (any, error)
-	NativeFunction1       func(ctx context.Context, interpeter *interpreter, arg1 any) (any, error)
-	NativeFunction2       func(ctx context.Context, interpeter *interpreter, arg1, arg2 any) (any, error)
-	NativeFunction3       func(ctx context.Context, interpeter *interpreter, arg1, arg2, arg3 any) (any, error)
-	NativeFunction4       func(ctx context.Context, interpeter *interpreter, arg1, arg2, arg3, arg4 any) (any, error)
-	NativeFunction5       func(ctx context.Context, interpeter *interpreter, arg1, arg2, arg3, arg4, arg5 any) (any, error)
+	NativeFunctionVarArgs func(interpeter *interpreter, args ...any) (any, error)
+	NativeFunction0       func(interpeter *interpreter) (any, error)
+	NativeFunction1       func(interpeter *interpreter, arg1 any) (any, error)
+	NativeFunction2       func(interpeter *interpreter, arg1, arg2 any) (any, error)
+	NativeFunction3       func(interpeter *interpreter, arg1, arg2, arg3 any) (any, error)
+	NativeFunction4       func(interpeter *interpreter, arg1, arg2, arg3, arg4 any) (any, error)
+	NativeFunction5       func(interpeter *interpreter, arg1, arg2, arg3, arg4, arg5 any) (any, error)
 	nativeFunctionN       struct {
 		arity Arity
-		fn    func(ctx context.Context, interpeter *interpreter, args ...any) (any, error)
+		fn    func(interpeter *interpreter, args ...any) (any, error)
 	}
 )
 
@@ -48,8 +47,8 @@ func (n NativeFunctionVarArgs) Arity() Arity {
 }
 
 // Call implements Callable.
-func (n NativeFunctionVarArgs) Call(ctx context.Context, interpreter *interpreter, arguments []any) (any, error) {
-	return n(ctx, interpreter, arguments...)
+func (n NativeFunctionVarArgs) Call(interpreter *interpreter, arguments []any) (any, error) {
+	return n(interpreter, arguments...)
 }
 
 // String implements fmt.Stringer.
@@ -68,8 +67,8 @@ func (n NativeFunction0) Arity() Arity {
 }
 
 // Call implements Callable.
-func (n NativeFunction0) Call(ctx context.Context, interpreter *interpreter, arguments []any) (any, error) {
-	return n(ctx, interpreter)
+func (n NativeFunction0) Call(interpreter *interpreter, arguments []any) (any, error) {
+	return n(interpreter)
 }
 
 // String implements fmt.Stringer.
@@ -88,8 +87,8 @@ func (n NativeFunction1) Arity() Arity {
 }
 
 // Call implements Callable.
-func (n NativeFunction1) Call(ctx context.Context, interpreter *interpreter, arguments []any) (any, error) {
-	return n(ctx, interpreter, arguments[0])
+func (n NativeFunction1) Call(interpreter *interpreter, arguments []any) (any, error) {
+	return n(interpreter, arguments[0])
 }
 
 // String implements fmt.Stringer.
@@ -108,8 +107,8 @@ func (n NativeFunction2) Arity() Arity {
 }
 
 // Call implements Callable.
-func (n NativeFunction2) Call(ctx context.Context, interpreter *interpreter, arguments []any) (any, error) {
-	return n(ctx, interpreter, arguments[0], arguments[1])
+func (n NativeFunction2) Call(interpreter *interpreter, arguments []any) (any, error) {
+	return n(interpreter, arguments[0], arguments[1])
 }
 
 // String implements fmt.Stringer.
@@ -128,8 +127,8 @@ func (n NativeFunction3) Arity() Arity {
 }
 
 // Call implements Callable.
-func (n NativeFunction3) Call(ctx context.Context, interpreter *interpreter, arguments []any) (any, error) {
-	return n(ctx, interpreter, arguments[0], arguments[1], arguments[2])
+func (n NativeFunction3) Call(interpreter *interpreter, arguments []any) (any, error) {
+	return n(interpreter, arguments[0], arguments[1], arguments[2])
 }
 
 // String implements fmt.Stringer.
@@ -148,8 +147,8 @@ func (n NativeFunction4) Arity() Arity {
 }
 
 // Call implements Callable.
-func (n NativeFunction4) Call(ctx context.Context, interpreter *interpreter, arguments []any) (any, error) {
-	return n(ctx, interpreter, arguments[0], arguments[1], arguments[2], arguments[3])
+func (n NativeFunction4) Call(interpreter *interpreter, arguments []any) (any, error) {
+	return n(interpreter, arguments[0], arguments[1], arguments[2], arguments[3])
 }
 
 // String implements fmt.Stringer.
@@ -168,8 +167,8 @@ func (n NativeFunction5) Arity() Arity {
 }
 
 // Call implements Callable.
-func (n NativeFunction5) Call(ctx context.Context, interpreter *interpreter, arguments []any) (any, error) {
-	return n(ctx, interpreter, arguments[0], arguments[1], arguments[2], arguments[3], arguments[4])
+func (n NativeFunction5) Call(interpreter *interpreter, arguments []any) (any, error) {
+	return n(interpreter, arguments[0], arguments[1], arguments[2], arguments[3], arguments[4])
 }
 
 // String implements fmt.Stringer.
@@ -188,8 +187,8 @@ func (n *nativeFunctionN) Arity() Arity {
 }
 
 // Call implements Callable.
-func (n *nativeFunctionN) Call(ctx context.Context, interpreter *interpreter, arguments []any) (any, error) {
-	return n.fn(ctx, interpreter, arguments...)
+func (n *nativeFunctionN) Call(interpreter *interpreter, arguments []any) (any, error) {
+	return n.fn(interpreter, arguments...)
 }
 
 // String implements fmt.Stringer.

@@ -1,7 +1,6 @@
 package interpreter
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/leonardinius/golox/internal/loxerrors"
@@ -9,8 +8,8 @@ import (
 )
 
 type LoxInstance interface {
-	Get(ctx context.Context, name *token.Token) (any, error)
-	Set(ctx context.Context, name *token.Token, value any) (any, error)
+	Get(name *token.Token) (any, error)
+	Set(name *token.Token, value any) (any, error)
 }
 
 type LoxClass struct {
@@ -42,26 +41,26 @@ func (l *LoxClass) Arity() Arity {
 }
 
 // Call implements Callable.
-func (l *LoxClass) Call(ctx context.Context, interpreter *interpreter, arguments []any) (any, error) {
+func (l *LoxClass) Call(interpreter *interpreter, arguments []any) (any, error) {
 	newInstance := &objectInstance{Class: l, Fields: make(map[string]any)}
 	if init := l.FindInit(); init != nil {
-		return init.Bind(newInstance).Call(ctx, interpreter, arguments)
+		return init.Bind(newInstance).Call(interpreter, arguments)
 	}
 	return newInstance, nil
 }
 
-func (l *LoxClass) Get(ctx context.Context, name *token.Token) (any, error) {
+func (l *LoxClass) Get(name *token.Token) (any, error) {
 	if value, ok := l.MetaClassFields[name.Lexeme]; ok {
 		return value, nil
 	}
 
-	if method := l.MetaClass.FindMethod(ctx, name.Lexeme); method != nil {
+	if method := l.MetaClass.FindMethod(name.Lexeme); method != nil {
 		boundMethod := method.Bind(l)
 		return boundMethod, nil
 	}
 
 	if l.SuperClass != nil {
-		if method := l.SuperClass.MetaClass.FindMethod(ctx, name.Lexeme); method != nil {
+		if method := l.SuperClass.MetaClass.FindMethod(name.Lexeme); method != nil {
 			boundMethod := method.Bind(l)
 			return boundMethod, nil
 		}
@@ -70,7 +69,7 @@ func (l *LoxClass) Get(ctx context.Context, name *token.Token) (any, error) {
 	return nil, loxerrors.NewRuntimeError(name, loxerrors.ErrRuntimeUndefinedProperty(name.Lexeme))
 }
 
-func (l *LoxClass) Set(_ context.Context, name *token.Token, value any) (any, error) {
+func (l *LoxClass) Set(name *token.Token, value any) (any, error) {
 	if l.MetaClassFields == nil {
 		l.MetaClassFields = make(map[string]any)
 	}
@@ -78,7 +77,7 @@ func (l *LoxClass) Set(_ context.Context, name *token.Token, value any) (any, er
 	return value, nil
 }
 
-func (l *LoxClass) FindMethod(_ context.Context, name string) *LoxFunction {
+func (l *LoxClass) FindMethod(name string) *LoxFunction {
 	cl := l
 	for cl != nil {
 		if method, ok := cl.Methods[name]; ok {
@@ -130,12 +129,12 @@ func (l *objectInstance) GoString() string {
 	return l.String()
 }
 
-func (l *objectInstance) Get(ctx context.Context, name *token.Token) (any, error) {
+func (l *objectInstance) Get(name *token.Token) (any, error) {
 	if value, ok := l.Fields[name.Lexeme]; ok {
 		return value, nil
 	}
 
-	if method := l.Class.FindMethod(ctx, name.Lexeme); method != nil {
+	if method := l.Class.FindMethod(name.Lexeme); method != nil {
 		boundMethod := method.Bind(l)
 		return boundMethod, nil
 	}
@@ -143,7 +142,7 @@ func (l *objectInstance) Get(ctx context.Context, name *token.Token) (any, error
 	return nil, loxerrors.NewRuntimeError(name, loxerrors.ErrRuntimeUndefinedProperty(name.Lexeme))
 }
 
-func (l *objectInstance) Set(_ context.Context, name *token.Token, value any) (any, error) {
+func (l *objectInstance) Set(name *token.Token, value any) (any, error) {
 	l.Fields[name.Lexeme] = value
 	return value, nil
 }
