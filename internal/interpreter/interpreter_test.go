@@ -5,12 +5,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/leonardinius/golox/internal/interpreter"
 	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/parser"
 	"github.com/leonardinius/golox/internal/scanner"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestInterpret(t *testing.T) {

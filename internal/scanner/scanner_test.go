@@ -5,9 +5,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/scanner"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestScanTokens(t *testing.T) {

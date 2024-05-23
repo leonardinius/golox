@@ -6,7 +6,7 @@ linters-settings:
     sections:
       - standard # Standard section: captures all standard packages.
       - default # Default section: contains all imports that could not be matched to another section type.
-      - prefix(github.com/leonardinius/go-service-template) # Custom section: groups all imports with the specified Prefix.
+      - prefix(github.com/leonardinius/golox) # Custom section: groups all imports with the specified Prefix.
       - blank # Blank section: contains all blank imports. This section is not present unless explicitly enabled.
       - dot # Dot section: contains all dot imports. This section is not present unless explicitly enabled.
       - alias # Alias section: contains all alias imports. This section is not present unless explicitly enabled.
@@ -90,6 +90,9 @@ issues:
         - golint
         - revive
       text: "should have a package comment"
+    - text: "Magic number:"
+      linters:
+        - mnd
     - path: _test\.go
       linters:
         - gosec

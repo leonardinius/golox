@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/chzyer/readline"
+
 	"github.com/leonardinius/golox/internal/interpreter"
 	"github.com/leonardinius/golox/internal/loxerrors"
 	"github.com/leonardinius/golox/internal/parser"
