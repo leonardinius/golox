@@ -41,7 +41,7 @@ help: ## Display this help
 
 ##@: Build/Run
 
-all: clean go/gen go/tidy go/format lint test ## ALL, builds the world
+all: clean go/gen go/tidy go/format lint build test ## ALL, builds the world
 
 .PHONY: clean
 clean: ## Clean-up build artifacts
@@ -57,6 +57,9 @@ test: clean go/test ## Runs all tests
 
 .PHONY: lint
 lint: go/lint ## Runs all linters
+
+.PHONY: build
+build: go/build ## Build
 
 .PHONY: run
 run: ## Runs golox. Use ARGS="" make run to pass arguments
@@ -84,9 +87,14 @@ go/test: $(BIN)/gotestsum ### Runs all tests
 	@$(BIN)/gotestsum --debug --format-hide-empty-pkg --format=testdox -- -shuffle=on -race -timeout=60s -count 1 -parallel 3 -v ./...
 
 .PHONY: go/gen
-go/gen: ### Generate go code from API spec
+go/gen: ### Generate go code
 	@echo -e "$(CYAN)--- go/gen...$(CLEAR)"
 	@go generate ./internal/...
+
+.PHONY: go/build
+go/build: ### Build
+	@echo -e "$(CYAN)--- go/build ...$(CLEAR)"
+	go build -o ${BUILDOUT}/golox ./main.go
 
 # TOOLS
 $(BIN)/golangci-lint: Makefile

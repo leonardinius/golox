@@ -12,7 +12,7 @@ import (
 var errNilnil error = nil
 
 func StdFnTime(ctx context.Context, interpeter *interpreter) (any, error) {
-	return float64(time.Now().UnixMilli()), nil
+	return float64(time.Now().UnixMilli()) / 1000.0, nil
 }
 
 func StdFnPPrint(ctx context.Context, interpeter *interpreter, args ...any) (any, error) {

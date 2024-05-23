@@ -2,7 +2,10 @@
 
 This is an implementation of [The Lox Programming Language](https://www.craftinginterpreters.com/the-lox-language.html) implemented in Go.
 
-Current status: Feature Complete as passing original test suite
+Current status:
+
+- Unoptimized, approx 2x time slower compared to original jlox (java) version.
+- Feature Complete as passing original test suite.
 
 > ```raw
 > runner_test.go:69: Suite golox: Tests=254, Passed=238, Failed=0, Skipped=16, Expectactions: 557
