@@ -21,9 +21,9 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-var (
-	testDir    = "../test/"
-	projectDir = "/Users/leo/src/golox"
+const (
+	testDir        = "../test/"
+	projectHomeDir = ".."
 )
 
 var (
@@ -75,11 +75,9 @@ func (r *Runner) RunAllSuites() {
 func (r *Runner) runSuites(names ...string) {
 	r.t.Helper()
 	for _, name := range names {
-		r.t.Run(name, func(t *testing.T) {
-			suite := r.allSuites[name]
-			r.runSuite(suite)
-			r.t.Logf("Suite %s: Tests=%d, Passed=%d, Failed=%d, Skipped=%d, Expectactions: %d", name, suite.tests, suite.passed, suite.failed, suite.skipped, suite.expectactions)
-		})
+		suite := r.allSuites[name]
+		r.runSuite(suite)
+		r.t.Logf("Suite %s: Tests=%d, Passed=%d, Failed=%d, Skipped=%d, Expectactions: %d", name, suite.tests, suite.passed, suite.failed, suite.skipped, suite.expectactions)
 	}
 }
 
@@ -114,7 +112,7 @@ func (r *Runner) runTest(suite *Suite, path string) {
 
 	test := &Test{path: path, suite: suite, expectedErrors: make(map[string]string)}
 
-	r.t.Run(path, func(t *testing.T) {
+	r.t.Run(suite.name+"/"+path, func(t *testing.T) {
 		test.t = t
 		suite.tests++
 		if !test.parse() {
@@ -230,15 +228,17 @@ func (t *Test) run() []string {
 	args = append(args, t.path)
 
 	cmd := exec.Command(t.suite.executable, args...)
-	cmd.Dir = projectDir
+	cmd.Dir = projectHomeDir
 	stdout := new(strings.Builder)
 	stderr := new(strings.Builder)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	func() {
-		if err := recover(); err != nil {
-			t.Errorf("Execute error %v: %#v", cmd, err)
-		}
+		defer func() {
+			if err := recover(); err != nil {
+				t.Failf("Execute error %v: %v", cmd, err)
+			}
+		}()
 		_ = cmd.Run()
 	}()
 
@@ -359,6 +359,12 @@ func (t *Test) Errorf(format string, args ...interface{}) {
 	t.failures = append(t.failures, fmt.Sprintf(format, args...))
 }
 
+func (t *Test) Failf(format string, args ...interface{}) {
+	t.t.Helper()
+	t.failures = append(t.failures, fmt.Sprintf(format, args...))
+	t.t.Fatalf(format, args...)
+}
+
 func (t *Test) Expectactions() int {
 	t.t.Helper()
 	expectactions := 0
@@ -374,13 +380,18 @@ func (t *Test) Expectactions() int {
 }
 
 func (r *Runner) InitSuites() {
-	func() {
-		// Build go lox
-		cmd := exec.Command("go", "build", "-o", projectDir+"/bin/golox", projectDir+"/main.go")
-		if out, err := cmd.CombinedOutput(); err != nil {
-			r.t.Fatalf("go build failed %v: %#v\n", err, out)
-		}
-	}()
+	// Build go lox
+	workDir, err := filepath.Abs(projectHomeDir)
+	if err != nil {
+		r.t.Fatalf("Failed to get absolute path: %v", err)
+	}
+	mainGo := workDir + "/main.go"
+	goloxBin := workDir + "/bin/golox"
+	cmd := exec.Command("go", "build", "-o", goloxBin, mainGo)
+	if outbytes, err := cmd.CombinedOutput(); err != nil {
+		out := string(outbytes)
+		r.t.Fatalf("go build failed with %v: %#v\n", err, out)
+	}
 
 	golox := func(name string, tests ...map[string]string) {
 		suiteTests := map[string]string{}
@@ -390,7 +401,7 @@ func (r *Runner) InitSuites() {
 		r.allSuites[name] = &Suite{
 			name:        name,
 			language:    "go",
-			executable:  projectDir + "/bin/golox",
+			executable:  goloxBin,
 			testsGroups: suiteTests,
 			args:        []string{"-profile=non-strict"},
 		}
