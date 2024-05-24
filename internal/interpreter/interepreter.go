@@ -250,7 +250,7 @@ func (i *interpreter) VisitStmtClass(stmtClass *parser.StmtClass) (any, error) {
 		if superClassValue, err := i.evaluate(stmtClass.SuperClass); err != nil {
 			return nil, err
 		} else {
-			if cast, ok := superClassValue.(*LoxClass); ok {
+			if cast, ok := i.asLoxClass(superClassValue); ok {
 				superClass = cast
 			}
 		}
@@ -286,10 +286,12 @@ func (i *interpreter) VisitStmtClass(stmtClass *parser.StmtClass) (any, error) {
 
 // VisitExprGet implements parser.ExprVisitor.
 func (i *interpreter) VisitExprGet(exprGet *parser.ExprGet) (any, error) {
-	var instance any
+	var eval any
+	var instance LoxInstance
 	var err error
-	if instance, err = i.evaluate(exprGet.Instance); err == nil {
-		if _, ok := instance.(LoxInstance); !ok {
+	if eval, err = i.evaluate(exprGet.Instance); err == nil {
+		var ok bool
+		if instance, ok = i.asLoxInstance(eval); !ok {
 			err = i.runtimeError(exprGet.Name, loxerrors.ErrRuntimeOnlyInstancesHaveProperties)
 		}
 	}
@@ -297,7 +299,7 @@ func (i *interpreter) VisitExprGet(exprGet *parser.ExprGet) (any, error) {
 		return nil, err
 	}
 
-	return instance.(LoxInstance).Get(exprGet.Name)
+	return instance.Get(exprGet.Name)
 }
 
 // VisitVariable implements parser.ExprVisitor.
@@ -395,7 +397,7 @@ func (i *interpreter) VisitExprCall(exprCall *parser.ExprCall) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	callable, ok := callee.(Callable)
+	callable, ok := i.asCallable(callee)
 	if !ok {
 		return i.returnRuntimeError(exprCall.CloseParen, loxerrors.ErrRuntimeCalleeMustBeCallable)
 	}
@@ -444,10 +446,12 @@ func (i *interpreter) VisitExprLogical(exprLogical *parser.ExprLogical) (any, er
 
 // VisitExprSet implements parser.ExprVisitor.
 func (i *interpreter) VisitExprSet(exprSet *parser.ExprSet) (any, error) {
-	var instance any
+	var eval any
+	var instance LoxInstance
 	var err error
-	if instance, err = i.evaluate(exprSet.Instance); err == nil {
-		if _, ok := instance.(LoxInstance); !ok {
+	if eval, err = i.evaluate(exprSet.Instance); err == nil {
+		var ok bool
+		if instance, ok = i.asLoxInstance(eval); !ok {
 			err = i.runtimeError(exprSet.Name, loxerrors.ErrRuntimeOnlyInstancesHaveFields)
 		}
 	}
@@ -460,7 +464,7 @@ func (i *interpreter) VisitExprSet(exprSet *parser.ExprSet) (any, error) {
 		return nil, err
 	}
 
-	return instance.(LoxInstance).Set(exprSet.Name, value)
+	return instance.Set(exprSet.Name, value)
 }
 
 // VisitExprSuper implements parser.ExprVisitor.
@@ -475,7 +479,7 @@ func (i *interpreter) VisitExprSuper(exprSuper *parser.ExprSuper) (any, error) {
 	var superClass *LoxClass
 	if _superClass, err := i.Env.GetAt(distance, "super"); err != nil {
 		return nil, err
-	} else if _superClass, ok := _superClass.(*LoxClass); !ok {
+	} else if _superClass, ok := i.asLoxClass(_superClass); !ok {
 		return i.unreachable()
 	} else {
 		superClass = _superClass
@@ -484,7 +488,7 @@ func (i *interpreter) VisitExprSuper(exprSuper *parser.ExprSuper) (any, error) {
 	var instance LoxInstance
 	if _instance, err := i.Env.GetAt(distance-1, "this"); err != nil {
 		return nil, err
-	} else if _instance, ok := _instance.(LoxInstance); !ok {
+	} else if _instance, ok := i.asLoxInstance(_instance); !ok {
 		return i.unreachable()
 	} else {
 		instance = _instance
@@ -631,6 +635,27 @@ func (i *interpreter) setEnv(env *environment) *environment {
 
 func (i *interpreter) unreachable() (any, error) {
 	panic("unreachable")
+}
+
+func (i *interpreter) asCallable(value any) (Callable, bool) {
+	if v, ok := value.(Callable); ok {
+		return v, ok
+	}
+	return nil, false
+}
+
+func (i *interpreter) asLoxClass(value any) (*LoxClass, bool) {
+	if v, ok := value.(*LoxClass); ok {
+		return v, ok
+	}
+	return nil, false
+}
+
+func (i *interpreter) asLoxInstance(value any) (LoxInstance, bool) {
+	if v, ok := value.(LoxInstance); ok {
+		return v, ok
+	}
+	return nil, false
 }
 
 var (
