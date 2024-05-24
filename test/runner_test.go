@@ -354,14 +354,12 @@ func (t *Test) validateOutput(outputLines []string) {
 	}
 }
 
-func (t *Test) Errorf(format string, args ...interface{}) {
+func (t *Test) Errorf(format string, args ...any) {
 	t.t.Helper()
-	t.failures = append(t.failures, fmt.Sprintf(format, args...))
 }
 
-func (t *Test) Failf(format string, args ...interface{}) {
+func (t *Test) Failf(format string, args ...any) {
 	t.t.Helper()
-	t.failures = append(t.failures, fmt.Sprintf(format, args...))
 	t.t.Fatalf(format, args...)
 }
 

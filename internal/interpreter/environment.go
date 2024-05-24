@@ -9,7 +9,7 @@ import (
 
 type environment struct {
 	enclosing *environment
-	values    map[string]interface{}
+	values    map[string]any
 }
 
 func NewEnvironment() *environment {
@@ -18,7 +18,7 @@ func NewEnvironment() *environment {
 
 func (e *environment) Define(name string, value any) {
 	if e.values == nil {
-		e.values = make(map[string]interface{})
+		e.values = make(map[string]any)
 	}
 	e.values[name] = value
 }
@@ -61,7 +61,7 @@ func (e *environment) GetAt(distance int, name string) (any, error) {
 func (e *environment) AssignAt(distance int, name *token.Token, value any) (any, error) {
 	depth := e.ancestor(distance)
 	if depth.values == nil {
-		depth.values = make(map[string]interface{})
+		depth.values = make(map[string]any)
 	}
 	depth.values[name.Lexeme] = value
 
