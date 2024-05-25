@@ -55,7 +55,7 @@ func NewInterpreter(options ...InterpreterOption) *interpreter {
 		Stdout:      opts.stdout,
 		Stderr:      opts.stderr,
 		ErrReporter: opts.reporter,
-		Locals:      make(map[parser.Expr]int),
+		Locals:      make(map[parser.Expr]int, 255),
 	}
 }
 

@@ -18,7 +18,7 @@ func NewEnvironment() *environment {
 
 func (e *environment) Define(name string, value Value) {
 	if e.values == nil {
-		e.values = make(map[string]Value)
+		e.values = make(map[string]Value, 5)
 	}
 	e.values[name] = value
 }
@@ -61,7 +61,7 @@ func (e *environment) GetAt(distance int, name string) (Value, error) {
 func (e *environment) AssignAt(distance int, name *token.Token, value Value) (Value, error) {
 	depth := e.ancestor(distance)
 	if depth.values == nil {
-		depth.values = make(map[string]Value)
+		depth.values = make(map[string]Value, 5)
 	}
 	depth.values[name.Lexeme] = value
 
