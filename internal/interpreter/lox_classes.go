@@ -13,20 +13,29 @@ type LoxInstance interface {
 }
 
 type LoxClass struct {
-	MetaClass       *LoxClass
+	// Static Class Inheritance. Class prototype.
+	// Static methods are stored at MetaClass.Methods
+	MetaClass *LoxClass
+	// Static fields are stored at MetaClass.MetaClassFields
 	MetaClassFields map[string]any
-	SuperClass      *LoxClass
 
-	Name    string
+	// Instance Inheritance chain. Superclass.
+	SuperClass *LoxClass
+
+	// Class name
+	Name string
+
+	// Class methods
 	Methods map[string]*LoxFunction
-	Init    *LoxFunction
+	// Constructor method
+	Init *LoxFunction
 }
 
 func NewLoxClass(name string, superClass *LoxClass, methods, classMethods map[string]*LoxFunction) *LoxClass {
 	metaClass := &LoxClass{Name: name + " metaclass", Methods: classMethods}
 
 	if init, ok := methods["init"]; ok {
-		return &LoxClass{Name: name, Methods: methods, Init: init}
+		return &LoxClass{Name: name, SuperClass: superClass, Methods: methods, Init: init}
 	}
 
 	return &LoxClass{Name: name, SuperClass: superClass, Methods: methods, MetaClass: metaClass}
