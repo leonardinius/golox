@@ -59,8 +59,6 @@ The benchmark work as follows:
 - executes `bin/golox` and [`jlox`](https://github.com/munificent/craftinginterpreters/blob/master/jlox) from original project.
 - benchmarks reports execution time and becnhmark elapsed time as printed by bechnmark script.
 
-> [code](./test/gobenchmark_test.go)
-
 Please find numbers below:
 
 ```raw
@@ -93,3 +91,5 @@ BenchmarkAll/JAVA/test/benchmark/zoo.lox-8                    9 3355564380 ns/op
 PASS
 ok   github.com/leonardinius/golox/test 1144.323s
 ```
+
+Please find bencmark code [here](./test/gobenchmark_test.go).
