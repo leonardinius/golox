@@ -21,6 +21,7 @@ Excluded tests (re [eXtra Features](#extra-features)):
 ## eXtra Features
 
 - REPL expression output; readline support.
+- block comments.
 - `continue`, `break` statements.
 - closures and anynymous functions.
 - native functions: `Array`, `pprint(...)` varargs function.
