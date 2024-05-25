@@ -128,7 +128,17 @@ func (app *LoxApp) resolve(profile string, stmts []parser.Stmt) error {
 }
 
 func (app *LoxApp) interpret(stmts []parser.Stmt) (any, error) {
-	return app.interpeter.Interpret(stmts)
+	// f, e := os.Create("cpuprofile.prof")
+	// if e != nil {
+	// 	panic(e)
+	// }
+	// e = pprof.StartCPUProfile(f)
+	// if e != nil {
+	// 	panic(e)
+	// }
+	// defer pprof.StopCPUProfile()
+	v, e := app.interpeter.Interpret(stmts)
+	return v, e
 }
 
 func (app *LoxApp) exitcode(err error) int {

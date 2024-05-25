@@ -341,7 +341,7 @@ func (p *parser) forStatement() Stmt {
 	body := p.statement()
 
 	if condition == nilExpr {
-		condition = &ExprLiteral{Value: true}
+		condition = &ExprLiteral{Value: false}
 	}
 
 	return &StmtFor{Initializer: initializer, Condition: condition, Increment: increment, Body: body}

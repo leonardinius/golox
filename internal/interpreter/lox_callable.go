@@ -22,22 +22,22 @@ func (a Arity) String() string {
 
 type Callable interface {
 	Arity() Arity
-	Call(interpreter *interpreter, arguments []any) (any, error)
+	Call(interpreter *interpreter, arguments []Value) (Value, error)
 }
 
 // ========  ========  ========  ========  ========  ========  ========
 
 type (
-	NativeFunctionVarArgs func(interpeter *interpreter, args ...any) (any, error)
-	NativeFunction0       func(interpeter *interpreter) (any, error)
-	NativeFunction1       func(interpeter *interpreter, arg1 any) (any, error)
-	NativeFunction2       func(interpeter *interpreter, arg1, arg2 any) (any, error)
-	NativeFunction3       func(interpeter *interpreter, arg1, arg2, arg3 any) (any, error)
-	NativeFunction4       func(interpeter *interpreter, arg1, arg2, arg3, arg4 any) (any, error)
-	NativeFunction5       func(interpeter *interpreter, arg1, arg2, arg3, arg4, arg5 any) (any, error)
+	NativeFunctionVarArgs func(interpeter *interpreter, args ...Value) (Value, error)
+	NativeFunction0       func(interpeter *interpreter) (Value, error)
+	NativeFunction1       func(interpeter *interpreter, arg1 Value) (Value, error)
+	NativeFunction2       func(interpeter *interpreter, arg1, arg2 Value) (Value, error)
+	NativeFunction3       func(interpeter *interpreter, arg1, arg2, arg3 Value) (Value, error)
+	NativeFunction4       func(interpeter *interpreter, arg1, arg2, arg3, arg4 Value) (Value, error)
+	NativeFunction5       func(interpeter *interpreter, arg1, arg2, arg3, arg4, arg5 Value) (Value, error)
 	nativeFunctionN       struct {
 		arity Arity
-		fn    func(interpeter *interpreter, args ...any) (any, error)
+		fn    func(interpeter *interpreter, args ...Value) (Value, error)
 	}
 )
 
@@ -47,7 +47,7 @@ func (n NativeFunctionVarArgs) Arity() Arity {
 }
 
 // Call implements Callable.
-func (n NativeFunctionVarArgs) Call(interpreter *interpreter, arguments []any) (any, error) {
+func (n NativeFunctionVarArgs) Call(interpreter *interpreter, arguments []Value) (Value, error) {
 	return n(interpreter, arguments...)
 }
 
@@ -67,7 +67,7 @@ func (n NativeFunction0) Arity() Arity {
 }
 
 // Call implements Callable.
-func (n NativeFunction0) Call(interpreter *interpreter, arguments []any) (any, error) {
+func (n NativeFunction0) Call(interpreter *interpreter, arguments []Value) (Value, error) {
 	return n(interpreter)
 }
 
@@ -87,7 +87,7 @@ func (n NativeFunction1) Arity() Arity {
 }
 
 // Call implements Callable.
-func (n NativeFunction1) Call(interpreter *interpreter, arguments []any) (any, error) {
+func (n NativeFunction1) Call(interpreter *interpreter, arguments []Value) (Value, error) {
 	return n(interpreter, arguments[0])
 }
 
@@ -107,7 +107,7 @@ func (n NativeFunction2) Arity() Arity {
 }
 
 // Call implements Callable.
-func (n NativeFunction2) Call(interpreter *interpreter, arguments []any) (any, error) {
+func (n NativeFunction2) Call(interpreter *interpreter, arguments []Value) (Value, error) {
 	return n(interpreter, arguments[0], arguments[1])
 }
 
@@ -127,7 +127,7 @@ func (n NativeFunction3) Arity() Arity {
 }
 
 // Call implements Callable.
-func (n NativeFunction3) Call(interpreter *interpreter, arguments []any) (any, error) {
+func (n NativeFunction3) Call(interpreter *interpreter, arguments []Value) (Value, error) {
 	return n(interpreter, arguments[0], arguments[1], arguments[2])
 }
 
@@ -147,7 +147,7 @@ func (n NativeFunction4) Arity() Arity {
 }
 
 // Call implements Callable.
-func (n NativeFunction4) Call(interpreter *interpreter, arguments []any) (any, error) {
+func (n NativeFunction4) Call(interpreter *interpreter, arguments []Value) (Value, error) {
 	return n(interpreter, arguments[0], arguments[1], arguments[2], arguments[3])
 }
 
@@ -167,7 +167,7 @@ func (n NativeFunction5) Arity() Arity {
 }
 
 // Call implements Callable.
-func (n NativeFunction5) Call(interpreter *interpreter, arguments []any) (any, error) {
+func (n NativeFunction5) Call(interpreter *interpreter, arguments []Value) (Value, error) {
 	return n(interpreter, arguments[0], arguments[1], arguments[2], arguments[3], arguments[4])
 }
 
@@ -187,7 +187,7 @@ func (n *nativeFunctionN) Arity() Arity {
 }
 
 // Call implements Callable.
-func (n *nativeFunctionN) Call(interpreter *interpreter, arguments []any) (any, error) {
+func (n *nativeFunctionN) Call(interpreter *interpreter, arguments []Value) (Value, error) {
 	return n.fn(interpreter, arguments...)
 }
 

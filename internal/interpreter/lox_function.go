@@ -8,7 +8,7 @@ import (
 )
 
 type ReturnValueError struct {
-	Value any
+	Value Value
 }
 
 func (r *ReturnValueError) Error() string {
@@ -32,7 +32,7 @@ func (l *LoxFunction) Arity() Arity {
 }
 
 // Call implements Callable.
-func (l *LoxFunction) Call(interpreter *interpreter, arguments []any) (any, error) {
+func (l *LoxFunction) Call(interpreter *interpreter, arguments []Value) (Value, error) {
 	env := l.Env.Nest()
 
 	for idx, e := range l.Fn.Parameters {
@@ -52,13 +52,13 @@ func (l *LoxFunction) Call(interpreter *interpreter, arguments []any) (any, erro
 	return value, nil
 }
 
-func (l *LoxFunction) Bind(instance LoxInstance) *LoxFunction {
+func (l *LoxFunction) Bind(instance LoxObject) *LoxFunction {
 	env := l.Env.Nest()
-	env.Define("this", instance)
+	env.Define("this", ValueObject{instance})
 	return NewLoxFunction(l.Name, l.Fn, env, l.IsIntialize)
 }
 
-func (l *LoxFunction) returnValue(err error) (any, error) {
+func (l *LoxFunction) returnValue(err error) (Value, error) {
 	if ret, ok := err.(*ReturnValueError); ok {
 		return ret.Value, nil
 	}

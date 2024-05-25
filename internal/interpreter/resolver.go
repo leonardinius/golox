@@ -90,15 +90,15 @@ func (r *resolver) Resolve(statements []parser.Stmt) error {
 }
 
 // VisitStmtBlock implements parser.StmtVisitor.
-func (r *resolver) VisitStmtBlock(stmtBlock *parser.StmtBlock) (any, error) {
+func (r *resolver) VisitStmtBlock(stmtBlock *parser.StmtBlock) (Value, error) {
 	r.beginScope()
 	defer r.endScope()
 	r.resolveStmts(stmtBlock.Statements)
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitStmtClass implements parser.StmtVisitor.
-func (r *resolver) VisitStmtClass(stmtClass *parser.StmtClass) (any, error) {
+func (r *resolver) VisitStmtClass(stmtClass *parser.StmtClass) (Value, error) {
 	enclosingClass := r.currentClass
 	defer func() { r.currentClass = enclosingClass }()
 	r.currentClass = CTypeClass
@@ -135,27 +135,27 @@ func (r *resolver) VisitStmtClass(stmtClass *parser.StmtClass) (any, error) {
 		r.resolveFunction(method.Fn, functionType)
 	}
 
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitStmtBreak implements parser.StmtVisitor.
-func (r *resolver) VisitStmtBreak(stmtBreak *parser.StmtBreak) (any, error) {
-	return nil, errNilnil
+func (r *resolver) VisitStmtBreak(stmtBreak *parser.StmtBreak) (Value, error) {
+	return NilValue, ErrNilNil
 }
 
 // VisitStmtContinue implements parser.StmtVisitor.
-func (r *resolver) VisitStmtContinue(stmtContinue *parser.StmtContinue) (any, error) {
-	return nil, errNilnil
+func (r *resolver) VisitStmtContinue(stmtContinue *parser.StmtContinue) (Value, error) {
+	return NilValue, ErrNilNil
 }
 
 // VisitStmtExpression implements parser.StmtVisitor.
-func (r *resolver) VisitStmtExpression(stmtExpression *parser.StmtExpression) (any, error) {
+func (r *resolver) VisitStmtExpression(stmtExpression *parser.StmtExpression) (Value, error) {
 	r.resolveExpr(stmtExpression.Expression)
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitStmtFor implements parser.StmtVisitor.
-func (r *resolver) VisitStmtFor(stmtFor *parser.StmtFor) (any, error) {
+func (r *resolver) VisitStmtFor(stmtFor *parser.StmtFor) (Value, error) {
 	if stmtFor.Initializer != nil {
 		r.beginScope()
 		defer r.endScope()
@@ -169,125 +169,125 @@ func (r *resolver) VisitStmtFor(stmtFor *parser.StmtFor) (any, error) {
 	}
 
 	r.resolveStmt(stmtFor.Body)
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitStmtFunction implements parser.StmtVisitor.
-func (r *resolver) VisitStmtFunction(stmtFunction *parser.StmtFunction) (any, error) {
+func (r *resolver) VisitStmtFunction(stmtFunction *parser.StmtFunction) (Value, error) {
 	r.declare(stmtFunction.Name)
 	r.define(stmtFunction.Name)
 
 	r.resolveFunction(stmtFunction.Fn, FnTypeFunction)
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitStmtIf implements parser.StmtVisitor.
-func (r *resolver) VisitStmtIf(stmtIf *parser.StmtIf) (any, error) {
+func (r *resolver) VisitStmtIf(stmtIf *parser.StmtIf) (Value, error) {
 	r.resolveExpr(stmtIf.Condition)
 	r.resolveStmt(stmtIf.ThenBranch)
 	if stmtIf.ElseBranch != nil {
 		r.resolveStmt(stmtIf.ElseBranch)
 	}
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitStmtPrint implements parser.StmtVisitor.
-func (r *resolver) VisitStmtPrint(stmtPrint *parser.StmtPrint) (any, error) {
+func (r *resolver) VisitStmtPrint(stmtPrint *parser.StmtPrint) (Value, error) {
 	r.resolveExpr(stmtPrint.Expression)
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitStmtReturn implements parser.StmtVisitor.
-func (r *resolver) VisitStmtReturn(stmtReturn *parser.StmtReturn) (any, error) {
+func (r *resolver) VisitStmtReturn(stmtReturn *parser.StmtReturn) (Value, error) {
 	if stmtReturn.Value != nil {
 		if r.currentFunction == FnTypeInitializer {
 			r.reportError(stmtReturn.Keyword, loxerrors.ErrParseCantReturnValueFromInitializer)
-			return nil, errNilnil
+			return NilValue, ErrNilNil
 		}
 		r.resolveExpr(stmtReturn.Value)
 	}
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitStmtVar implements parser.StmtVisitor.
-func (r *resolver) VisitStmtVar(stmtVar *parser.StmtVar) (any, error) {
+func (r *resolver) VisitStmtVar(stmtVar *parser.StmtVar) (Value, error) {
 	r.declare(stmtVar.Name)
 	if stmtVar.Initializer != nil {
 		r.resolveExpr(stmtVar.Initializer)
 	}
 	r.define(stmtVar.Name)
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitStmtWhile implements parser.StmtVisitor.
-func (r *resolver) VisitStmtWhile(stmtWhile *parser.StmtWhile) (any, error) {
+func (r *resolver) VisitStmtWhile(stmtWhile *parser.StmtWhile) (Value, error) {
 	r.resolveExpr(stmtWhile.Condition)
 	r.resolveStmt(stmtWhile.Body)
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitExprAssign implements parser.ExprVisitor.
-func (r *resolver) VisitExprAssign(exprAssign *parser.ExprAssign) (any, error) {
+func (r *resolver) VisitExprAssign(exprAssign *parser.ExprAssign) (Value, error) {
 	r.resolveExpr(exprAssign.Value)
 	r.resolveLocal(exprAssign, exprAssign.Name, false)
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitExprBinary implements parser.ExprVisitor.
-func (r *resolver) VisitExprBinary(exprBinary *parser.ExprBinary) (any, error) {
+func (r *resolver) VisitExprBinary(exprBinary *parser.ExprBinary) (Value, error) {
 	r.resolveExpr(exprBinary.Left)
 	r.resolveExpr(exprBinary.Right)
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitExprCall implements parser.ExprVisitor.
-func (r *resolver) VisitExprCall(exprCall *parser.ExprCall) (any, error) {
+func (r *resolver) VisitExprCall(exprCall *parser.ExprCall) (Value, error) {
 	r.resolveExpr(exprCall.Callee)
 	for _, arg := range exprCall.Arguments {
 		r.resolveExpr(arg)
 	}
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitExprGet implements parser.ExprVisitor.
-func (r *resolver) VisitExprGet(exprGet *parser.ExprGet) (any, error) {
+func (r *resolver) VisitExprGet(exprGet *parser.ExprGet) (Value, error) {
 	r.resolveExpr(exprGet.Instance)
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitExprFunction implements parser.ExprVisitor.
-func (r *resolver) VisitExprFunction(exprFunction *parser.ExprFunction) (any, error) {
+func (r *resolver) VisitExprFunction(exprFunction *parser.ExprFunction) (Value, error) {
 	r.resolveFunction(exprFunction, FnTypeExpr)
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitExprGrouping implements parser.ExprVisitor.
-func (r *resolver) VisitExprGrouping(exprGrouping *parser.ExprGrouping) (any, error) {
+func (r *resolver) VisitExprGrouping(exprGrouping *parser.ExprGrouping) (Value, error) {
 	r.resolveExpr(exprGrouping.Expression)
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitExprLiteral implements parser.ExprVisitor.
-func (r *resolver) VisitExprLiteral(exprLiteral *parser.ExprLiteral) (any, error) {
-	return nil, errNilnil
+func (r *resolver) VisitExprLiteral(exprLiteral *parser.ExprLiteral) (Value, error) {
+	return NilValue, ErrNilNil
 }
 
 // VisitExprLogical implements parser.ExprVisitor.
-func (r *resolver) VisitExprLogical(exprLogical *parser.ExprLogical) (any, error) {
+func (r *resolver) VisitExprLogical(exprLogical *parser.ExprLogical) (Value, error) {
 	r.resolveExpr(exprLogical.Left)
 	r.resolveExpr(exprLogical.Right)
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitExprSet implements parser.ExprVisitor.
-func (r *resolver) VisitExprSet(exprSet *parser.ExprSet) (any, error) {
+func (r *resolver) VisitExprSet(exprSet *parser.ExprSet) (Value, error) {
 	r.resolveExpr(exprSet.Value)
 	r.resolveExpr(exprSet.Instance)
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitExprSuper implements parser.ExprVisitor.
-func (r *resolver) VisitExprSuper(exprSuper *parser.ExprSuper) (any, error) {
+func (r *resolver) VisitExprSuper(exprSuper *parser.ExprSuper) (Value, error) {
 	switch r.currentClass {
 	case CTypeSubclass:
 		break
@@ -302,32 +302,32 @@ func (r *resolver) VisitExprSuper(exprSuper *parser.ExprSuper) (any, error) {
 	}
 
 	r.resolveLocal(exprSuper, exprSuper.Keyword, true)
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitExprThis implements parser.ExprVisitor.
-func (r *resolver) VisitExprThis(exprThis *parser.ExprThis) (any, error) {
+func (r *resolver) VisitExprThis(exprThis *parser.ExprThis) (Value, error) {
 	if r.currentClass == CTypeNone {
 		r.reportError(exprThis.Keyword, loxerrors.ErrParseThisOutsideClass)
 	}
 	r.resolveLocal(exprThis, exprThis.Keyword, true)
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitExprUnary implements parser.ExprVisitor.
-func (r *resolver) VisitExprUnary(exprUnary *parser.ExprUnary) (any, error) {
+func (r *resolver) VisitExprUnary(exprUnary *parser.ExprUnary) (Value, error) {
 	r.resolveExpr(exprUnary.Right)
-	return nil, errNilnil
+	return NilValue, ErrNilNil
 }
 
 // VisitExprVariable implements parser.ExprVisitor.
-func (r *resolver) VisitExprVariable(exprVariable *parser.ExprVariable) (any, error) {
+func (r *resolver) VisitExprVariable(exprVariable *parser.ExprVariable) (Value, error) {
 	var err error
 	if state, ok := r.peekScopeVar(exprVariable.Name.Lexeme); ok && state.State == VarStateDeclared {
 		r.reportError(exprVariable.Name, loxerrors.ErrParseCantInitVarSelfReference)
 	}
 	r.resolveLocal(exprVariable, exprVariable.Name, true)
-	return nil, err
+	return NilValue, err
 }
 
 func (r *resolver) beginScope() {

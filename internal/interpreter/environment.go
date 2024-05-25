@@ -9,21 +9,21 @@ import (
 
 type environment struct {
 	enclosing *environment
-	values    map[string]any
+	values    map[string]Value
 }
 
 func NewEnvironment() *environment {
 	return &environment{}
 }
 
-func (e *environment) Define(name string, value any) {
+func (e *environment) Define(name string, value Value) {
 	if e.values == nil {
-		e.values = make(map[string]any)
+		e.values = make(map[string]Value)
 	}
 	e.values[name] = value
 }
 
-func (e *environment) Get(name *token.Token) (any, error) {
+func (e *environment) Get(name *token.Token) (Value, error) {
 	if value, ok := e.values[name.Lexeme]; ok {
 		return value, nil
 	}
@@ -35,7 +35,7 @@ func (e *environment) Get(name *token.Token) (any, error) {
 	return nil, e.undefinedVariable(name)
 }
 
-func (e *environment) Assign(name *token.Token, value any) error {
+func (e *environment) Assign(name *token.Token, value Value) error {
 	if _, ok := e.values[name.Lexeme]; ok {
 		e.values[name.Lexeme] = value
 		return nil
@@ -48,7 +48,7 @@ func (e *environment) Assign(name *token.Token, value any) error {
 	return e.undefinedVariable(name)
 }
 
-func (e *environment) GetAt(distance int, name string) (any, error) {
+func (e *environment) GetAt(distance int, name string) (Value, error) {
 	depth := e.ancestor(distance)
 	if value, ok := depth.values[name]; ok {
 		return value, nil
@@ -58,10 +58,10 @@ func (e *environment) GetAt(distance int, name string) (any, error) {
 	return nil, err
 }
 
-func (e *environment) AssignAt(distance int, name *token.Token, value any) (any, error) {
+func (e *environment) AssignAt(distance int, name *token.Token, value Value) (Value, error) {
 	depth := e.ancestor(distance)
 	if depth.values == nil {
-		depth.values = make(map[string]any)
+		depth.values = make(map[string]Value)
 	}
 	depth.values[name.Lexeme] = value
 

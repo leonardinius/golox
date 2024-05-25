@@ -86,12 +86,12 @@ func defineAst(outFile, packageName, baseClass string, types ...string) error {
 	fprintfln("type %sVisitor interface {", baseClass)
 	for _, typeDef := range types {
 		exprClassName := strings.TrimSpace(strings.Split(typeDef, ":")[0])
-		fprintfln("\tVisit%s(%s *%s) (any, error)", exprClassName, varify(exprClassName), exprClassName)
+		fprintfln("\tVisit%s(%s *%s) (Value, error)", exprClassName, varify(exprClassName), exprClassName)
 	}
 	fprintfln("}\n")
 
 	fprintfln("type %s interface{", baseClass)
-	fprintfln("\tAccept(v %sVisitor) (any, error)", baseClass)
+	fprintfln("\tAccept(v %sVisitor) (Value, error)", baseClass)
 	fprintfln("}\n")
 
 	for _, typeDef := range types {
@@ -116,7 +116,7 @@ func defineType(fprintf func(message string, args ...any), baseClass, exprClassN
 
 	fprintf("var _ %s = (*%s)(nil)\n", baseClass, exprClassName)
 
-	fprintf("func (e *%s) Accept(v %sVisitor) (any, error) {", exprClassName, baseClass)
+	fprintf("func (e *%s) Accept(v %sVisitor) (Value, error) {", exprClassName, baseClass)
 	fprintf("\treturn v.Visit%s(e)", exprClassName)
 	fprintf("}\n")
 }

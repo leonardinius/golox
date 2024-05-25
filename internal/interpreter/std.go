@@ -5,67 +5,64 @@ import (
 	"time"
 
 	"github.com/leonardinius/golox/internal/loxerrors"
+	"github.com/leonardinius/golox/internal/parser"
 	"github.com/leonardinius/golox/internal/token"
 )
 
-var errNilnil error = nil
-
-func StdFnTime(interpeter *interpreter) (any, error) {
-	return float64(time.Now().UnixMilli()) / 1000.0, nil
+func StdFnTime(interpeter *interpreter) (Value, error) {
+	return ValueFloat(time.Now().UnixMilli()) / 1000.0, nil
 }
 
-func StdFnPPrint(interpeter *interpreter, args ...any) (any, error) {
+func StdFnPPrint(interpeter *interpreter, args ...Value) (Value, error) {
 	interpeter.print(args...)
-	return nil, errNilnil
+	return nil, ErrNilNil
 }
 
-func StdFnCreateArray(interpeter *interpreter, arg any) (any, error) {
+func StdFnCreateArray(interpeter *interpreter, arg Value) (Value, error) {
 	var size int
-	switch arg := arg.(type) {
-	case int:
-		size = arg
-	case float64:
-		size = int(arg)
+	switch arg.Type() {
+	case parser.ValueFloatType:
+		size = int(arg.(ValueFloat))
 	default:
 		return nil, loxerrors.ErrRuntimeArrayInvalidArraySize
 	}
 
-	values := make([]any, size)
-	return NewStdArray(values), nil
+	values := make([]Value, size)
+	return ValueObject{NewStdArray(values)}, nil
 }
 
 type StdArray struct {
-	values []any
+	values []Value
 }
 
-func NewStdArray(values []any) *StdArray {
+func NewStdArray(values []Value) *StdArray {
 	return &StdArray{values: values}
 }
 
 // Get implements LoxInstance.
-func (s *StdArray) Get(name *token.Token) (any, error) {
+func (s *StdArray) Get(name *token.Token) (Value, error) {
 	switch name.Lexeme {
 	case "length":
-		return float64(len(s.values)), nil
+		return ValueFloat(len(s.values)), nil
 	case "get":
-		return NativeFunction1(func(interpeter *interpreter, arg1 any) (any, error) {
+		return ValueCallable{NativeFunction1(func(interpeter *interpreter, arg1 Value) (Value, error) {
 			return s.getAt(name, arg1)
-		}), nil
+		})}, nil
 	case "set":
-		return NativeFunction2(func(interpeter *interpreter, arg1, arg2 any) (any, error) {
+		return ValueCallable{NativeFunction2(func(interpeter *interpreter, arg1, arg2 Value) (Value, error) {
 			return s.setAt(name, arg1, arg2)
-		}), nil
+		})}, nil
 	}
 
 	return nil, loxerrors.NewRuntimeError(name, loxerrors.ErrRuntimeUndefinedProperty(name.Lexeme))
 }
 
 // Set implements LoxInstance.
-func (s *StdArray) Set(name *token.Token, value any) (any, error) {
+func (s *StdArray) Set(name *token.Token, value Value) (Value, error) {
 	return nil, loxerrors.NewRuntimeError(name, loxerrors.ErrRuntimeArraysCantSetProperties)
 }
 
-func (s *StdArray) getAt(name *token.Token, index any) (any, error) {
+func (s *StdArray) getAt(name *token.Token, index Value) (Value, error) {
 	i, err := s.indexToInt(name, index)
 	if err != nil {
 		return nil, err
@@ -78,7 +75,7 @@ func (s *StdArray) getAt(name *token.Token, index any) (any, error) {
 	return s.values[i], nil
 }
 
-func (s *StdArray) setAt(name *token.Token, index, value any) (any, error) {
+func (s *StdArray) setAt(name *token.Token, index, value Value) (Value, error) {
 	i, err := s.indexToInt(name, index)
 	if err != nil {
 		return nil, err
@@ -89,15 +86,13 @@ func (s *StdArray) setAt(name *token.Token, index, value any) (any, error) {
 	}
 
 	s.values[i] = value
-	return nil, errNilnil
+	return nil, ErrNilNil
 }
 
-func (s *StdArray) indexToInt(name *token.Token, index any) (int, error) {
-	switch index := index.(type) {
-	case int:
-		return index, nil
-	case float64:
-		return int(index), nil
+func (s *StdArray) indexToInt(name *token.Token, index Value) (int, error) {
+	switch index.Type() {
+	case parser.ValueFloatType:
+		return int(index.(ValueFloat)), nil
 	}
 
 	return 0, loxerrors.NewRuntimeError(name, loxerrors.ErrRuntimeArrayInvalidArrayIndex)
@@ -112,7 +107,7 @@ func (s *StdArray) GoString() string {
 }
 
 var (
-	_ LoxInstance    = (*StdArray)(nil)
+	_ LoxObject      = (*StdArray)(nil)
 	_ fmt.Stringer   = (*StdArray)(nil)
 	_ fmt.GoStringer = (*StdArray)(nil)
 )
