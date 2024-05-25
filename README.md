@@ -54,10 +54,12 @@ Command used:
 go test -v -run=XXX -bench=. -benchtime=30s -timeout=30m ./test/.
 ```
 
-The benchmark work as follows ([code](./test/gobenchmark_test.go)):
+The benchmark work as follows:
 
 - executes `bin/golox` and [`jlox`](https://github.com/munificent/craftinginterpreters/blob/master/jlox) from original project.
 - benchmarks reports execution time and becnhmark elapsed time as printed by bechnmark script.
+
+> [code](./test/gobenchmark_test.go)
 
 Please find numbers below:
 
