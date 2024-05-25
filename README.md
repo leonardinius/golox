@@ -4,20 +4,8 @@ This is an implementation of [The Lox Programming Language](https://www.crafting
 
 Current status:
 
-- Feature Complete as passing original test suite.
-
-> ```raw
-> runner_test.go:69: Suite golox: Tests=254, Passed=238, Failed=0, Skipped=16, Expectactions: 557
-> ```
-
-Excluded tests (re [eXtra Features](#extra-features)):
-
-- `test/field/get_on_class.lox`.
-- `test/field/set_on_class.lox`.
-
-- See benchmarks against jlox (java) below.
-
----
+- Feature Complete as passing original test suite, see below.
+- Benchmarks comparable to jlox (java version), see below.
 
 ## eXtra Features
 
@@ -46,6 +34,17 @@ Usage: make <target>
         lint                  Runs all linters
         run                   Runs golox. Use ARGS="" make run to pass arguments
 ```
+
+## Test Suite
+
+> ```raw
+> runner_test.go:69: Suite golox: Tests=254, Passed=238, Failed=0, Skipped=16, Expectactions: 557
+> ```
+
+Excluded tests (conflicts with eXtra features):
+
+- `test/field/get_on_class.lox`.
+- `test/field/set_on_class.lox`.
 
 ## Benchmarks
 
