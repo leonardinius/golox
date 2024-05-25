@@ -92,4 +92,4 @@ PASS
 ok   github.com/leonardinius/golox/test 1144.323s
 ```
 
-Please find bencmark code [here](./test/gobenchmark_test.go).
+Please find benchmark code [here](./test/gobenchmark_test.go).
