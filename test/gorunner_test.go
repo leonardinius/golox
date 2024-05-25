@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	testDir        = "../test/"
-	projectHomeDir = ".."
+	testDir            = "../test/"
+	testProjectHomeDir = ".."
 )
 
 var (
@@ -228,7 +228,7 @@ func (t *Test) run() []string {
 	args = append(args, t.path)
 
 	cmd := exec.Command(t.suite.executable, args...)
-	cmd.Dir = projectHomeDir
+	cmd.Dir = testProjectHomeDir
 	stdout := new(strings.Builder)
 	stderr := new(strings.Builder)
 	cmd.Stdout = stdout
@@ -379,7 +379,7 @@ func (t *Test) Expectactions() int {
 
 func (r *Runner) InitSuites() {
 	// Build go lox
-	workDir, err := filepath.Abs(projectHomeDir)
+	workDir, err := filepath.Abs(testProjectHomeDir)
 	if err != nil {
 		r.t.Fatalf("Failed to get absolute path: %v", err)
 	}
