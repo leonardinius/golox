@@ -90,8 +90,7 @@ func (s *StdArray) setAt(name *token.Token, index, value Value) (Value, error) {
 }
 
 func (s *StdArray) indexToInt(name *token.Token, index Value) (int, error) {
-	switch index.Type() {
-	case parser.ValueFloatType:
+	if index.Type() == parser.ValueFloatType {
 		return int(index.(ValueFloat)), nil
 	}
 

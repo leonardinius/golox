@@ -39,7 +39,8 @@ func (l *LoxFunction) Call(interpreter *interpreter, arguments []Value) (Value, 
 		env.Define(e.Lexeme, arguments[idx])
 	}
 
-	value, err := interpreter.executeBlock(env, l.Fn.Body)
+	var value Value
+	err := interpreter.executeBlock(env, l.Fn.Body)
 	if err != nil {
 		value, err = l.returnValue(err)
 	}

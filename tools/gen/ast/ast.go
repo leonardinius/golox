@@ -21,7 +21,7 @@ func Main(args []string) int {
 	statementsOutFile := args[1]
 	packageName := args[2]
 
-	if err := defineAst(expressionsOutFile, packageName, "Expr",
+	if err := defineAst(expressionsOutFile, packageName, "Expr", "Value",
 		"ExprAssign   : Name *token.Token, Value Expr",
 		"ExprBinary   : Left Expr, Operator *token.Token, Right Expr",
 		"ExprCall     : Callee Expr, CloseParen *token.Token, Arguments []Expr",
@@ -40,7 +40,7 @@ func Main(args []string) int {
 		return 1
 	}
 
-	if err := defineAst(statementsOutFile, packageName, "Stmt",
+	if err := defineAst(statementsOutFile, packageName, "Stmt", "",
 		"StmtBlock      : Statements []Stmt",
 		"StmtClass      : Name *token.Token, SuperClass *ExprVariable, Methods []*StmtFunction, ClassMethods []*StmtFunction",
 		"StmtExpression : Expression Expr",
@@ -61,9 +61,13 @@ func Main(args []string) int {
 	return 0
 }
 
-func defineAst(outFile, packageName, baseClass string, types ...string) error {
+func defineAst(outFile, packageName, baseClass, returnType string, types ...string) error {
 	f, err := os.Create(outFile)
 	defer func() { _ = f.Close() }()
+
+	if returnType != "" {
+		returnType += ", "
+	}
 
 	fprintfln := func(message string, args ...any) {
 		if err == nil {
@@ -86,12 +90,12 @@ func defineAst(outFile, packageName, baseClass string, types ...string) error {
 	fprintfln("type %sVisitor interface {", baseClass)
 	for _, typeDef := range types {
 		exprClassName := strings.TrimSpace(strings.Split(typeDef, ":")[0])
-		fprintfln("\tVisit%s(%s *%s) (Value, error)", exprClassName, varify(exprClassName), exprClassName)
+		fprintfln("\tVisit%s(%s *%s) (%serror)", exprClassName, varify(exprClassName), exprClassName, returnType)
 	}
 	fprintfln("}\n")
 
 	fprintfln("type %s interface{", baseClass)
-	fprintfln("\tAccept(v %sVisitor) (Value, error)", baseClass)
+	fprintfln("\tAccept(v %sVisitor) (%serror)", baseClass, returnType)
 	fprintfln("}\n")
 
 	for _, typeDef := range types {
@@ -101,13 +105,13 @@ func defineAst(outFile, packageName, baseClass string, types ...string) error {
 			fields[i] = strings.TrimSpace(field)
 		}
 
-		defineType(fprintfln, baseClass, exprClassName, fields)
+		defineType(fprintfln, baseClass, returnType, exprClassName, fields)
 	}
 
 	return err
 }
 
-func defineType(fprintf func(message string, args ...any), baseClass, exprClassName string, fields []string) {
+func defineType(fprintf func(message string, args ...any), baseClass, returnType, exprClassName string, fields []string) {
 	fprintf("type %s struct {", exprClassName)
 	for _, field := range fields {
 		fprintf("\t%s", field)
@@ -116,7 +120,7 @@ func defineType(fprintf func(message string, args ...any), baseClass, exprClassN
 
 	fprintf("var _ %s = (*%s)(nil)\n", baseClass, exprClassName)
 
-	fprintf("func (e *%s) Accept(v %sVisitor) (Value, error) {", exprClassName, baseClass)
+	fprintf("func (e *%s) Accept(v %sVisitor) (%serror) {", exprClassName, baseClass, returnType)
 	fprintf("\treturn v.Visit%s(e)", exprClassName)
 	fprintf("}\n")
 }

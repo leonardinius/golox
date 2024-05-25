@@ -4,7 +4,7 @@ import (
 	"github.com/leonardinius/golox/internal/parser"
 )
 
-// alias, not type redefinition.
+// Value alias, not type redefinition.
 type Value = parser.Value
 
 type (

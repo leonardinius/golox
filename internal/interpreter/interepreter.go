@@ -28,7 +28,7 @@ type Interpreter interface {
 	// The error is nil if the statement is valid.
 	//
 	// Not thread safe.
-	Evaluate(stmt parser.Stmt) (Value, error)
+	Evaluate(stmt parser.Stmt) error
 }
 
 type interpreter struct {
@@ -62,10 +62,9 @@ func NewInterpreter(options ...InterpreterOption) *interpreter {
 // Interpret implements Interpreter.
 func (i *interpreter) Interpret(stmts []parser.Stmt) (string, error) {
 	var v any
-	var err error
 
 	for _, stmt := range stmts {
-		if v, err = i.Evaluate(stmt); err != nil {
+		if err := i.Evaluate(stmt); err != nil {
 			return "", err
 		}
 	}
@@ -74,7 +73,7 @@ func (i *interpreter) Interpret(stmts []parser.Stmt) (string, error) {
 }
 
 // Evaluate implements Interpreter.
-func (i *interpreter) Evaluate(stmt parser.Stmt) (Value, error) {
+func (i *interpreter) Evaluate(stmt parser.Stmt) error {
 	return i.execute(stmt)
 }
 
@@ -95,23 +94,24 @@ func (i *interpreter) stringify(v any) string {
 }
 
 // VisitExpression implements parser.StmtVisitor.
-func (i *interpreter) VisitStmtExpression(expr *parser.StmtExpression) (Value, error) {
-	return i.evaluate(expr.Expression)
+func (i *interpreter) VisitStmtExpression(expr *parser.StmtExpression) error {
+	_, err := i.evaluate(expr.Expression)
+	return err
 }
 
 // VisitStmtFunction implements parser.StmtVisitor.
-func (i *interpreter) VisitStmtFunction(stmtFunction *parser.StmtFunction) (Value, error) {
+func (i *interpreter) VisitStmtFunction(stmtFunction *parser.StmtFunction) error {
 	function := NewLoxFunction(stmtFunction.Name, stmtFunction.Fn, i.Env, false)
 	i.Env.Define(stmtFunction.Name.Lexeme, ValueCallable{function})
 
-	return NilValue, ErrNilNil
+	return ErrNilNil
 }
 
 // VisitStmtIf implements parser.StmtVisitor.
-func (i *interpreter) VisitStmtIf(stmtIf *parser.StmtIf) (Value, error) {
+func (i *interpreter) VisitStmtIf(stmtIf *parser.StmtIf) error {
 	condition, err := i.evaluate(stmtIf.Condition)
 	if err != nil {
-		return NilValue, err
+		return err
 	}
 
 	if i.isTruthy(condition) {
@@ -120,48 +120,49 @@ func (i *interpreter) VisitStmtIf(stmtIf *parser.StmtIf) (Value, error) {
 		return i.execute(stmtIf.ElseBranch)
 	}
 
-	return NilValue, ErrNilNil
+	return ErrNilNil
 }
 
 // VisitPrint implements parser.StmtVisitor.
-func (i *interpreter) VisitStmtPrint(expr *parser.StmtPrint) (Value, error) {
+func (i *interpreter) VisitStmtPrint(expr *parser.StmtPrint) error {
 	value, err := i.evaluate(expr.Expression)
 	if err == nil {
 		i.print(value)
 	}
-	return NilValue, err
+	return err
 }
 
 // VisitStmtReturn implements parser.StmtVisitor.
-func (i *interpreter) VisitStmtReturn(stmtReturn *parser.StmtReturn) (value Value, err error) {
+func (i *interpreter) VisitStmtReturn(stmtReturn *parser.StmtReturn) error {
+	var value Value
+	var err error
 	if stmtReturn.Value != nil {
 		if value, err = i.evaluate(stmtReturn.Value); err != nil {
-			return NilValue, err
+			return err
 		}
 	}
 
-	return NilValue, &ReturnValueError{Value: value}
+	return &ReturnValueError{Value: value}
 }
 
 // VisitVar implements parser.StmtVisitor.
-func (i *interpreter) VisitStmtVar(stmt *parser.StmtVar) (Value, error) {
+func (i *interpreter) VisitStmtVar(stmt *parser.StmtVar) error {
 	var value Value
 	var err error
 	if stmt.Initializer != nil {
 		if value, err = i.evaluate(stmt.Initializer); err != nil {
-			return NilValue, err
+			return err
 		}
 	}
 
 	i.Env.Define(stmt.Name.Lexeme, value)
 
-	return NilValue, ErrNilNil
+	return ErrNilNil
 }
 
 // VisitStmtWhile implements parser.StmtVisitor.
-func (i *interpreter) VisitStmtWhile(stmtWhile *parser.StmtWhile) (Value, error) {
+func (i *interpreter) VisitStmtWhile(stmtWhile *parser.StmtWhile) error {
 	var condition Value
-	var value Value
 	var err error
 
 	for err == nil {
@@ -173,11 +174,11 @@ func (i *interpreter) VisitStmtWhile(stmtWhile *parser.StmtWhile) (Value, error)
 			break
 		}
 
-		if value, err = i.execute(stmtWhile.Body); err != nil {
+		if err = i.execute(stmtWhile.Body); err != nil {
 			switch {
 			case err == errBreak:
 				// returns immediately
-				return NilValue, ErrNilNil
+				return ErrNilNil
 			case err == errContinue:
 				// continue to next iteration
 				err = nil
@@ -185,17 +186,16 @@ func (i *interpreter) VisitStmtWhile(stmtWhile *parser.StmtWhile) (Value, error)
 		}
 	}
 
-	return value, err
+	return err
 }
 
 // VisitStmtFor implements parser.StmtVisitor.
-func (i *interpreter) VisitStmtFor(stmtFor *parser.StmtFor) (Value, error) {
+func (i *interpreter) VisitStmtFor(stmtFor *parser.StmtFor) error {
 	var condition Value
-	var value Value
 	var err error
 
 	if stmtFor.Initializer != nil {
-		_, err = i.execute(stmtFor.Initializer)
+		err = i.execute(stmtFor.Initializer)
 	}
 
 	for err == nil {
@@ -207,11 +207,11 @@ func (i *interpreter) VisitStmtFor(stmtFor *parser.StmtFor) (Value, error) {
 			break
 		}
 
-		if value, err = i.execute(stmtFor.Body); err != nil {
+		if err = i.execute(stmtFor.Body); err != nil {
 			switch {
 			case err == errBreak:
 				// returns immediately
-				return NilValue, ErrNilNil
+				return ErrNilNil
 			case err == errContinue:
 				// continue to next iteration
 				err = nil
@@ -223,38 +223,38 @@ func (i *interpreter) VisitStmtFor(stmtFor *parser.StmtFor) (Value, error) {
 		}
 	}
 
-	return value, err
+	return err
 }
 
 // VisitStmtBreak implements parser.StmtVisitor.
-func (*interpreter) VisitStmtBreak(stmtBreak *parser.StmtBreak) (Value, error) {
-	return NilValue, errBreak
+func (*interpreter) VisitStmtBreak(stmtBreak *parser.StmtBreak) error {
+	return errBreak
 }
 
 // VisitStmtContinue implements parser.StmtVisitor.
-func (*interpreter) VisitStmtContinue(stmtContinue *parser.StmtContinue) (Value, error) {
-	return NilValue, errContinue
+func (*interpreter) VisitStmtContinue(stmtContinue *parser.StmtContinue) error {
+	return errContinue
 }
 
 // VisitStmtBlock implements parser.StmtVisitor.
-func (i *interpreter) VisitStmtBlock(block *parser.StmtBlock) (Value, error) {
+func (i *interpreter) VisitStmtBlock(block *parser.StmtBlock) error {
 	newEnv := i.Env.Nest()
 	return i.executeBlock(newEnv, block.Statements)
 }
 
 // VisitStmtClass implements parser.StmtVisitor.
-func (i *interpreter) VisitStmtClass(stmtClass *parser.StmtClass) (Value, error) {
+func (i *interpreter) VisitStmtClass(stmtClass *parser.StmtClass) error {
 	var superClass *LoxClass
 	if stmtClass.SuperClass != nil {
 		if superClassValue, err := i.evaluate(stmtClass.SuperClass); err != nil {
-			return NilValue, err
+			return err
 		} else {
 			if cast, ok := i.asLoxClass(superClassValue); ok {
 				superClass = cast
 			}
 		}
 		if superClass == nil {
-			return i.returnRuntimeError(stmtClass.SuperClass.Name, loxerrors.ErrRuntimeSuperClassMustBeClass)
+			return i.runtimeError(stmtClass.SuperClass.Name, loxerrors.ErrRuntimeSuperClassMustBeClass)
 		}
 	}
 	env := i.Env
@@ -280,7 +280,7 @@ func (i *interpreter) VisitStmtClass(stmtClass *parser.StmtClass) (Value, error)
 	if superClass != nil {
 		env = env.Enclosing()
 	}
-	return NilValue, env.Assign(stmtClass.Name, ValueClass{class})
+	return env.Assign(stmtClass.Name, ValueClass{class})
 }
 
 // VisitExprGet implements parser.ExprVisitor.
@@ -365,7 +365,7 @@ func (i *interpreter) VisitExprBinary(expr *parser.ExprBinary) (Value, error) {
 		}
 		if left, ok := left.(ValueString); ok {
 			if right, ok := right.(ValueString); ok {
-				return ValueString(left + right), nil
+				return left + right, nil
 			}
 		}
 		return i.returnRuntimeError(expr.Operator, loxerrors.ErrRuntimeOperandsMustNumbersOrStrings)
@@ -555,21 +555,21 @@ func (i *interpreter) VisitExprUnary(expr *parser.ExprUnary) (Value, error) {
 	return i.unreachable()
 }
 
-func (i *interpreter) execute(stmt parser.Stmt) (Value, error) {
+func (i *interpreter) execute(stmt parser.Stmt) error {
 	return stmt.Accept(i)
 }
 
-func (i *interpreter) executeBlock(env *environment, stmt []parser.Stmt) (value Value, err error) {
+func (i *interpreter) executeBlock(env *environment, stmt []parser.Stmt) error {
 	oldEnv := i.setEnv(env)
 	defer i.setEnv(oldEnv)
 
 	for _, stmt := range stmt {
-		if _, err = i.execute(stmt); err != nil {
-			return NilValue, err
+		if err := i.execute(stmt); err != nil {
+			return err
 		}
 	}
 
-	return NilValue, ErrNilNil
+	return ErrNilNil
 }
 
 func (i *interpreter) evaluate(expr parser.Expr) (Value, error) {
