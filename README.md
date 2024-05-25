@@ -4,7 +4,6 @@ This is an implementation of [The Lox Programming Language](https://www.crafting
 
 Current status:
 
-- See [benchmarks](#benchmarks) against jlox (java) version on my laptop.
 - Feature Complete as passing original test suite.
 
 > ```raw
@@ -15,6 +14,8 @@ Excluded tests (re [eXtra Features](#extra-features)):
 
 - `test/field/get_on_class.lox`.
 - `test/field/set_on_class.lox`.
+
+- See benchmarks against jlox (java) below.
 
 ---
 
