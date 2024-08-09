@@ -48,16 +48,16 @@ func NewRunner(t *testing.T) *Runner {
 }
 
 type Suite struct {
-	name          string
-	language      string
-	executable    string
-	args          []string
-	testsGroups   map[string]string
-	tests         int
-	passed        int
-	failed        int
-	skipped       int
-	expectactions int
+	name         string
+	language     string
+	executable   string
+	args         []string
+	testsGroups  map[string]string
+	tests        int
+	passed       int
+	failed       int
+	skipped      int
+	expectations int
 }
 
 func TestSuite(t *testing.T) {
@@ -77,7 +77,7 @@ func (r *Runner) runSuites(names ...string) {
 	for _, name := range names {
 		suite := r.allSuites[name]
 		r.runSuite(suite)
-		r.t.Logf("Suite %s: Tests=%d, Passed=%d, Failed=%d, Skipped=%d, Expectactions: %d", name, suite.tests, suite.passed, suite.failed, suite.skipped, suite.expectactions)
+		r.t.Logf("Suite %s: Tests=%d, Passed=%d, Failed=%d, Skipped=%d, Expectations: %d", name, suite.tests, suite.passed, suite.failed, suite.skipped, suite.expectations)
 	}
 }
 
@@ -119,7 +119,7 @@ func (r *Runner) runTest(suite *Suite, path string) {
 			suite.skipped++
 			return
 		}
-		suite.expectactions += test.Expectactions()
+		suite.expectations += test.Expectations()
 		failures := test.run()
 		if len(failures) > 0 {
 			suite.failed++
@@ -356,6 +356,7 @@ func (t *Test) validateOutput(outputLines []string) {
 
 func (t *Test) Errorf(format string, args ...any) {
 	t.t.Helper()
+	t.failures = append(t.failures, fmt.Sprintf(format, args...))
 }
 
 func (t *Test) Failf(format string, args ...any) {
@@ -363,18 +364,18 @@ func (t *Test) Failf(format string, args ...any) {
 	t.t.Fatalf(format, args...)
 }
 
-func (t *Test) Expectactions() int {
+func (t *Test) Expectations() int {
 	t.t.Helper()
-	expectactions := 0
+	expectations := 0
 
 	if t.expectedRuntimeError != "" {
-		expectactions++
+		expectations++
 	}
 
-	expectactions += len(t.expectedErrors)
-	expectactions += len(t.expectedOutput)
+	expectations += len(t.expectedErrors)
+	expectations += len(t.expectedOutput)
 
-	return expectactions
+	return expectations
 }
 
 func (r *Runner) InitSuites() {

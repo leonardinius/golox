@@ -40,7 +40,7 @@ Usage: make <target>
 See `test/` folder with a copy of original testsuite from <https://github.com/munificent/craftinginterpreters/tree/master/test>.
 
 > ```raw
-> runner_test.go:69: Suite golox: Tests=254, Passed=238, Failed=0, Skipped=16, Expectactions: 557
+> runner_test.go:69: Suite golox: Tests=254, Passed=238, Failed=0, Skipped=16, Expectations: 557
 > ```
 
 Excluded tests (conflicts with eXtra features):
